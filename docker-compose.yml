@@ -1,0 +1,23 @@
+version: "3"
+services:
+  db:
+    container_name: db-htmx_actix
+    image: postgres:latest
+    user: postgres
+    ports:
+      - '5432:5432'
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    restart: "no"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+
+
+
+  
