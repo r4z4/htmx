@@ -1,0 +1,34 @@
+{{
+#>
+ form-layout }}
+<div>
+  <h2 class="text-center">Add Consultant</h2>
+  <form class="form-style">
+    <ul>
+      <li>
+          <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" />
+          <input type="email" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
+      </li>
+    <div>
+      <label for="email">Consultant</label>
+      <input id="email" type="email" />
+    </div>
+    <div class="full-width">
+      <label for="message">Message</label>
+      <textarea id="message"></textarea>
+    </div>
+    <div class="full-width">
+      <label for="message">Attachment</label>
+      <input type="file" id="file_input" />
+    </div>
+    <div class="full-width">
+      <input type="checkbox" id="newsletter" />
+      <label for="newsletter">Receive our newsletter?</label>
+    </div>
+    <div class="full-width">
+      <button type="submit">Send Response</button>
+      <button type="reset">Clear Form</button>
+    </div>
+  </form>
+</div>
+{{/form-layout}}

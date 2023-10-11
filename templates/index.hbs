@@ -1,0 +1,23 @@
+{{
+#>
+ main-layout session=false title='Index' }}
+  <div>
+    <p id="index_view"></p>
+    {{!-- {{#if authorized}}
+      <div class="header">
+        <h1>Welcome to Ext Rev</h1>
+        <img width=="100" height="100" src="/images/logo.png"/>
+      </div>
+      {{> homepage}}
+    {{else}} --}}
+      {{message}}
+      {{!-- {{this}} --}}
+      {{> login-form}}
+    {{!-- {{/if}}
+    {{!-- if !cookie, show login form. Else, show homepage. Also, login form response = homepage if success --}}
+    {{!-- {{> articles}} --}}
+  </div>
+  {{!-- {{> simple-form}} --}}
+   {{!-- {{> footer}}
+   --}}
+  {{/main-layout}}

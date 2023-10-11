@@ -1,0 +1,28 @@
+{{
+#>
+ main-layout session=true}}
+ <div class="crud">
+    <h1>Consults CRUD Ops</h1>
+    <p>{{{name}}}</p>
+    <div class="btn_div">
+        <button
+            hx-get="/consult/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Consult
+        </button>
+        <button
+            hx-get="/consultant/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Consultant
+        </button>
+    </div>
+
+    <div id="crud_response">
+    </div>
+
+    <div id="crud_op_container">
+    </div>
+</div>
+{{/main-layout}}

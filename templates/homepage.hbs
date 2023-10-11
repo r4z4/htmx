@@ -1,0 +1,34 @@
+{{
+#>
+ main-layout session=true title='Homepage' }}
+ <div class="homepage">
+    <h1>Welcome to External Review or Whatever</h1>
+    <p class="intro">This is the Home Page</p>
+    {{#if str}}
+        <div id="error_div">
+            <p>{{str}}</p>
+            <p><a href="/">Login</a></p>
+        </div>
+    {{else}}
+    <div class="fancy_links">
+        <p>Here are some helpful links:</p>
+        <ul>
+            <li>Hey -- {{{username}}}</li>
+            <li>Cookie -- {{{email}}}</li>
+            <li>Create Records</li>
+            <li>Read &amp; Edit</li>
+            <li><a href="/crud">CRUD API</a></li>
+
+            <li>Hey 2 -- {{username}}</li>
+        </ul>
+    <button
+        hx-get="/consultants" 
+        hx-target="#consultant-list" 
+    >
+        View Consultants
+    </button>
+    </div>
+    <div id="consultant-list"></div>
+    {{/if}}
+</div>
+{{/main-layout}}

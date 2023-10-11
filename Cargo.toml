@@ -1,0 +1,26 @@
+[package]
+name = "actix_htmx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.4"
+actix-files = "0.6"
+handlebars = { version = "4.2.1", features = ["dir_source"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+mini_markdown = "0.3"
+
+dotenv = "0.15.0"
+env_logger = "0.10.0"
+sqlx = { version = "0.7.1", features = ["runtime-async-std-native-tls", "postgres", "chrono", "uuid"] }
+uuid = { version = "1.4.1", features = ["serde", "v4"] }
+dotenvy_macro = "0.15.7"
+jsonwebtoken = "8.3.0"
+actix-multipart = "0.6.1"
+argonautica = "0.2.0"
+regex = "1.9.6"
+chrono = { version = "0.4.31", features = ["serde"] }
+validator = { version = "0.16.1", features = ["derive"] }
+lazy_static = "1.4.0"

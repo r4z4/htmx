@@ -1,0 +1,46 @@
+<div class="nav">
+    <ul>
+    <li>    
+        <a
+            href="/about-us"
+            class="about-link"
+            >About Us</a
+        >
+    </li>
+    <li>    
+        <a
+            href="/articles"
+            class="about-link"
+            >Articles</a
+        >
+    </li>
+    <li>    
+        <a
+            href="/"
+            class="about-link"
+            >Home</a
+        >
+    </li>
+
+
+
+    {{#if session}}
+    <li style="float:right">  
+        <div class="dropdown">
+            <button class="dropbtn">👤 
+                <i class="fa fa-caret-down"></i>
+            </button>
+            <div class="dropdown-content">
+                    <button
+                        hx-get="/auth/logout" 
+                    >
+                        Logout
+                    </button>
+                <a href="/user/settings">Settings</a>
+                <a class="active" href="#about">👤</a>
+            </div>
+        </div>
+    </li> 
+    {{/if}}
+    </ul>
+</div>

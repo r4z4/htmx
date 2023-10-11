@@ -1,0 +1,45 @@
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+use validator::Validate;
+
+use crate::config::SelectOptions;
+
+#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+pub struct ConsultPost {
+    pub client_id: i32,
+    pub consultant_id: i32,
+    pub location_id: i32,
+    pub consult_start: DateTime<Utc>,
+    pub consult_end: Option<DateTime<Utc>>,
+    #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
+    pub notes: String,
+}
+
+#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+pub struct ConsultFormRequest {
+    pub client_id: i32,
+    pub consultant_id: i32,
+    pub location_id: i32,
+    pub consult_start: DateTime<Utc>,
+    pub consult_end: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+pub struct ConsultList {
+    pub consult_id: i32,
+    pub client_id: i32,
+    pub consultant_id: i32,
+    pub location_id: i32,
+    pub consult_start: DateTime<Utc>,
+    pub consult_end: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+pub struct ConsultFormTemplate {
+    pub location_options: Vec<SelectOptions>,
+    pub consultant_options: Vec<SelectOptions>,
+    pub client_options: Vec<SelectOptions>,
+}

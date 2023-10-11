@@ -1,0 +1,85 @@
+{{
+#>
+ form-layout }}
+<div>
+  <h2 class="text-center">Add Consult</h2>
+  <form 
+    class="form-style"
+    hx-post="/consult/form"
+    {{!-- Display Err/Success Msg in designated div --}}
+    hx-target="#crud_response"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML">
+    <ul>
+      <li>
+        <div>
+          <label for="location_id">Location</label>
+          <select class="field-style field-full align-none" id="location_id" name="location_id">
+            {{#each location_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+      <li>
+        <div>
+          <label for="client_id">Client</label>
+          <select class="field-style field-full align-none" id="client_id" name="client_id">
+            {{#each client_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+      <li>
+        <div>
+          <label for="consultant_id">Consultant</label>
+          <select class="field-style field-full align-none" id="consultant_id" name="consultant_id">
+            {{#each consultant_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="date" class="field-style field-split align-left" id="start_date" name="start_date" placeholder="Start Date" />
+        </div>
+        <div>
+          <input type="time" class="field-style field-split align-right" id="start_time" name="start_time" placeholder="Start Time" />
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="date" class="field-style field-split align-left" id="end_date" name="end_date" placeholder="End Date" />
+        </div>
+        <div>
+          <input type="time" class="field-style field-split align-right" id="end_time" name="end_time" placeholder="End Time" />
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)"/>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="file" class="field-style field-full align-none" id="file_input" name="attachment"/>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+        </div>
+      </li>
+    </ul>
+  </form>
+</div>
+
+{{/form-layout}}
