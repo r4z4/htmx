@@ -1,0 +1,28 @@
+{{
+#>
+ main-layout session=true}}
+ <div class="user_home">
+    <h1>Homepage for {{username}}</h1>
+    <p>Email: {{email}} | User Since: {{created_at}}</p>
+    <div class="btn_div">
+        <button
+            hx-get="/user/settings" 
+            hx-target="#user_op_container" 
+        >
+            Edit Settings
+        </button>
+        <button
+            hx-get="/user/profile" 
+            hx-target="#user_op_container" 
+        >
+            Edit Profile
+        </button>
+    </div>
+
+    <div id="user_op_response">
+    </div>
+
+    <div id="user_op_container">
+    </div>
+</div>
+{{/main-layout}}
