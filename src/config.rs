@@ -21,7 +21,7 @@ pub struct FilterOptions {
     pub limit: Option<usize>,
 }
 
-#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
 pub struct SelectOptions {
     pub value: i32,
     pub key: Option<String>,

@@ -1,0 +1,57 @@
+{{
+#>
+ form-layout }}
+<div>
+  <h2 class="text-center">Add Consult</h2>
+  <form 
+    class="form-style"
+    hx-post="/consult/form"
+    {{!-- Display Err/Success Msg in designated div --}}
+    hx-target="#crud_response"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML">
+    <ul>
+      <li>
+        <div>
+          <input type="text" class="field-style field-split align-left" id="username" name="username" value={{username}} placeholder="Username" disabled="true" />
+        </div>
+        <div>
+          <input type="time" class="field-style field-split align-right" id="email" name="email" value={{email}} placeholder="Email" />
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <label for="theme_select">Theme Preference</label>
+          <select class="field-style field-full align-none" id="theme_select" name="theme_select">
+            {{#each theme_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+      <li>
+
+      <li>
+        <div>
+          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)"/>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="file" class="field-style field-full align-none" id="file_input" name="attachment"/>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+        </div>
+      </li>
+    </ul>
+  </form>
+</div>
+
+{{/form-layout}}

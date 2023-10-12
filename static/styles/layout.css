@@ -163,7 +163,7 @@ button {
 *****CRUD*****
 *************/
 
-#crud_op_container {
+.op_container {
     width: 95%;
     margin: 3em auto;
     border-radius: 5px;
