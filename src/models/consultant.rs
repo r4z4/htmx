@@ -21,6 +21,12 @@ pub struct ResponseConsultantList {
     pub consultants: Vec<ResponseConsultant>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct ConsultantListResponse {
+    pub consultants: Vec<ResponseConsultant>,
+    pub name: String,
+}
+
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantList {
     pub consult_id: i32,

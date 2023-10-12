@@ -447,7 +447,7 @@ section{
 }
 .fancy_links li a{
     text-transform: uppercase;
-    color: #fff;
+    color: black;
     text-decoration: none;
 }
 .fancy_links li:hover{

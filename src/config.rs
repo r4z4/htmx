@@ -28,7 +28,7 @@ pub struct SelectOptions {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ResponseConsultant {
     pub consultant_id: i32,
     pub specialty_id: i32,

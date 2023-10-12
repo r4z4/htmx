@@ -80,7 +80,7 @@ async fn index(hb: web::Data<Handlebars<'_>>, data: web::Data<AppState>, state: 
 }
 
 #[get("/about-us")]
-async fn about_us(hb: web::Data<Handlebars<'_>>, config: web::Data<config::Config>) -> impl Responder {
+async fn about_us(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let data = json!({
         "name": "ExtRev",
         "title": "Best",
@@ -95,7 +95,7 @@ pub struct HbError {
 }
 
 #[get("/crud")]
-async fn crud_api(hb: web::Data<Handlebars<'_>>, config: web::Data<config::Config>) -> impl Responder {
+async fn crud_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let data = json!({
         "name": "CRUD Ops",
         "title": "Create / Remove / Update / Delete",
@@ -105,8 +105,19 @@ async fn crud_api(hb: web::Data<Handlebars<'_>>, config: web::Data<config::Confi
     HttpResponse::Ok().body(body)
 }
 
+#[get("/list")]
+async fn list_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+    let data = json!({
+        "name": "Lists",
+        "title": "View Records",
+    });
+    let body = hb.render("list-api", &data).unwrap();
+
+    HttpResponse::Ok().body(body)
+}
+
 #[get("/homepage")]
-async fn homepage(hb: web::Data<Handlebars<'_>>, state: Data<AppState>, req: HttpRequest, config: web::Data<config::Config>) -> impl Responder {
+async fn homepage(hb: web::Data<Handlebars<'_>>, state: Data<AppState>, req: HttpRequest) -> impl Responder {
     dbg!(&req);
     // FIXME unwrap()
     let headers = req.headers();
@@ -150,16 +161,14 @@ pub struct ArticleData {
     pub title: String,
     pub description: String,
     pub posts: Vec<Post>,
-    pub current: String,
 }
 
-#[get("/articles/{current}")]
+#[get("/articles")]
 async fn detail(
     hb: web::Data<Handlebars<'_>>,
     config: web::Data<config::Config>,
     state: Data<AppState>,
     req: HttpRequest,
-    path: web::Path<String>,
 ) -> impl Responder {
     println!("Articles");
     // current(hb, config, state, req, path.into_inner())
@@ -167,7 +176,6 @@ async fn detail(
         title: config.title.clone(),
         description: config.description.clone(),
         posts: config.posts.clone(),
-        current: path.into_inner(),
     };
 
     let body = hb.render("articles", &data).unwrap();
@@ -335,6 +343,7 @@ async fn main() -> std::io::Result<()> {
             .service(about_us)
             .service(homepage)
             .service(crud_api)
+            .service(list_api)
             .service(detail)
             .service(content)
             .service(create_todo)

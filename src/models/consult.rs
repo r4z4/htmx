@@ -26,7 +26,7 @@ pub struct ConsultFormRequest {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
 pub struct ConsultList {
     pub consult_id: i32,
     pub client_id: i32,
@@ -35,6 +35,12 @@ pub struct ConsultList {
     pub consult_start: DateTime<Utc>,
     pub consult_end: Option<DateTime<Utc>>,
     pub notes: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct ConsultListResponse {
+    pub consults: Vec<ConsultList>,
+    pub name: String,
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]

@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 
-use crate::{AppState, config::{FilterOptions, SelectOptions, ResponseConsultant}, models::consultant::{ConsultantList, ConsultantFormTemplate}};
+use crate::{AppState, config::{FilterOptions, SelectOptions, ResponseConsultant}, models::consultant::{ConsultantList, ConsultantFormTemplate, ConsultantListResponse}};
 
 lazy_static! {
     static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -24,7 +24,7 @@ pub fn consultant_scope() -> Scope {
         .service(get_consultants_handler)
 }
 
-#[get("/")]
+#[get("/list")]
 pub async fn get_consultants_handler(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
@@ -54,20 +54,13 @@ pub async fn get_consultants_handler(
     }
 
     let consultants = query_result.unwrap();
-    // let mut list = vec![];
-    // for i in consultants.iter_mut() {
-    //     let json = 
-    //         json!({
-    //             "consultant_id": i.consultant_id,
-    //             "specialty_id": i.specialty_id,
-    //             "consultant_f_name": i.consultant_f_name,
-    //         });
-    //     list.push(json);
-    // }
-    
-    // dbg!(&list);
 
-    let body = hb.render("consultant-list", &consultants).unwrap();
+    let consultants_response = ConsultantListResponse {
+        consultants: consultants,
+        name: "Hello".to_owned()
+,    };
+
+    let body = hb.render("consultant-list", &consultants_response).unwrap();
     return HttpResponse::Ok().body(body);
 
 }
@@ -101,7 +94,7 @@ async fn consultant_form(
         account_options: account_options,
     };
 
-    let body = hb.render("consultant-form", &template_data).unwrap();
+    let body = hb.render("consultant/consultant-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }

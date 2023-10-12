@@ -1,0 +1,28 @@
+{{
+#>
+ main-layout session=true}}
+ <div class="list_api">
+    <h1>Lists</h1>
+    <p>{{{name}}}</p>
+    <div class="btn_div">
+        <button
+            hx-get="/consult/list" 
+            hx-target="#list_op_container" 
+        >
+            Consults
+        </button>
+        <button
+            hx-get="/consultant/list" 
+            hx-target="#list_op_container" 
+        >
+            Consultants
+        </button>
+    </div>
+
+    <div id="list_response">
+    </div>
+
+    <div class="op_container" id="list_op_container">
+    </div>
+</div>
+{{/main-layout}}

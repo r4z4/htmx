@@ -13,7 +13,7 @@ use sqlx::FromRow;
 use std::{sync::Arc, convert::Infallible, task::{Poll, Context}, pin::Pin};
 use validator::Validate;
 
-use crate::{AppState, config::{FilterOptions, SelectOptions}, models::consult::{ConsultPost, ConsultFormRequest, ConsultList, ConsultFormTemplate}};
+use crate::{AppState, config::{FilterOptions, SelectOptions}, models::consult::{ConsultPost, ConsultFormRequest, ConsultList, ConsultFormTemplate, ConsultListResponse}};
 
 lazy_static! {
     static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -25,6 +25,7 @@ pub fn consult_scope() -> Scope {
         // .route("/users", web::get().to(get_users_handler))
         .service(consult_form)
         .service(create_consult)
+        .service(get_consults_handler)
 }
 
 #[post("/form")]
@@ -46,7 +47,7 @@ async fn create_consult(
     .await
     {
         Ok(consult) => {
-            let body = hb.render("consult-list", &{}).unwrap();
+            let body = hb.render("consult/consult-list", &{}).unwrap();
             return HttpResponse::Ok().body(body);
         }
         Err(err) => {
@@ -119,7 +120,7 @@ async fn consult_form(
         client_options: client_options,
     };
 
-    let body = hb.render("consult-form", &template_data).unwrap();
+    let body = hb.render("consult/consult-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -156,10 +157,9 @@ async fn consult_edit_form(
 
     let consult = query_result.unwrap();
 
-    let body = hb.render("consult-form", &consult).unwrap();
+    let body = hb.render("consult/consult-form", &consult).unwrap();
     return HttpResponse::Ok().body(body);
 }
-
 
 #[get("/list")]
 pub async fn get_consults_handler(
@@ -195,7 +195,12 @@ pub async fn get_consults_handler(
 
     let consults = query_result.unwrap();
 
-    let body = hb.render("consult-list", &consults).unwrap();
+    let consults_response = ConsultListResponse {
+        consults: consults,
+        name: "Hello".to_owned(),
+    };
+
+    let body = hb.render("consult/consult-list", &consults_response).unwrap();
     return HttpResponse::Ok().body(body);
 
 }
