@@ -34,6 +34,13 @@ pub struct UserSettingsModel {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct UserSettingsPost {
+    pub theme_id: i32,
+    pub email: String,
+    pub username: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserHomeModel {
     pub created_at: DateTime<Utc>,
     pub email: String,

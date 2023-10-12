@@ -2,14 +2,14 @@ use actix_web::{
     get,
     post,
     web::{Data, Json, self},
-    HttpResponse, Responder, Scope, HttpRequest, HttpMessage
+    HttpResponse, Responder, Scope, HttpRequest, HttpMessage, put
 };
 
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel}, HeaderValueExt};
+use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost}, HeaderValueExt};
 
 
 pub fn user_scope() -> Scope {
@@ -18,7 +18,18 @@ pub fn user_scope() -> Scope {
         .service(home)
         .service(settings)
         .service(profile)
-        //.service(edit_form)
+        .service(edit_settings)
+}
+
+pub fn theme_options() -> Vec<SelectOptions> {
+    [SelectOptions {
+            key: Some("classic".to_owned()),
+            value: 1
+        },
+        SelectOptions {
+            key: Some("dark".to_owned()),
+            value: 2
+        }].to_vec()
 }
 
 #[get("/settings")]
@@ -28,15 +39,6 @@ async fn settings(
     state: web::Data<AppState>,
 ) -> impl Responder {
     // let user_id = get_user_id_from_token();
-    let theme_options: Vec<SelectOptions> = [
-        SelectOptions {
-            key: Some("classic".to_owned()),
-            value: 1
-        },
-        SelectOptions {
-            key: Some("dark".to_owned()),
-            value: 2
-        }].to_vec();
 
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserModel>(
@@ -53,7 +55,7 @@ async fn settings(
             Ok(user) => {
                 let user_c = user.clone();
                 let user_settings_model = UserSettingsModel {
-                    theme_options: theme_options,
+                    theme_options: theme_options(),
                     username: user.unwrap().username,
                     email: user_c.unwrap().email,
                 };
@@ -73,6 +75,39 @@ async fn settings(
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
+    }
+}
+
+#[put("/settings")]
+async fn edit_settings(
+    hb: web::Data<Handlebars<'_>>,
+    body: web::Form<UserSettingsPost>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
+) -> impl Responder {
+    match sqlx::query_as::<_, UserSettingsPost>(
+        "UPDATE user_settings SET theme_id = $1, username = $2, email = $3 WHERE user_id = $4 RETURNING *",
+    )
+    .bind(body.theme_id)
+    .bind(body.username.clone())
+    .bind(body.email.clone())
+    .fetch_one(&state.db)
+    .await
+    {
+        Ok(user_settings) => {
+            let user_c = user_settings.clone();
+            let user_settings_model = UserSettingsModel {
+                theme_options: theme_options(),
+                username: user_settings.username,
+                email: user_c.email,
+            };
+            let body = hb.render("user/user-settings", &user_settings_model).unwrap();
+            return HttpResponse::Ok().body(body);
+        }
+        Err(err) => {
+            let body = hb.render("error", &err.to_string()).unwrap();
+            return HttpResponse::Ok().body(body);
+        }
     }
 }
 

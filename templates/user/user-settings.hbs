@@ -2,12 +2,12 @@
 #>
  form-layout }}
 <div>
-  <h2 class="text-center">Add Consult</h2>
+  <h2 class="text-center">Settings for {{username}}</h2>
   <form 
     class="form-style"
-    hx-post="/consult/form"
+    hx-post="/user/settings"
     {{!-- Display Err/Success Msg in designated div --}}
-    hx-target="#crud_response"
+    hx-target="#user_response"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML">
     <ul>
