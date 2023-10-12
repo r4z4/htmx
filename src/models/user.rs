@@ -28,9 +28,25 @@ pub struct UserModel {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserSettingsModel {
-    pub theme_options: Vec<SelectOptions>,
-    pub email: String,
+    pub user_settings_id: i32,
+    pub user_id: i32,
+    // user_settings table updated_at, not user table
+    pub updated_at: DateTime<Utc>,
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct UserSettingsQuery {
+    pub user_id: i32,
     pub username: String,
+    pub email: String,
+    pub user_updated: DateTime<Utc>,
+    pub settings_updated: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct UserSettingsObj {
+    pub theme_options: Vec<SelectOptions>,
+    // user_settings table updated_at, not user table
+    pub updated_at_fmt: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]

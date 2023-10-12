@@ -58,6 +58,16 @@ CREATE TABLE IF NOT EXISTS users (
 	            REFERENCES accounts(account_id)
     );
 
+CREATE TABLE IF NOT EXISTS user_settings (
+        user_settings_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        theme_id INTEGER NOT NULL DEFAULT 1,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT fk_user_id
+            FOREIGN KEY(user_id) 
+	            REFERENCES users(user_id)
+    );
+
 CREATE TABLE IF NOT EXISTS user_sessions (
         user_session_id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -295,6 +305,17 @@ VALUES
 -- Consultants
 ('first_consultant', 2, 'consultant_one@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('second_consultant', 2, 'consultant_two@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+
+INSERT INTO user_settings (user_id, theme_id) 
+VALUES 
+(1, 1),
+(2, 1),
+(3, 1),
+(4, 1),
+(5, 1),
+(6, 1),
+(7, 1),
+(8, 1);
 
 INSERT INTO user_sessions (user_id, session_id, expires, created_at) 
 VALUES 

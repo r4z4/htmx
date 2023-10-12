@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS specialties;
 
 DROP TABLE IF EXISTS consutlants;
 DROP TABLE IF EXISTS user_sessions;
+DROP TABLE IF EXISTS user_settings;
 DROP TABLE IF EXISTS users;
 -- This needs to be last
 DROP TABLE IF EXISTS accounts;

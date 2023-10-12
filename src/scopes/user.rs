@@ -4,12 +4,9 @@ use actix_web::{
     web::{Data, Json, self},
     HttpResponse, Responder, Scope, HttpRequest, HttpMessage, put
 };
-
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-
-use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost}, HeaderValueExt};
+use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost, UserSettingsObj, UserSettingsQuery}, HeaderValueExt};
 
 
 pub fn user_scope() -> Scope {
@@ -41,10 +38,11 @@ async fn settings(
     // let user_id = get_user_id_from_token();
 
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, UserModel>(
-            "SELECT users.user_id, username, email, users.created_at, users.updated_at
+        match sqlx::query_as::<_, UserSettingsQuery>(
+            "SELECT users.user_id, username, email, users.created_at, users.updated_at AS user_updated, user_settings.updated_at AS settings_updated
             FROM users
             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            LEFT JOIN user_settings on user_settings.user_id = users.user_id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -53,15 +51,22 @@ async fn settings(
         .await
         {
             Ok(user) => {
-                let user_c = user.clone();
-                let user_settings_model = UserSettingsModel {
-                    theme_options: theme_options(),
-                    username: user.unwrap().username,
-                    email: user_c.unwrap().email,
-                };
-                let body = hb.render("user/user-settings", &user_settings_model).unwrap();
-                return HttpResponse::Ok()
-                .body(body);
+                if let Some(usr) = user {
+                    let usr_c = usr.clone();
+                    let updated_at_fmt = usr_c.settings_updated.format("%b %-d, %-I:%M").to_string();
+                    let user_settings_obj = UserSettingsObj {
+                        theme_options: theme_options(),
+                        updated_at_fmt: updated_at_fmt,
+                    };
+                    let body = hb.render("user/user-settings", &user_settings_obj).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body);
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("user/user-settings", &message).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body);
+                }
             }
             Err(err) => {
                 dbg!(&err);
@@ -85,8 +90,8 @@ async fn edit_settings(
     req: HttpRequest,
     state: web::Data<AppState>,
 ) -> impl Responder {
-    match sqlx::query_as::<_, UserSettingsPost>(
-        "UPDATE user_settings SET theme_id = $1, username = $2, email = $3 WHERE user_id = $4 RETURNING *",
+    match sqlx::query_as::<_, UserSettingsModel>(
+        "UPDATE user_settings SET theme_id = $1 WHERE user_id = $4 RETURNING *",
     )
     .bind(body.theme_id)
     .bind(body.username.clone())
@@ -96,12 +101,12 @@ async fn edit_settings(
     {
         Ok(user_settings) => {
             let user_c = user_settings.clone();
-            let user_settings_model = UserSettingsModel {
+            let updated_at_fmt = user_c.updated_at.format("%b %-d, %-I:%M").to_string();
+            let user_settings_obj = UserSettingsObj {
                 theme_options: theme_options(),
-                username: user_settings.username,
-                email: user_c.email,
+                updated_at_fmt: updated_at_fmt
             };
-            let body = hb.render("user/user-settings", &user_settings_model).unwrap();
+            let body = hb.render("user/user-settings", &user_settings_obj).unwrap();
             return HttpResponse::Ok().body(body);
         }
         Err(err) => {

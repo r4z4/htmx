@@ -11,14 +11,14 @@
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML">
     <ul>
-      <li>
+      {{!-- <li>
         <div>
           <input type="text" class="field-style field-split align-left" id="username" name="username" value={{username}} placeholder="Username" disabled="true" />
         </div>
         <div>
           <input type="time" class="field-style field-split align-right" id="email" name="email" value={{email}} placeholder="Email" />
         </div>
-      </li>
+      </li> --}}
 
       <li>
         <div>
@@ -51,6 +51,10 @@
         </div>
       </li>
     </ul>
+    <details>
+      <summary>Last Updated</summary>
+        {{updated_at_fmt}}
+    </details>
   </form>
 </div>
 
