@@ -2,6 +2,7 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 --DROP TABLE IF EXISTS accounts;
+DROP TYPE IF EXISTS user_type;
 DROP TYPE IF EXISTS consultant_specialty;
 DROP TYPE IF EXISTS consultant_territory;
 DROP TYPE IF EXISTS state_abbr;
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS users (
         email TEXT NOT NULL UNIQUE,
         secret TEXT DEFAULT NULL,
         password TEXT NOT NULL,
+        avatar_path TEXT NOT NULL DEFAULT '/images/default_avatar.svg',
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_account_id

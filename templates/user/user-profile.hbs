@@ -1,17 +1,17 @@
 {{
 #>
  layouts/basic-layout session=true}}
- <div class="user_settings">
+ <div class="user_profile">
     <h1>User Profile</h1>
-    <p>Email: {{email}}</p>
-    <p>User Since: {{created_at}}</p>
-    <p>Last Updated: {{updated_at}}</p>
-
+    <div class="info_section">
+        <p>Username: {{username}}</p>
+        <p>Email: {{email}}</p>
+        <p>User Since: {{created_at_fmt}}</p>
+        <p>Last Updated: {{updated_at_fmt}}</p>
+    </div>
 
     <div id="crud_response">
     </div>
 
-    <div class="op_container" id="crud_op_container">
-    </div>
 </div>
 {{/layouts/basic-layout}}

@@ -159,6 +159,33 @@ button {
     display: block;
 }
 
+
+/*************
+**** User ****
+*************/
+
+.user_home h1 {
+    text-align: center;
+    color: rgb(5, 5, 68);
+    font-weight: bold;
+}
+
+.user_home img {
+    width: 5em;
+    height: auto;
+}
+
+.img_div {
+    margin-top: 2em auto;
+    text-align: center;
+}
+
+.info_section {
+    width: 80%;
+    margin: auto;
+    text-align: center;
+}
+
 /*************
 *****CRUD*****
 *************/
@@ -221,7 +248,6 @@ h1,h2,h3,h4,h5,h6 {
 }
   
 p,ul,ol {
-    margin-bottom: 2em;
     color: #1d1d1d;
     font-family: sans-serif;
 }

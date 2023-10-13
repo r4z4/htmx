@@ -22,6 +22,7 @@ DROP TABLE IF EXISTS accounts;
 
 DROP TYPE IF EXISTS consultant_specialty;
 DROP TYPE IF EXISTS consultant_territory;
+DROP TYPE IF EXISTS user_type;
 DROP TYPE IF EXISTS state_abbr;
 DROP TYPE IF EXISTS state_name;
 DROP TYPE IF EXISTS us_territories;

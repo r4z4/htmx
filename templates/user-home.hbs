@@ -3,7 +3,9 @@
  main-layout session=true}}
  <div class="user_home">
     <h1>Homepage for {{username}}</h1>
-    <p>Email: {{email}} | User Since: {{created_at}}</p>
+    <div class="img_div">
+        <img src={{avatar_path}} alt="user_avatar"/>
+    </div>
     <div class="btn_div">
         <button
             hx-get="/user/settings" 
@@ -11,18 +13,33 @@
         >
             Edit Settings
         </button>
-        <button
+        <button onclick="window.dialog.show();">Edit Settings</button>
+
+        <dialog id="dialog">
+            {{> user/user-settings}}
+        <button onclick="window.dialog.close();">Cancel</button>
+        </dialog>
+        {{!-- <button
             hx-get="/user/profile" 
             hx-target="#user_op_container" 
         >
             Edit Profile
-        </button>
+        </button> --}}
     </div>
 
     <div id="user_op_response">
+        {{#if err}}
+            {{err}}
+        {{/if}}
     </div>
 
     <div class="op_container" id="user_op_container">
+        <div class="info_section">
+            <p>Username: {{username}}</p>
+            <p>Email: {{email}}</p>
+            <p>User Since: {{created_at_fmt}}</p>
+            <p>Last Updated: {{updated_at_fmt}}</p>
+        </div>
     </div>
 </div>
 {{/main-layout}}

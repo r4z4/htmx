@@ -6,7 +6,7 @@ use actix_web::{
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost, UserSettingsObj, UserSettingsQuery}, HeaderValueExt};
+use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost, UserSettingsObj, UserSettingsQuery, UserHomeQuery}, HeaderValueExt};
 
 
 pub fn user_scope() -> Scope {
@@ -14,7 +14,7 @@ pub fn user_scope() -> Scope {
         // .route("/users", web::get().to(get_users_handler))
         .service(home)
         .service(settings)
-        .service(profile)
+        //.service(profile)
         .service(edit_settings)
 }
 
@@ -116,45 +116,47 @@ async fn edit_settings(
     }
 }
 
-#[get("/profile")]
-async fn profile(
-    hb: web::Data<Handlebars<'_>>,
-    req: HttpRequest,
-    state: web::Data<AppState>,
-) -> impl Responder {
-    // let user_id = get_user_id_from_token();
-    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, UserModel>(
-            "SELECT users.user_id, username, email, users.created_at, users.updated_at
-            FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
-            WHERE session_id = $1
-            AND expires > NOW()",
-        )
-        .bind(cookie.to_string())
-        .fetch_optional(&state.db)
-        .await
-        {
-            Ok(user) => {
-                dbg!(&user);
-                let body = hb.render("user/user-profile", &user).unwrap();
-                return HttpResponse::Ok()
-                .body(body);
-            }
-            Err(err) => {
-                dbg!(&err);
-                let body = hb.render("user/user-profile", &format!("{:?}", err)).unwrap();
-                return HttpResponse::Ok().body(body);
-                // HttpResponse::InternalServerError().json(format!("{:?}", err))
-            }
-        }
-        // FIXME: Is this else right? Redirect?
-    } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
-        let body = hb.render("index", &message).unwrap();
-        HttpResponse::Ok().body(body)
-    }
-}
+// #[get("/profile")]
+// async fn profile(
+//     hb: web::Data<Handlebars<'_>>,
+//     req: HttpRequest,
+//     state: web::Data<AppState>,
+// ) -> impl Responder {
+//     // let user_id = get_user_id_from_token();
+//     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+//         match sqlx::query_as::<_, UserProfileModel>(
+//             "SELECT users.user_id, username, email, 
+//             TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
+//             TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
+//             FROM users
+//             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+//             WHERE session_id = $1
+//             AND expires > NOW()",
+//         )
+//         .bind(cookie.to_string())
+//         .fetch_optional(&state.db)
+//         .await
+//         {
+//             Ok(user) => {
+//                 dbg!(&user);
+//                 let body = hb.render("user/user-profile", &user).unwrap();
+//                 return HttpResponse::Ok()
+//                 .body(body);
+//             }
+//             Err(err) => {
+//                 dbg!(&err);
+//                 let body = hb.render("user/user-profile", &format!("{:?}", err)).unwrap();
+//                 return HttpResponse::Ok().body(body);
+//                 // HttpResponse::InternalServerError().json(format!("{:?}", err))
+//             }
+//         }
+//         // FIXME: Is this else right? Redirect?
+//     } else {
+//         let message = "Your session seems to have expired. Please login again.".to_owned();
+//         let body = hb.render("index", &message).unwrap();
+//         HttpResponse::Ok().body(body)
+//     }
+// }
 
 
 #[get("/home")]
@@ -165,10 +167,13 @@ async fn home(
 ) -> impl Responder {
     // let user_id = get_user_id_from_token();
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, UserModel>(
-            "SELECT users.user_id, username, email, users.created_at, users.updated_at
+        match sqlx::query_as::<_, UserHomeQuery>(
+            "SELECT users.user_id, username, email, users.created_at, users.updated_at, avatar_path, user_settings.updated_at AS settings_updated
+                -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
+                -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
             FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+            LEFT JOIN user_settings on user_settings.user_id = users.user_id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -179,8 +184,13 @@ async fn home(
             Ok(user) => {
                 let unwrapped_user = user.unwrap();
                 let user_home_model = UserHomeModel {
+                    user_id: unwrapped_user.user_id,
                     username: unwrapped_user.username,
-                    created_at: unwrapped_user.created_at,
+                    theme_options: theme_options(),
+                    avatar_path: unwrapped_user.avatar_path,
+                    settings_updated: unwrapped_user.settings_updated.format("%b %-d, %-I:%M").to_string(),
+                    created_at_fmt: unwrapped_user.created_at.format("%b %-d, %-I:%M").to_string(),
+                    updated_at_fmt: unwrapped_user.updated_at.format("%b %-d, %-I:%M").to_string(),
                     email: unwrapped_user.email,
                 };
                 let body = hb.render("user-home", &user_home_model).unwrap();
