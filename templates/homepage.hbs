@@ -3,7 +3,6 @@
  main-layout session=true title='Homepage' }}
  <div class="homepage">
     <h1>Welcome to External Review or Whatever</h1>
-    <p class="intro">This is the Home Page</p>
     {{#if str}}
         <div id="error_div">
             <p>{{str}}</p>
@@ -11,15 +10,10 @@
         </div>
     {{else}}
     <div class="fancy_links">
-        <p>Here are some helpful links:</p>
+        <p>Glad you could join us, {{{username}}}. Here are some helpful links:</p>
         <ul>
-            <li>Hey -- {{{username}}}</li>
-            <li>Cookie -- {{{email}}}</li>
-            
             <li><a href="/crud">Create Records</a></li>
             <li><a href="/list">Read &amp; Edit</a></li>
-
-            <li>Hey 2 -- {{username}}</li>
         </ul>
     <button
         hx-get="/consultants" 

@@ -7,12 +7,12 @@
         <img src={{avatar_path}} alt="user_avatar"/>
     </div>
     <div class="btn_div">
-        <button
+        {{!-- <button
             hx-get="/user/settings" 
             hx-target="#user_op_container" 
         >
             Edit Settings
-        </button>
+        </button> --}}
         <button onclick="window.dialog.show();">Edit Settings</button>
 
         <dialog id="dialog">

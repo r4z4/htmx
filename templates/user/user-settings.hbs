@@ -32,6 +32,36 @@
       </li>
       <li>
 
+      {{!-- <li>
+        <div>
+          <label for="avatar_select">Avatar</label>
+          <select class="field-style field-full align-none" id="theme_select" name="theme_select">
+            {{#each avatar_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li> --}}
+
+      {{!-- Map over & have checked={{this.avatar_path == user.avatar_path}}--}}
+
+      <div class="user-dropdown">
+          <button class="mini_dropbtn">Change Avatar 
+              <i class="fa fa-caret-down"></i>
+          </button>
+          <div class="user-dropdown-content">
+            <label>
+              <input type="radio" name="test" value="small" checked>
+              <img src="/images/default_avatar.svg" alt="Option 1">
+            </label>
+
+            <label>
+              <input type="radio" name="test" value="big">
+              <img src="/images/default_avatar.svg" alt="Option 2">
+            </label>
+          </div>
+      </div>
+
       <li>
         <div>
           <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)"/>

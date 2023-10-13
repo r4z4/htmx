@@ -160,6 +160,62 @@ button {
 }
 
 
+.user-dropdown {
+    float: left;
+    overflow: hidden;
+  }
+  
+  .user-dropdown .dropbtn {
+    font-size: 16px;  
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+  }
+  
+  .user-dropdown:hover .dropbtn {
+    background-color: rgb(132, 183, 230);
+  }
+  
+  .user-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+  }
+  
+.user-dropdown-content a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+.user-dropdown-content button {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+  
+.user-dropdown-content a:hover {
+    background-color: #ddd;
+}
+  
+.user-dropdown:hover .user-dropdown-content {
+    display: block;
+}
+
+
 /*************
 **** User ****
 *************/
@@ -184,6 +240,29 @@ button {
     width: 80%;
     margin: auto;
     text-align: center;
+}
+
+.dropdown img {
+    width: 1em;
+    height: 1em;
+}
+
+/* HIDE RADIO */
+[type=radio] { 
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* IMAGE STYLES */
+[type=radio] + img {
+  cursor: pointer;
+}
+
+/* CHECKED STYLES */
+[type=radio]:checked + img {
+  outline: 2px solid #f00;
 }
 
 /*************
@@ -463,13 +542,17 @@ section{
 .fancy_links{
     margin: 15px 0;
 }
+.fancy_links p{
+    text-align: center;
+}
 .fancy_links li{
-    border: 2px solid #4158D0;
+    border: 2px solid #5a93de;
     list-style: none;
     border-radius: 5px;
     padding: 10px 15px;
-    /* width: 160px; */
     text-align: center;
+    width: 40%;
+    margin: 1em auto;
 }
 .fancy_links li a{
     text-transform: uppercase;
