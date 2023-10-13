@@ -34,6 +34,17 @@ pub struct IndexData {
     pub description: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct FixedTableData {
+    pub table_headers: Vec<String>,
+    pub table_rows: Vec<TableRow>
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct TableRow {
+    pub th: String,
+    pub tds: Vec<String>
+}
+
 fn mock_fixed_table_data() -> FixedTableData {
     let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec();
     let th = "One".to_owned();
@@ -80,6 +91,42 @@ fn mock_fixed_table_data() -> FixedTableData {
     };
     let table_rows = [table_row_1, table_row_2, table_row_3, table_row_4, table_row_5, table_row_6, table_row_7, table_row_8, table_row_9, table_row_10].to_vec();
     let fixed_table_data = FixedTableData {
+        table_headers: table_headers,
+        table_rows: table_rows,
+    };
+
+    return fixed_table_data;
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct ResponsiveTableData {
+    pub table_headers: Vec<String>,
+    pub table_rows: Vec<ResponsiveTableRow>
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct ResponsiveTableRow {
+    pub tds: Vec<ResponsiveTd>
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct ResponsiveTd {
+    pub table_data: String,
+    pub value: String,
+}
+
+fn mock_responsive_table_data() -> ResponsiveTableData {
+    let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned()].to_vec();
+    let td = ResponsiveTd {table_data: "consultant_id".to_owned(), value: "23".to_owned()};
+    let td_2 = ResponsiveTd {table_data: "consultant_name".to_owned(), value: "Steve".to_owned()};
+    let td_3 = ResponsiveTd {table_data: "consultant_city".to_owned(), value: "Omaha".to_owned()};
+    let table_row = ResponsiveTableRow {
+        tds: [td.clone(), td_2.clone(), td_3.clone()].to_vec(),
+    };
+    let table_row_2 = ResponsiveTableRow {
+        tds: [td, td_2, td_3].to_vec(),
+    };
+    let table_rows = [table_row, table_row_2].to_vec();
+    let fixed_table_data = ResponsiveTableData {
         table_headers: table_headers,
         table_rows: table_rows,
     };
@@ -169,21 +216,18 @@ async fn list_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
 
     HttpResponse::Ok().body(body)
 }
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct FixedTableData {
-    pub table_headers: Vec<String>,
-    pub table_rows: Vec<TableRow>
-}
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct TableRow {
-    pub th: String,
-    pub tds: Vec<String>
-}
 
 #[get("/fixed")]
 async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let fixed_table_data = mock_fixed_table_data();
     let body = hb.render("fixed-table", &fixed_table_data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/responsive")]
+async fn responsive_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+    let responsive_table_data = mock_responsive_table_data();
+    let body = hb.render("responsive-table", &responsive_table_data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
@@ -413,6 +457,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(about_us)
             .service(fixed_table)
+            .service(responsive_table)
             .service(homepage)
             .service(crud_api)
             .service(list_api)
