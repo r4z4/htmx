@@ -60,6 +60,14 @@ pub async fn get_consultants_handler(
         name: "Hello".to_owned()
 ,    };
 
+    // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
+
+    // let consultants_table_data = ResponsiveTableData {
+    //     table_headers:
+    //     // This is where we need to impl TableRows for ResponseConsultant :)
+    //     table_rows:
+    // }
+
     let body = hb.render("consultant-list", &consultants_response).unwrap();
     return HttpResponse::Ok().body(body);
 

@@ -105,33 +105,36 @@ pub struct ResponsiveTableData {
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct ResponsiveTableRow {
-    pub tds: Vec<ResponsiveTd>
+    pub tds: Vec<String>
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct ResponsiveTd {
-    pub table_data: String,
-    pub value: String,
-}
+// #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+// pub struct ResponsiveTd {
+//     pub table_data: String,
+//     pub value: String,
+// }
 
 fn mock_responsive_table_data() -> ResponsiveTableData {
     let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned()].to_vec();
-    let td = ResponsiveTd {table_data: "consultant_id".to_owned(), value: "23".to_owned()};
-    let td_2 = ResponsiveTd {table_data: "consultant_name".to_owned(), value: "Steve".to_owned()};
-    let td_3 = ResponsiveTd {table_data: "consultant_city".to_owned(), value: "Omaha".to_owned()};
     let table_row = ResponsiveTableRow {
-        tds: [td.clone(), td_2.clone(), td_3.clone()].to_vec(),
+        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
     };
     let table_row_2 = ResponsiveTableRow {
-        tds: [td, td_2, td_3].to_vec(),
+        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
     };
-    let table_rows = [table_row, table_row_2].to_vec();
-    let fixed_table_data = ResponsiveTableData {
+    let table_row_3 = ResponsiveTableRow {
+        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
+    };
+    let table_row_4 = ResponsiveTableRow {
+        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
+    };
+    let table_rows = [table_row, table_row_2, table_row_3, table_row_4].to_vec();
+    let responsive_table_data = ResponsiveTableData {
         table_headers: table_headers,
         table_rows: table_rows,
     };
 
-    return fixed_table_data;
+    return responsive_table_data;
 }
 
 

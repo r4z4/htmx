@@ -682,7 +682,7 @@ section{
 /* default styling. Nothing to do with freexing first row and column */
 table {border-collapse: collapse; font-family: helvetica}
 
-td, th {border:  1px solid;
+.table-container td, th {border:  1px solid;
       padding: 10px;
       min-width: 200px;
       background: white;
@@ -697,7 +697,7 @@ td, th {border:  1px solid;
   overflow: scroll;
 }
 
-thead th {
+.table-container thead th {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
@@ -705,7 +705,7 @@ thead th {
   background: hsl(67, 36%, 52%);
 }
 
-thead th:first-child {
+.table-container thead th:first-child {
   left: 0;
   z-index: 3;
 }
@@ -727,97 +727,143 @@ tfoot td:first-child {
   z-index: 3;
 }
 
-tbody {
+.table-container tbody {
   overflow: scroll;
   height: 200px;
 }
 
 /* MAKE LEFT COLUMN FIXEZ */
-tr > :first-child {
+.table-container tr > :first-child {
   position: -webkit-sticky;
   position: sticky; 
   background: #216288;
   left: 0; 
 }
 /* don't do this */
-tr > :first-child {
+.table-container tr > :first-child {
   box-shadow: inset 0px 1px black;
 }
 
 
-/*****************
-** Simple Table **
-*****************/
+/*********************
+** Responsive Table **
+*********************/
 
-.resposive_table_container {
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-  
-.resposive_table_container h2 {
-    font-size: 26px;
-    margin: 20px 0;
+.responsive_table h2{
     text-align: center;
-    small {
-      font-size: 0.5em;
-    }
-  }
-  
-.responsive-table li {
-    border-radius: 3px;
-    padding: 25px 30px;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 25px;
-}
-.responsive-table .table-header {
-    background-color: #95A5A6;
-    font-size: 14px;
+    font-size: 18px;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-.responsive-table .table-row {
-    background-color: #ffffff;
-    box-shadow: 0px 0px 9px 0px rgba(0,0,0,0.1);
-}
-.responsive-table .col-0 {
-    flex-basis: 10%;
-}
-.responsive-table  .col-1 {
-    flex-basis: 40%;
-}
-.responsive-table .col-2 {
-    flex-basis: 25%;
-}
-.responsive-table .col-3 {
-    flex-basis: 25%;
+    letter-spacing: 1px;
+    color: rgb(40, 5, 50);
+    padding: 30px 0;
 }
 
-@media all and (max-width: 767px) {
-    .table-header {
-    display: none;
+/* Table Styles */
+
+.table-wrapper{
+    margin: 10px 70px 70px;
+    box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
+}
+
+.fl-table {
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: normal;
+    border: none;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+    white-space: nowrap;
+    background-color: white;
+}
+
+.fl-table td, .fl-table th {
+    text-align: center;
+    padding: 8px;
+}
+
+.fl-table td {
+    border-right: 1px solid #f8f8f8;
+    font-size: 12px;
+}
+
+.fl-table thead th {
+    color: #ffffff;
+    background: #4FC3A1;
+}
+
+
+.fl-table thead th:nth-child(odd) {
+    color: #ffffff;
+    background: #324960;
+}
+
+.fl-table tr:nth-child(even) {
+    background: #F8F8F8;
+}
+
+/* Responsive */
+
+@media (max-width: 767px) {
+    .fl-table {
+        display: block;
+        width: 100%;
     }
-    .table-row{
-    
-    }
-    li {
-    display: block;
-    }
-    .col {
-    flex-basis: 100%;
-    }
-    .col {
-    display: flex;
-    padding: 10px 0;
-    &:before {
-        color: #6C7A89;
-        padding-right: 10px;
-        content: attr(data-label);
-        flex-basis: 50%;
+    .table-wrapper:before{
+        content: "Scroll horizontally >";
+        display: block;
         text-align: right;
+        font-size: 11px;
+        color: white;
+        padding: 0 0 10px;
     }
+    .fl-table thead, .fl-table tbody, .fl-table thead th {
+        display: block;
+    }
+    .fl-table thead th:last-child{
+        border-bottom: none;
+    }
+    .fl-table thead {
+        float: left;
+    }
+    .fl-table tbody {
+        width: auto;
+        position: relative;
+        overflow-x: auto;
+    }
+    .fl-table td, .fl-table th {
+        padding: 20px .625em .625em .625em;
+        height: 60px;
+        vertical-align: middle;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 120px;
+        font-size: 13px;
+        text-overflow: ellipsis;
+    }
+    .fl-table thead th {
+        text-align: left;
+        border-bottom: 1px solid #f7f7f9;
+    }
+    .fl-table tbody tr {
+        display: table-cell;
+    }
+    .fl-table tbody tr:nth-child(odd) {
+        background: none;
+    }
+    .fl-table tr:nth-child(even) {
+        background: transparent;
+    }
+    .fl-table tr td:nth-child(odd) {
+        background: #F8F8F8;
+        border-right: 1px solid #E6E4E4;
+    }
+    .fl-table tr td:nth-child(even) {
+        border-right: 1px solid #E6E4E4;
+    }
+    .fl-table tbody td {
+        display: block;
+        text-align: center;
     }
 }

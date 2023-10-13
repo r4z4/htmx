@@ -34,7 +34,7 @@
   </ul>
 </div> --}}
 
-<div class="resposive_table_container">
+{{!-- <div class="resposive_table_container">
   <h2>Responsive Tables</h2>
   <ul class="responsive-table">
     <li class="table-header">
@@ -50,4 +50,28 @@
       </li>
     {{/each}}
   </ul>
+</div> --}}
+
+<div class="responsive_table">
+  <h2>Responsive Table</h2>
+  <div class="table-wrapper">
+      <table class="fl-table">
+          <thead>
+          <tr>
+              {{#each table_headers}}
+                  <th>{{this}}</th>
+              {{/each}}
+          </tr>
+          </thead>
+          <tbody>
+          {{#each table_rows}}
+            <tr>
+                {{#each this.tds}}
+                  <td>{{this}}</td>
+                {{/each}}
+            </tr>
+          {{/each}}
+          <tbody>
+      </table>
+  </div>
 </div>
