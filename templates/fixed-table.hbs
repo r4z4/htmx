@@ -1,0 +1,27 @@
+  <div class="table-container">
+  <div class="table-horizontal-container">
+    <table class="unfixed-table">
+      <thead>
+        <tr>
+            {{#each table_headers}}
+                <th>{{this}}</th>
+            {{/each}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each table_rows}}
+            <tr>
+                <th>{{this.th}}</th>
+                {{#each this.tds}}
+                    <td>{{this}}</td>
+                {{/each}}
+            </tr>
+        {{/each}}
+      </tbody>
+      
+      {{!-- <tfoot>
+        <tr><td>Footer</td><td>Footer</td><td>Footer</td><td>Footer</td><td>Footer</td><td>Footer</td><th>Footer</th><th>Footer</th></tr>
+      </tfoot> --}}
+    </table>
+  </div>
+</div>

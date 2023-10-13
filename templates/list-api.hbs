@@ -3,7 +3,7 @@
  main-layout session=true}}
  <div class="list_api">
     <h1>Lists</h1>
-    <p>{{{name}}}</p>
+    <p>{{{title}}}</p>
     <div class="btn_div">
         <button
             hx-get="/consult/list" 
@@ -16,6 +16,12 @@
             hx-target="#list_op_container" 
         >
             Consultants
+        </button>
+        <button
+            hx-get="/fixed" 
+            hx-target="#list_op_container" 
+        >
+            Fixed Table
         </button>
     </div>
 

@@ -34,6 +34,60 @@ pub struct IndexData {
     pub description: String,
 }
 
+fn mock_fixed_table_data() -> FixedTableData {
+    let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec();
+    let th = "One".to_owned();
+    let tds = ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec();
+    let table_row_1 = TableRow {
+        th: th.clone(),
+        tds: tds.clone(),
+    };
+    let table_row_2 = TableRow {
+        th: th,
+        tds: tds,
+    };
+    let table_row_3 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_4 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_5 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_6 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_7 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_8 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_9 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_row_10 = TableRow {
+        th: "One".to_owned(),
+        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+    };
+    let table_rows = [table_row_1, table_row_2, table_row_3, table_row_4, table_row_5, table_row_6, table_row_7, table_row_8, table_row_9, table_row_10].to_vec();
+    let fixed_table_data = FixedTableData {
+        table_headers: table_headers,
+        table_rows: table_rows,
+    };
+
+    return fixed_table_data;
+}
+
+
 #[get("/")]
 async fn index(hb: web::Data<Handlebars<'_>>, data: web::Data<AppState>, state: Data<AppState>, req: HttpRequest, config: web::Data<config::Config>) -> impl Responder {
     let headers = req.headers();
@@ -113,6 +167,23 @@ async fn list_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     });
     let body = hb.render("list-api", &data).unwrap();
 
+    HttpResponse::Ok().body(body)
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct FixedTableData {
+    pub table_headers: Vec<String>,
+    pub table_rows: Vec<TableRow>
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct TableRow {
+    pub th: String,
+    pub tds: Vec<String>
+}
+
+#[get("/fixed")]
+async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+    let fixed_table_data = mock_fixed_table_data();
+    let body = hb.render("fixed-table", &fixed_table_data).unwrap();
     HttpResponse::Ok().body(body)
 }
 
@@ -341,6 +412,7 @@ async fn main() -> std::io::Result<()> {
             .service(consultant_scope())
             .service(index)
             .service(about_us)
+            .service(fixed_table)
             .service(homepage)
             .service(crud_api)
             .service(list_api)
