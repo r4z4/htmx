@@ -3,7 +3,12 @@
  form-layout }}
 <div>
   <h2 class="text-center">Add Location</h2>
-  <form class="form-style">
+  <form 
+    class="form-style"
+    hx-boost="true"
+    action="/location/create" 
+    method="post"
+  >
     <ul>
       <li>
         <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" />
