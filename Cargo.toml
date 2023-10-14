@@ -24,3 +24,4 @@ regex = "1.9.6"
 chrono = { version = "0.4.31", features = ["serde"] }
 validator = { version = "0.16.1", features = ["derive"] }
 lazy_static = "1.4.0"
+convert_case = "0.6.0"

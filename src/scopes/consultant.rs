@@ -8,6 +8,7 @@ use actix_web::{
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 
 use crate::{AppState, config::{FilterOptions, SelectOptions, ResponseConsultant}, models::consultant::{ConsultantList, ConsultantFormTemplate, ConsultantListResponse}};
@@ -22,6 +23,11 @@ pub fn consultant_scope() -> Scope {
         // .route("/users", web::get().to(get_users_handler))
         .service(consultant_form)
         .service(get_consultants_handler)
+}
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct ResponsiveConsultantData {
+    table_headers: Vec<String>,
+    consultants: Vec<ResponseConsultant>,
 }
 
 #[get("/list")]
@@ -55,20 +61,20 @@ pub async fn get_consultants_handler(
 
     let consultants = query_result.unwrap();
 
-    let consultants_response = ConsultantListResponse {
+//     let consultants_response = ConsultantListResponse {
+//         consultants: consultants,
+//         name: "Hello".to_owned()
+// ,    };
+
+    let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
+
+    let consultants_table_data = ResponsiveConsultantData {
+        table_headers: table_headers,
+        // This is where we need to impl TableRows for ResponseConsultant :)
         consultants: consultants,
-        name: "Hello".to_owned()
-,    };
+    };
 
-    // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-
-    // let consultants_table_data = ResponsiveTableData {
-    //     table_headers:
-    //     // This is where we need to impl TableRows for ResponseConsultant :)
-    //     table_rows:
-    // }
-
-    let body = hb.render("consultant-list", &consultants_response).unwrap();
+    let body = hb.render("responsive-table", &consultants_table_data).unwrap();
     return HttpResponse::Ok().body(body);
 
 }

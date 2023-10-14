@@ -1,5 +1,6 @@
 use std::env;
 use config::Post;
+use convert_case::{Case, Casing};
 use dotenv::dotenv;
 use actix_files::Files;
 use actix_web::{get, web::{self, post, Data}, App, HttpResponse, HttpServer, Responder, post, http::{Error, header::{Header, HeaderValue}}, HttpRequest};
@@ -15,6 +16,8 @@ use scopes::{auth::auth_scope, consult::consult_scope, consultant::consultant_sc
 mod config;
 mod scopes;
 mod models;
+
+use handlebars::handlebars_helper;
 
 #[derive(Debug)]
 pub struct AppState {
@@ -441,6 +444,9 @@ async fn main() -> std::io::Result<()> {
     handlebars
         .register_templates_directory(".hbs", "./templates")
         .unwrap();
+
+    // WTF doesn't this work
+    // handlebars_helper!(to_title_case: |x: String| x.to_case(Case::Title));
 
     handlebars.set_dev_mode(true);
 

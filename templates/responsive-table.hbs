@@ -58,20 +58,68 @@
       <table class="fl-table">
           <thead>
           <tr>
+              {{#each consultants.[0]}}
+                  <th>{{@key}}</th>
+              {{/each}}
+          </tr>
+          </thead>
+          <tbody>
+            {{#each consultants}}
+                <tr>
+                    {{#each this}}
+                      <td id={{@key}}>{{this}}</td>
+                    {{/each}}
+                </tr>
+            {{/each}} 
+          <tbody>
+      </table>
+  </div>
+</div>
+
+{{!-- <div class="responsive_table">
+  <h2>Responsive Table</h2>
+  <div class="table-wrapper">
+      <table class="fl-table">
+          <thead>
+          <tr>
               {{#each table_headers}}
                   <th>{{this}}</th>
               {{/each}}
           </tr>
           </thead>
           <tbody>
-          {{#each table_rows}}
-            <tr>
-                {{#each this.tds}}
-                  <td>{{this}}</td>
-                {{/each}}
-            </tr>
-          {{/each}}
+            {{#each consultants}}
+                <tr>
+                    {{#each this}}
+                      <td id={{@key}}>{{this}}</td>
+                    {{/each}}
+                </tr>
+            {{/each}} 
           <tbody>
       </table>
   </div>
-</div>
+</div> --}}
+
+{{!-- {{#each consultants}}
+    <tr>
+        {{#each this.}}
+          <td>{{this}}</td>
+        {{/each}}
+    </tr>
+{{/each}} 
+
+{{#each table_rows}}
+  <tr>
+      {{#each this.tds}}
+        <td>{{this}}</td>
+      {{/each}}
+  </tr>
+{{/each}} --}}
+
+{{!-- {{#each consultants}}
+    <tr>
+          <td>{{this.specialty_id}}</td>
+          <td>{{this.consultant_id}}</td>
+          <td>{{this.consultant_f_name}}</td>
+    </tr>
+{{/each}}  --}}
