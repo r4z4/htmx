@@ -26,7 +26,8 @@ pub fn consultant_scope() -> Scope {
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveConsultantData {
-    table_headers: Vec<String>,
+    // table_headers: Vec<String>,
+    table_title: String,
     consultants: Vec<ResponseConsultant>,
 }
 
@@ -42,7 +43,17 @@ pub async fn get_consultants_handler(
 
     let query_result = sqlx::query_as!(
         ResponseConsultant,
-        "SELECT consultant_id, specialty_id, consultant_f_name FROM consultants ORDER by consultant_id LIMIT $1 OFFSET $2",
+        "SELECT 
+            consultant_id, 
+            specialty_name,
+            territory_name,
+            consultant_f_name,
+            consultant_l_name
+        FROM consultants
+        INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
+        INNER JOIN territories ON territories.territory_id = consultants.territory_id
+        ORDER by consultant_id 
+        LIMIT $1 OFFSET $2",
         limit as i32,
         offset as i32
     )
@@ -66,11 +77,12 @@ pub async fn get_consultants_handler(
 //         name: "Hello".to_owned()
 // ,    };
 
-    let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
+    // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
 
     let consultants_table_data = ResponsiveConsultantData {
-        table_headers: table_headers,
+        // table_headers: table_headers,
         // This is where we need to impl TableRows for ResponseConsultant :)
+        table_title: "Consultancy Consultants".to_owned(),
         consultants: consultants,
     };
 

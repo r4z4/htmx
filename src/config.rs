@@ -31,8 +31,10 @@ pub struct SelectOptions {
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ResponseConsultant {
     pub consultant_id: i32,
-    pub specialty_id: i32,
+    pub specialty_name: String,
+    pub territory_name: String,
     pub consultant_f_name: String,
+    pub consultant_l_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

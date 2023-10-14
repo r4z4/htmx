@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS consultants (
         consultant_f_name TEXT NOT NULL,
         consultant_l_name TEXT NOT NULL,
         specialty_id INTEGER NOT NULL,
-        territory_id INTEGER NULL,
+        territory_id INTEGER NOT NULL DEFAULT 1,
         user_id INTEGER NOT NULL,
         img_path TEXT DEFAULT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -274,10 +274,11 @@ CREATE TABLE IF NOT EXISTS consults (
 
 INSERT INTO territories (territory_id, territory_name, territory_states)
 VALUES
-(1, 'Northeast', ARRAY['NY', 'MA','VT', 'NH', 'RI']),
-(2, 'Southeast', ARRAY['FL', 'GA','LA', 'VA', 'WV']),
-(3, 'West', ARRAY['CA', 'WA','OR', 'NV', 'NM', 'AZ', 'WY', 'ID']),
-(4, 'Midwest', ARRAY['NE', 'KS','OK', 'TX', 'IA', 'CO']);
+(1, 'National',     NULL),
+(2, 'Northeast',    ARRAY['DE', 'MD', 'PA', 'NJ', 'NY', 'MA', 'CT', 'VT', 'NH', 'RI', 'ME', 'OH']),
+(3, 'Southeast',    ARRAY['AR', 'LA', 'MS', 'TN', 'AL', 'KY', 'WV', 'VA', 'NC', 'SC', 'GA', 'FL']),
+(4, 'West',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID'. 'MT', 'AK', 'CO', 'WY']),
+(5, 'Midwest',      ARRAY['NE', 'IA', 'KS', 'OK', 'MO', 'SD', 'ND', 'MN', 'WI', 'MI', 'IN', 'IL', 'TX']);
 
 INSERT INTO specialties (specialty_id, specialty_name)
 VALUES
@@ -286,27 +287,50 @@ VALUES
 (3, 'Technology'),
 (4, 'Government');
 
+INSERT INTO mime_types (mime_type_id, mime_type_name)
+VALUES
+(1, 'image/png'),
+(2, 'image/jpeg'),
+(3, 'image/gif'),
+(4, 'image/webp'),
+(5, 'image/svg+xml'),
+(6, 'audio/wav'),
+(7, 'audio/mpeg'),
+(8, 'audio/webm'),
+(9, 'video/webm'),
+(10, 'video/mpeg'),
+(11, 'video/mp4'),
+(12, 'application/json'),
+(13, 'application/pdf'),
+(14, 'text/csv'),
+(15, 'text/html'),
+(16, 'text/calendar');
+
 INSERT INTO accounts (account_name, account_secret) 
 VALUES 
-('root', 'root_secret'),
-('admin', 'admin_secret'),
-('default_user', 'user_secret'),
-('default_client', 'client_secret'),
-('default_company_client', 'company_client_secret');
+('root',                    'root_secret'),
+('admin',                   'admin_secret'),
+('default_user',            'user_secret'),
+('default_client',          'client_secret'),
+('default_company_client',  'company_client_secret');
 
 INSERT INTO users (username, account_id, email, password) 
 VALUES 
-('root', 1, 'root@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('admin', 2, 'admin@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('root',                1, 'root@consultancy.com',              '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('admin',               2, 'admin@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Users
-('jim_jam', 2, 'jim@jam.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('aaron', 2, 'aaron@aaron.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('jim_jam',             2, 'jim@jam.com',                       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('aaron',               2, 'aaron@aaron.com',                   '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Clients
-('first_client', 3, 'client_one@client.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('second_client', 3, 'client_two@client.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('first_client',        3, 'client_one@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('second_client',       3, 'client_two@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Consultants
-('first_consultant', 2, 'consultant_one@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('second_consultant', 2, 'consultant_two@consultancy.com', '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+('hulk_hogan',          2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('gregs_lobos',         2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('zardos',              2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('rob_bower',           2, 'rob_bower@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('v_smith',             2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('mike_ryan',           2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
 
 INSERT INTO user_settings (user_id, theme_id) 
 VALUES 
@@ -327,32 +351,50 @@ VALUES
 
 INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, user_id) 
 VALUES 
-('Mike', 'Ryan', NULL, '555-555-5555', '1111 Client St.', 'Client City', 'NE', '68114', '1989-01-08', 3, 5),
-(NULL, NULL, 'McGillicuddy & Sons LLC', '555-555-5555', '1111 Jupiter St.', 'Company Town', 'NE', '68114', NULL, 4, 5),
-('Chris', 'Cote', NULL, '555-555-5555', '2222 Client St.', 'Client Town', 'MN', '55057', '1966-07-22', 3, 6);
+('Mike',    'Ryan', NULL,                       '555-555-5555', '1111 Client St.',  'Client City',  'NE', '68114', '1989-01-08', 3, 5),
+(NULL,      NULL,   'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.', 'Company Town', 'NE', '68114',  NULL,        4, 5),
+('Chris',   'Cote', NULL,                       '555-555-5555', '2222 Client St.',  'Client Town',  'MN', '55057', '1966-07-22', 3, 6);
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 
-('Terry', 'Bolea', 1, 7, '/img/consultants/consultant_one.svg'),
-('Joe', 'Zagacki', 2, 8, '/img/consultants/consultant_two.svg');
+('Terry',   'Bolea',    1, 7, '/images/consultants/hulk_hogan.svg'),
+('Mike',    'Ryan',     3, 7, '/images/consultants/m_w.svg'),
+('Mister',  'Zardos',   4, 7, '/images/consultants/m_w.svg'),
+('Greg',    'Cote',     2, 7, '/images/consultants/m_w.svg'),
+('Robert',  'Bower',    1, 7, '/images/consultants/m_w.svg'),
+('Vanessa', 'Smith',    3, 7, '/images/consultants/f_w.svg'),
+('Joe',     'Zagacki',  2, 8, '/images/consultants/m_w.svg');
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 
 (1, 2, NULL, '2022-02-02', '2023-02-02'),
 (2, 1, NULL, '2022-02-02', '2023-02-02'),
+(3, 4, 1,    '2022-02-02', '2023-02-02'),
 (1, 1, NULL, '2023-02-02', NULL),
-(2, 2, NULL, '2023-02-02', NULL);
+(2, 2, NULL, '2023-02-02', NULL),
+-- Moving national gov consultant to a region, because we hired one for each region
+(3, 4, 4,    '2023-02-02', NULL),
+(4, 4, 2,    '2023-02-02', NULL),
+(5, 4, 3,    '2023-03-02', NULL),
+(6, 4, 5,    '2023-03-02', NULL),
+-- Now we have a national tech guy
+(7, 3, 1,    '2023-05-27', NULL);
 
 INSERT INTO contacts (contact_title, contact_f_name, contact_l_name, contact_email, contact_primary_phone, contact_secondary_phone) 
 VALUES 
-('Site Admin', 'Greg', 'Cote', 'cote@gregslobos.com', '555-555-5555', '555-555-5555'),
-('Location Manager', 'Billy', 'Gil', 'bill@marlins.com', '555-555-5555', '555-555-5555');
+('Site Admin',       'Greg',  'Cote',   'cote@gregslobos.com',  '555-555-5555', '555-555-5555'),
+('Location Manager', 'Billy', 'Gil',    'bill@marlins.com',     '555-555-5555', '555-555-5555');
 
 INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
 VALUES 
-('Default - Main Office', '1234 Main St.', NULL, 'Omaha', 'NE', '68114', '555-555-5555', DEFAULT, 4),
-('Bend Conference Center', '5432 Postgres Ave', 'Ste. 101', 'Bend', 'OR', '97701', '555-555-5555', DEFAULT, 3),
-('Austin Heights', '6379 Redis Lane', NULL, 'Austin', 'TX', '78799', '555-555-5555', 2, 4);
+('Default - Main Office',   '1234 Main St.',        NULL,       'Omaha',                            'NE', '68114', '555-555-5555', DEFAULT, 5),
+('Bend Conference Center',  '5432 Postgres Ave',    'Ste. 101', 'Bend',                             'OR', '97701', '555-555-5555', DEFAULT, 4),
+('101 W',                   '101 W. Ave',           'Ste. 901', 'Chicago',                          'IL', '60007', '555-555-5555', DEFAULT, 5),
+('Hilton New York',         '1001 Western St.',     NULL,       'New York',                         'NY', '10001', '555-555-5555', DEFAULT, 2),
+('Islands Local',           '70 Oahu Ave',          'Pt. 12',   'Honolulu',                         'HI', '96805', '555-555-5555', DEFAULT, 4),
+('LAX Sidepost',            '1 World Way',          NULL,       'Los Angeles',                      'CA', '90045', '555-555-5555', DEFAULT, 4),
+('Grosse Pointe Main'       '1212 Main Ln.'         NULL        'Village of Grosse Pointe Shores',  'MI', '48236', '555-555-5555', DEFAULT, 5),
+('Austin Heights',          '6379 Redis Lane',      NULL,       'Austin',                           'TX', '78799', '555-555-5555', 2, 5);
 
 INSERT INTO engagements (rating, text, user_id) 
 VALUES 
@@ -364,7 +406,11 @@ VALUES
 (1, 1, 2, '2023-09-11 19:10:25-06', '2023-09-11 19:30:25-06', NULL),
 (2, 2, 1, '2023-09-11 16:00:25-06', '2023-09-11 16:50:11-06', 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
 
-INSERT INTO attachments (path, mime_type, user_id, channel, created_at, updated_at) 
+-- audio/flac
+INSERT INTO attachments (path, mime_type_id, user_id, channel, created_at) 
 VALUES 
-('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png', 'image/png', 3, 'Upload', '2023-09-11 19:10:25-06', '2023-09-11 19:30:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png', 'image/png', 4, 'Email', '2023-09-11 16:00:25-06', '2023-09-11 16:50:11-06');
+('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png', 1, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg', 2, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav', 6, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm', 9, 3, 'Upload', '2023-09-14 19:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png', 1, 4, 'Email', '2023-09-16 16:00:25-06');
