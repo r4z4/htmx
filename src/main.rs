@@ -30,6 +30,14 @@ mod models;
 mod scopes;
 
 use handlebars::handlebars_helper;
+handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));
+handlebars_helper!(str_eq: |s_1: String, s_2: String| {
+        if s_1 == s_2 {
+            true
+        } else {
+            false
+        }
+    });
 
 #[derive(Debug)]
 pub struct AppState {
@@ -584,8 +592,8 @@ async fn main() -> std::io::Result<()> {
         .register_templates_directory(".hbs", "./templates")
         .unwrap();
 
-    // WTF doesn't this work
-    // handlebars_helper!(to_title_case: |x: String| x.to_case(Case::Title));
+    handlebars.register_helper("to_title_case", Box::new(to_title_case));
+    handlebars.register_helper("str_eq", Box::new(str_eq));
 
     handlebars.set_dev_mode(true);
 

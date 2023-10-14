@@ -30,7 +30,7 @@ pub fn consultant_scope() -> Scope {
 pub struct ResponsiveConsultantData {
     // table_headers: Vec<String>,
     table_title: String,
-    consultants: Vec<ResponseConsultant>,
+    entities: Vec<ResponseConsultant>,
 }
 
 #[get("/list")]
@@ -84,8 +84,8 @@ pub async fn get_consultants_handler(
     let consultants_table_data = ResponsiveConsultantData {
         // table_headers: table_headers,
         // This is where we need to impl TableRows for ResponseConsultant :)
-        table_title: "Consultancy Consultants".to_owned(),
-        consultants: consultants,
+        table_title: "Consultants".to_owned(),
+        entities: consultants,
     };
 
     let body = hb

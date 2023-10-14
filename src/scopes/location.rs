@@ -25,7 +25,7 @@ pub fn location_scope() -> Scope {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveLocationData {
     table_title: String,
-    locations: Vec<LocationList>,
+    entities: Vec<LocationList>,
 }
 
 #[get("/list")]
@@ -78,7 +78,7 @@ pub async fn get_locations_handler(
 
     let locations_table_data = ResponsiveLocationData {
         table_title: "Consultancy Locations".to_owned(),
-        locations: locations,
+        entities: locations,
     };
 
     let body = hb

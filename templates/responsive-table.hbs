@@ -54,24 +54,34 @@
 
 <div class="responsive_table">
   <h2>{{table_title}}</h2>
+  <dialog id="dialog">
+    {{#if (str_eq table_title "Consultants")}}
+      {{> user/user-settings}}
+    {{else}}
+      <p>Hi</p>
+    {{/if}}
+    <button onclick="window.dialog.close();">Cancel</button>
+  </dialog>
   <div class="table-wrapper">
       <table class="fl-table">
-          <thead>
+        <thead>
           <tr>
-              {{#each consultants.[0]}}
-                  <th>{{@key}}</th>
-              {{/each}}
+            {{#each entities.[0]}}
+              <th>{{to_title_case @key}}</th>
+            {{/each}}
+              <th>Action(s)</th>
           </tr>
-          </thead>
-          <tbody>
-            {{#each consultants}}
-                <tr>
-                    {{#each this}}
-                      <td id={{@key}}>{{this}}</td>
-                    {{/each}}
-                </tr>
-            {{/each}} 
-          <tbody>
+        </thead>
+        <tbody>
+          {{#each entities}}
+            <tr>
+              {{#each this}}
+                <td id={{@key}}>{{this}}</td>
+              {{/each}}
+                <td id="td_action"><button onclick="window.dialog.show();">Edit</button></td>
+            </tr>
+          {{/each}} 
+        <tbody>
       </table>
   </div>
 </div>
