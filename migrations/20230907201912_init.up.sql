@@ -89,6 +89,11 @@ CREATE TABLE IF NOT EXISTS specialties (
         specialty_name TEXT NOT NULL
     );
 
+CREATE TABLE IF NOT EXISTS mime_types (
+        mime_type_id SERIAL PRIMARY KEY,
+        mime_type_name TEXT NOT NULL
+    );
+
 CREATE TABLE IF NOT EXISTS territories (
         territory_id SERIAL PRIMARY KEY,
         territory_name TEXT NOT NULL,
@@ -242,7 +247,7 @@ CREATE TABLE IF NOT EXISTS attachments (
         user_id INTEGER NOT NULL,
         -- mime_type mime_type NOT NULL,
         -- channel attachment_channel NOT NULL,
-        mime_type TEXT NOT NULL,
+        mime_type_id INTEGER NOT NULL,
         channel TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -259,6 +264,7 @@ CREATE TABLE IF NOT EXISTS consults (
         consult_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         consult_end TIMESTAMPTZ DEFAULT NULL,
         notes TEXT DEFAULT NULL,
+        consult_attachments INTEGER[] DEFAULT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NULL,
         CONSTRAINT fk_client
@@ -277,7 +283,7 @@ VALUES
 (1, 'National',     NULL),
 (2, 'Northeast',    ARRAY['DE', 'MD', 'PA', 'NJ', 'NY', 'MA', 'CT', 'VT', 'NH', 'RI', 'ME', 'OH']),
 (3, 'Southeast',    ARRAY['AR', 'LA', 'MS', 'TN', 'AL', 'KY', 'WV', 'VA', 'NC', 'SC', 'GA', 'FL']),
-(4, 'West',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID'. 'MT', 'AK', 'CO', 'WY']),
+(4, 'West',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID', 'MT', 'AK', 'CO', 'WY']),
 (5, 'Midwest',      ARRAY['NE', 'IA', 'KS', 'OK', 'MO', 'SD', 'ND', 'MN', 'WI', 'MI', 'IN', 'IL', 'TX']);
 
 INSERT INTO specialties (specialty_id, specialty_name)
@@ -351,9 +357,14 @@ VALUES
 
 INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, user_id) 
 VALUES 
-('Mike',    'Ryan', NULL,                       '555-555-5555', '1111 Client St.',  'Client City',  'NE', '68114', '1989-01-08', 3, 5),
-(NULL,      NULL,   'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.', 'Company Town', 'NE', '68114',  NULL,        4, 5),
-('Chris',   'Cote', NULL,                       '555-555-5555', '2222 Client St.',  'Client Town',  'MN', '55057', '1966-07-22', 3, 6);
+('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 5),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 5),
+('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 6),
+('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 3),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 2),
+(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 4),
+(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4),
+(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1);
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 
@@ -393,7 +404,7 @@ VALUES
 ('Hilton New York',         '1001 Western St.',     NULL,       'New York',                         'NY', '10001', '555-555-5555', DEFAULT, 2),
 ('Islands Local',           '70 Oahu Ave',          'Pt. 12',   'Honolulu',                         'HI', '96805', '555-555-5555', DEFAULT, 4),
 ('LAX Sidepost',            '1 World Way',          NULL,       'Los Angeles',                      'CA', '90045', '555-555-5555', DEFAULT, 4),
-('Grosse Pointe Main'       '1212 Main Ln.'         NULL        'Village of Grosse Pointe Shores',  'MI', '48236', '555-555-5555', DEFAULT, 5),
+('Grosse Pointe Main',      '1212 Main Ln.',        NULL,       'Village of Grosse Pointe Shores',  'MI', '48236', '555-555-5555', DEFAULT, 5),
 ('Austin Heights',          '6379 Redis Lane',      NULL,       'Austin',                           'TX', '78799', '555-555-5555', 2, 5);
 
 INSERT INTO engagements (rating, text, user_id) 
@@ -401,16 +412,18 @@ VALUES
 (7, 'It was a seven.', 1),
 (3, 'I give it a 3', 2);
 
-INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes) 
+INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes) 
 VALUES 
-(1, 1, 2, '2023-09-11 19:10:25-06', '2023-09-11 19:30:25-06', NULL),
-(2, 2, 1, '2023-09-11 16:00:25-06', '2023-09-11 16:50:11-06', 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
+(1, 4, 2, '2023-09-11 19:10:25', '2023-09-11 19:30:25', ARRAY[2], NULL),
+(3, 5, 4, '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one'),
+(4, 2, 3, '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.'),
+(2, 2, 1, '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
 
 -- audio/flac
 INSERT INTO attachments (path, mime_type_id, user_id, channel, created_at) 
 VALUES 
-('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png', 1, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg', 2, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav', 6, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm', 9, 3, 'Upload', '2023-09-14 19:16:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png', 1, 4, 'Email', '2023-09-16 16:00:25-06');
+('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png',            1, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg',          2, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6, 3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9, 3, 'Upload', '2023-09-14 19:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1, 4, 'Email',  '2023-09-16 16:00:25-06');
