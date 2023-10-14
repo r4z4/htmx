@@ -1,0 +1,49 @@
+<div id="register_form">
+    <form
+    class="form-style"
+    hx-post="/auth/register"
+    {{!-- Success gets a redirect, error gets form back w/ errors --}}
+    hx-target="#register_errors"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML"
+    >
+        <h1>Register Form</h1>
+        <div>
+        <hr/>
+        <div id="login_errors"></div>
+        <ul>
+            <li>
+                <input class="field-style field-full align-none" type="text" placeholder="Username" name="username" required>
+            </li>
+            <li>
+                <input name="email" id="email" type="email" class="field-style field-full align-none"
+                    {{!-- hx-get="/contacts/{{ contact.id }}/email" --}}
+                    hx-get="/auth/validate/email"
+                    hx-target="next .error"
+                    hx-trigger="change, keyup delay:200ms changed"
+                    placeholder="Email">
+                <span class="error"></span>
+            </li>
+            <li>
+                <input class="field-style field-full align-none" type="password" placeholder="Password" name="password" required>
+            </li>
+            <li>
+                <button type="submit">Register</button>
+            </li>
+            <li>
+                <div class="container" style="background-color: #eee">
+                    <span class="reg">
+                        <a 
+                            href="/"
+                            hx-get="/auth/register"
+                            hx-target="register_form"
+                            hx-swap="outerHTML"
+                        >Already have an account? Login here.
+                        </a>
+                    </span>
+                </div>
+            </li>
+        </ul>
+        </div>
+    </form>
+</div>

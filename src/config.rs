@@ -5,6 +5,14 @@ use sqlx::FromRow;
 use std::fmt::Debug;
 use std::fs::File;
 use validator::Validate;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    pub static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
+    pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
+    pub static ref RE_EMAIL: Regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Post {

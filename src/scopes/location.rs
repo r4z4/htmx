@@ -5,16 +5,9 @@ use actix_web::{
 };
 
 use handlebars::Handlebars;
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{config::{FilterOptions, SelectOptions, self}, models::location::{LocationList, LocationFormTemplate}, AppState};
-
-lazy_static! {
-    static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
-    static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
-}
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
@@ -63,7 +56,7 @@ pub async fn get_locations_handler(
         let err = "Error occurred while fetching all location records";
         // return HttpResponse::InternalServerError()
         //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -106,7 +99,7 @@ async fn location_form(
 
     if account_result.is_err() {
         let err = "Error occurred while fetching account option KVs";
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 

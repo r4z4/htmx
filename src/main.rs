@@ -469,7 +469,7 @@ async fn content(
         HttpResponse::Ok().body(body)
     } else {
         let err = "Error retrieving content".to_owned();
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         HttpResponse::Ok().body(body)
     }
 }
@@ -553,7 +553,7 @@ async fn create_todo(
             return HttpResponse::Ok().body(body);
         }
         Err(err) => {
-            let body = hb.render("error", &err).unwrap();
+            let body = hb.render("validation", &err).unwrap();
             return HttpResponse::Ok().body(body);
         }
     }

@@ -28,7 +28,7 @@
     });
 </script>
 
-<div>
+<div id="login_form">
     <form
     class="form-style"
     hx-post="/auth/login"
@@ -41,23 +41,36 @@
         <div>
         <hr/>
         <div id="login_errors"></div>
-        <ul>
-            <li>
-                <input class="field-style field-full align-none" type="text" placeholder="Username" name="username" required>
-            </li>
-            <li>
-                <input class="field-style field-full align-none" type="password" placeholder="Password" name="password" required>
-            </li>
-            <li>
-                <button type="submit">Login</button>
-            </li>
-            <li>
-                <div class="container" style="background-color: #eee">
-                    <span class="reg"><a href="#"> No account? Register here</a></span>
-                    <span class="psw"><a href="#"> Forgot password?</a></span>
-                </div>
-            </li>
-        </ul>
+            <ul>
+                <li>
+                    <input class="field-style field-full align-none" type="text" placeholder="Username" name="username" required>
+                </li>
+                <li>
+                    <input class="field-style field-full align-none" type="password" placeholder="Password" name="password" required>
+                </li>
+                <li>
+                    <button type="submit">Login</button>
+                </li>
+                <li>
+                    <div class="container" style="background-color: #eee">
+                        <span class="reg">
+                            <a 
+                                href="/"
+                                hx-get="auth/register"
+                                hx-target="#login_form"
+                                hx-swap="outerHTML"
+                            > No account? Register here
+                            </a>
+                        </span>
+                        <span class="psw">
+                            <a 
+                                href="#"
+                            > Forgot password?
+                            </a>
+                        </span>
+                    </div>
+                </li>
+            </ul>
         </div>
     </form>
 </div>

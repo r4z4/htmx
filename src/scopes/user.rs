@@ -118,7 +118,7 @@ async fn edit_settings(
             return HttpResponse::Ok().body(body);
         }
         Err(err) => {
-            let body = hb.render("error", &err.to_string()).unwrap();
+            let body = hb.render("validation", &err.to_string()).unwrap();
             return HttpResponse::Ok().body(body);
         }
     }

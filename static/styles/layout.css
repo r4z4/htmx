@@ -37,6 +37,18 @@ input[type="time"]:valid:before {
 button {
     cursor: pointer;
 }
+
+.error_msg {
+    color: red;
+    font-weight: bold;
+    font-size: small;
+}
+
+.success_msg {
+    color: green;
+    font-weight: bold;
+    font-size: small;
+}
 /****************
 *** Home Page ***
 ****************/

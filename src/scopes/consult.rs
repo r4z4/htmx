@@ -5,10 +5,6 @@ use actix_web::{
 };
 
 use handlebars::Handlebars;
-use lazy_static::lazy_static;
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 use std::{
     convert::Infallible,
     pin::Pin,
@@ -24,11 +20,6 @@ use crate::{
     },
     AppState,
 };
-
-lazy_static! {
-    static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
-    static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
-}
 
 pub fn consult_scope() -> Scope {
     web::scope("/consult")
@@ -61,7 +52,7 @@ async fn create_consult(
             return HttpResponse::Ok().body(body);
         }
         Err(err) => {
-            let body = hb.render("error", &err.to_string()).unwrap();
+            let body = hb.render("validation", &err.to_string()).unwrap();
             return HttpResponse::Ok().body(body);
         }
     }
@@ -86,7 +77,7 @@ async fn consult_form(
 
     if location_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -102,7 +93,7 @@ async fn consult_form(
 
     if client_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -118,7 +109,7 @@ async fn consult_form(
 
     if consultant_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -161,7 +152,7 @@ async fn consult_edit_form(
         let err = "Error occurred while fetching all consult records";
         // return HttpResponse::InternalServerError()
         //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -199,7 +190,7 @@ pub async fn get_consults_handler(
         let err = "Error occurred while fetching all consultant records";
         // return HttpResponse::InternalServerError()
         //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("error", &err).unwrap();
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 

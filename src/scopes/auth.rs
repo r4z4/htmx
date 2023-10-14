@@ -22,6 +22,7 @@ use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 use crate::{AppState, HeaderValueExt};
+use crate::config::{RE_USER_NAME, RE_EMAIL, RE_SPECIAL_CHAR};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginRequest {
@@ -71,31 +72,6 @@ pub struct ResponseUser {
 //     }
 // }
 
-// impl FromRequest for ResponseUser {
-//     type Error = actix_web::Error;
-//     type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>>>>;
-
-//     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
-//         // let auth_header = req
-//         //     .headers()
-//         //     .get("Authorization")
-//         //     .unwrap()
-//         //     .to_str()
-//         //     .unwrap()
-//         //     .to_owned();
-
-//         Box::pin(async move {
-//             if (false) {
-//                 Err(actix_web::error::ErrorBadRequest("asdf"))
-//             } else {
-//                 Ok(Self {
-//                     username: Self.username,
-//                     email: Self.email,
-//                 })
-//             }
-//         })
-//     }
-// }
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginUser {
@@ -111,16 +87,13 @@ pub struct AuthUser {
     email: String,
 }
 
-lazy_static! {
-    static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
-    static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
-}
-
 pub fn auth_scope() -> Scope {
     web::scope("/auth")
         // .route("/users", web::get().to(get_users_handler))
         .service(register_user)
         .service(basic_auth)
+        .service(validate_email)
+        .service(register_form)
         .service(logout)
 }
 
@@ -272,19 +245,19 @@ async fn basic_auth(
                     Err(err) => {
                         dbg!(err);
                         let err = "Invalid Login Request".to_owned();
-                        let body = hb.render("error", &err).unwrap();
+                        let body = hb.render("validation", &err).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                 }
             } else {
                 let err = "Invalid Login Request".to_owned();
-                let body = hb.render("error", &err).unwrap();
+                let body = hb.render("validation", &err).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }
         Err(err) => {
             // let static_err = "Error occurred while logging in (DB).";
-            let body = hb.render("error", &format!("{:?}", err)).unwrap();
+            let body = hb.render("validation", &format!("{:?}", err)).unwrap();
             return HttpResponse::Ok().body(body);
             // HttpResponse::InternalServerError().json(format!("{:?}", err))
         }
@@ -307,6 +280,17 @@ fn decode_and_login(body: LoginRequest) -> Result<LoginResponse, LoginError> {
 #[derive(Debug, Validate, FromRow, Serialize, Deserialize)]
 pub struct LogoutResult {
     expires: DateTime<Utc>,
+}
+
+#[get("/register")]
+async fn register_form(
+    state: Data<AppState>,
+    req: HttpRequest,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    let message = "No cookie present at logout".to_owned();
+    let body = hb.render("register-form", &format!("{:?}", message)).unwrap();
+    return HttpResponse::Ok().body(body);
 }
 
 #[get("/logout")]
@@ -344,10 +328,120 @@ async fn logout(
         }
     } else {
         let message = "No cookie present at logout".to_owned();
-        let body = hb.render("error", &format!("{:?}", message)).unwrap();
+        let body = hb.render("validation", &format!("{:?}", message)).unwrap();
         return HttpResponse::Ok().body(body);
     }
 }
+
+#[derive(Deserialize, FromRow, Validate)]
+struct EmailParam {
+    email: String,
+}
+
+#[derive(Deserialize, FromRow, Validate)]
+pub struct QueryBool {
+    exists: bool,
+}
+
+pub fn validate_email_fmt(email: String) -> bool {
+    if RE_EMAIL.is_match(&email) {
+        true
+    } else {
+        false
+    }
+} 
+
+#[derive(Deserialize, Serialize, FromRow, Validate)]
+pub struct ValidationResponse {
+    pub error_msg: Option<String>,
+    pub success_msg: Option<String>,
+}
+
+#[get("/validate/email")]
+async fn validate_email(
+    state: Data<AppState>,
+    param: web::Query<EmailParam>,
+    req: HttpRequest,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    dbg!(req);
+    let submitted_email = &param.email;
+    if validate_email_fmt(submitted_email.to_owned()) {
+        match sqlx::query_as::<_, QueryBool>(
+            "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)",
+        )
+        .bind(submitted_email.to_string())
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(result) => {
+                if result.exists {
+                    let error_msg = "Email already taken!".to_owned();
+                    let validation_response = ValidationResponse {
+                        error_msg: Some(error_msg),
+                        success_msg: None,
+                    };
+                    let body = hb.render("validation", &validation_response).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body)
+                } else {
+                    let success_msg = "Email is available for use".to_owned();
+                    let validation_response = ValidationResponse {
+                        error_msg: None,
+                        success_msg: Some(success_msg),
+                    };
+                    let body = hb.render("validation", &validation_response).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body)
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let error_msg = "Error occurred in (DB layer).".to_owned();
+                let validation_response = ValidationResponse {
+                    error_msg: Some(error_msg),
+                    success_msg: None,
+                };
+                let body = hb.render("validation", &validation_response).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+    } else {
+        let error_msg = "Incorrect Format.".to_owned();
+        let validation_response = ValidationResponse {
+            error_msg: Some(error_msg),
+            success_msg: None,
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+}
+    // email_regex.is_match(email_address)
+    // match sqlx::query_as::<_, LogoutResult>(
+    //     "UPDATE user_sessions SET expires = NOW(), updated_at = NOW(), logout = TRUE WHERE session_id = $1 RETURNING expires",
+    // )
+    // .bind(cookie.to_string())
+    // .fetch_one(&state.db)
+    // .await
+    // {
+    //     Ok(expires) => {
+    //         dbg!(&expires);
+    //         let body = hb.render("index", &expires).unwrap();
+    //         return HttpResponse::Ok()
+    //         .header("HX-Redirect", "/")
+    //         .header("Set-Cookie", "")
+    //         .body(body);
+    //     }
+    //     Err(err) => {
+    //         dbg!(&err);
+    //         // let static_err = "Error occurred while logging in (DB).";
+    //         let body = hb.render("index", &format!("{:?}", err)).unwrap();
+    //         // Notify someone
+    //         return HttpResponse::Ok().body(body);
+    //         // HttpResponse::InternalServerError().json(format!("{:?}", err))
+    //     }
+    // }
 
 // #[post("/login")]
 // async fn login_user(
@@ -379,7 +473,7 @@ async fn logout(
 //             .body(body);
 //         }
 //         Err(err) => {
-//             let body = hb.render("error", &err).unwrap();
+//             let body = hb.render("validation", &err).unwrap();
 //             return HttpResponse::Ok().body(body);
 //         }
 //     }
