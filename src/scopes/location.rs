@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::FilterOptions, models::location::LocationList, AppState};
+use crate::{config::{FilterOptions, SelectOptions, self}, models::location::{LocationList, LocationFormTemplate}, AppState};
 
 lazy_static! {
     static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -19,7 +19,7 @@ lazy_static! {
 pub fn location_scope() -> Scope {
     web::scope("/location")
         // .route("/users", web::get().to(get_users_handler))
-        // .service(consultant_form)
+        .service(location_form)
         .service(get_locations_handler)
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -77,12 +77,46 @@ pub async fn get_locations_handler(
     // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
 
     let locations_table_data = ResponsiveLocationData {
-        table_title: "Consultancy Locations".to_owned(),
+        table_title: "Locations".to_owned(),
         entities: locations,
     };
 
     let body = hb
         .render("responsive-table", &locations_table_data)
         .unwrap();
+    return HttpResponse::Ok().body(body);
+}
+
+#[get("/form")]
+async fn location_form(
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+    // path: web::Path<i32>,
+) -> impl Responder {
+    println!("location_form firing");
+
+    let account_result = sqlx::query_as!(
+        SelectOptions,
+        "SELECT account_id AS value, account_name AS key 
+        FROM accounts 
+        ORDER by account_name"
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    if account_result.is_err() {
+        let err = "Error occurred while fetching account option KVs";
+        let body = hb.render("error", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let template_data = LocationFormTemplate {
+        state_options: config::states(),
+    };
+
+    let body = hb
+        .render("location/location-form", &template_data)
+        .unwrap();
+    dbg!(&body);
     return HttpResponse::Ok().body(body);
 }

@@ -27,6 +27,13 @@ pub struct SelectOptions {
     pub key: Option<String>,
 }
 
+#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
+pub struct StringSelectOption {
+    pub value: String,
+    pub key: Option<String>,
+}
+
+
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ResponseConsultant {
     pub consultant_id: i32,
@@ -62,4 +69,13 @@ impl Config {
         let config = serde_yaml::from_reader(file).expect("Could not read values.");
         config
     }
+}
+
+pub fn states() -> Vec<StringSelectOption> {
+    vec![
+        StringSelectOption{key:Some("AL".to_string()),value:"AL".to_string()},
+        StringSelectOption{key:Some("AR".to_string()),value:"AK".to_string()},
+        StringSelectOption{key:Some("AK".to_string()),value:"AR".to_string()},
+        StringSelectOption{key:Some("AZ".to_string()),value:"AZ".to_string()},
+    ]
 }

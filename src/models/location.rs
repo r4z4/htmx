@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
-use crate::config::SelectOptions;
+use crate::config::{SelectOptions, StringSelectOption};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LocationPostRequest {
@@ -39,5 +39,5 @@ pub struct LocationList {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct LocationFormTemplate {
-    pub account_options: Vec<SelectOptions>,
+    pub state_options: Vec<StringSelectOption>,
 }

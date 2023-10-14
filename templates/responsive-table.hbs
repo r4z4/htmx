@@ -56,9 +56,10 @@
   <h2>{{table_title}}</h2>
   <dialog id="dialog">
     {{#if (str_eq table_title "Consultants")}}
-      {{> user/user-settings}}
-    {{else}}
-      <p>Hi</p>
+      {{> consultant/consultant-form}}
+    {{/if}}
+    {{#if (str_eq table_title "Locations")}}
+      {{> consult/consult-form}}
     {{/if}}
     <button onclick="window.dialog.close();">Cancel</button>
   </dialog>

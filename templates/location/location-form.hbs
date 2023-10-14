@@ -1,0 +1,39 @@
+{{
+#>
+ form-layout }}
+<div>
+  <h2 class="text-center">Add Location</h2>
+  <form class="form-style">
+    <ul>
+      <li>
+        <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" />
+      </li>
+      <li>
+        <input type="text" name="consultant_l_name" class="field-style field-full align-none" placeholder="Address" />
+      </li>
+      <li>
+        <input type="text" name="city" class="field-style field-city" placeholder="City" />
+        {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
+        <select class="field-style field-state" id="location_state" name="location_state">
+            {{#each state_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+        <input type="text" name="zip" class="field-style field-zip" placeholder="Zip" />
+      </li>
+      <li>
+        <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" />
+        <input type="email" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
+      </li>
+    <div class="full-width">
+      <input type="checkbox" id="newsletter" />
+      <label for="newsletter">Receive our newsletter?</label>
+    </div>
+    <div class="full-width">
+      <button type="submit">Send Response</button>
+      <button type="reset">Clear Form</button>
+    </div>
+  </form>
+</div>
+{{/form-layout}}
+

@@ -110,7 +110,6 @@ button {
   }
   
   .dropdown .dropbtn {
-    font-size: 16px;  
     border: none;
     outline: none;
     color: white;
@@ -127,7 +126,7 @@ button {
   .dropdown-content {
     display: none;
     position: absolute;
-    background-color: #f9f9f9;
+    background-color: #5995b8d6;
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
@@ -144,11 +143,12 @@ button {
 
 .dropdown-content button {
     float: none;
-    color: black;
+    color: white;
     padding: 12px 16px;
     text-decoration: none;
     display: block;
     text-align: center;
+    margin: auto;
 }
   
 .dropdown-content a:hover {
@@ -463,6 +463,21 @@ p,ul,ol {
 .form-style ul li input.align-right{
 	float:right;
 }
+
+/*****************
+** Address Form **
+*****************/
+
+.form-style ul li .field-state{
+	width: 10%;
+}
+.form-style ul li .field-city{
+	width: 59%;
+}
+.form-style ul li .field-zip{
+	width: 28%;
+}
+
 .form-style ul li textarea{
 	width: 100%;
 	height: 100px;
