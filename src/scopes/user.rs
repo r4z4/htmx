@@ -1,13 +1,18 @@
+use crate::{
+    config::{self, SelectOptions},
+    models::user::{
+        UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
+        UserSettingsPost, UserSettingsQuery,
+    },
+    AppState, HeaderValueExt,
+};
 use actix_web::{
-    get,
-    post,
-    web::{Data, Json, self},
-    HttpResponse, Responder, Scope, HttpRequest, HttpMessage, put
+    get, post, put,
+    web::{self, Data, Json},
+    HttpMessage, HttpRequest, HttpResponse, Responder, Scope,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use crate::{config::{self, SelectOptions}, AppState, models::user::{UserModel, UserSettingsModel, UserHomeModel, UserSettingsPost, UserSettingsObj, UserSettingsQuery, UserHomeQuery}, HeaderValueExt};
-
 
 pub fn user_scope() -> Scope {
     web::scope("/user")
@@ -19,14 +24,17 @@ pub fn user_scope() -> Scope {
 }
 
 pub fn theme_options() -> Vec<SelectOptions> {
-    [SelectOptions {
+    [
+        SelectOptions {
             key: Some("classic".to_owned()),
-            value: 1
+            value: 1,
         },
         SelectOptions {
             key: Some("dark".to_owned()),
-            value: 2
-        }].to_vec()
+            value: 2,
+        },
+    ]
+    .to_vec()
 }
 
 #[get("/settings")]
@@ -104,7 +112,7 @@ async fn edit_settings(
             let updated_at_fmt = user_c.updated_at.format("%b %-d, %-I:%M").to_string();
             let user_settings_obj = UserSettingsObj {
                 theme_options: theme_options(),
-                updated_at_fmt: updated_at_fmt
+                updated_at_fmt: updated_at_fmt,
             };
             let body = hb.render("user/user-settings", &user_settings_obj).unwrap();
             return HttpResponse::Ok().body(body);
@@ -125,11 +133,11 @@ async fn edit_settings(
 //     // let user_id = get_user_id_from_token();
 //     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
 //         match sqlx::query_as::<_, UserProfileModel>(
-//             "SELECT users.user_id, username, email, 
-//             TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
+//             "SELECT users.user_id, username, email,
+//             TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt,
 //             TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
 //             FROM users
-//             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+//             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
 //             WHERE session_id = $1
 //             AND expires > NOW()",
 //         )
@@ -157,7 +165,6 @@ async fn edit_settings(
 //         HttpResponse::Ok().body(body)
 //     }
 // }
-
 
 #[get("/home")]
 async fn home(
@@ -212,7 +219,6 @@ async fn home(
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HbError {
     str: String,
@@ -224,7 +230,7 @@ pub struct HbError {
 //     match sqlx::query_as::<_, ValidatedUser>(
 //         "SELECT username, email, created_at, updated_at
 //         FROM users
-//         LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+//         LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
 //         WHERE session_id = $1
 //         AND expires > NOW()",
 //     )

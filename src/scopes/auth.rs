@@ -1,19 +1,24 @@
 use actix_web::{
-    get,
-    post,
-    web::{Data, Json, self, Bytes},
-    HttpResponse, Responder, Scope, body::{MessageBody, BodySize}, FromRequest, HttpRequest,
+    body::{BodySize, MessageBody},
+    get, post,
+    web::{self, Bytes, Data, Json},
+    FromRequest, HttpRequest, HttpResponse, Responder, Scope,
 };
 use argonautica::{Hasher, Verifier};
-use chrono::{Duration, Utc, DateTime};
+use chrono::{DateTime, Duration, Utc};
 use handlebars::Handlebars;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use std::{
+    convert::Infallible,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
 use uuid::Uuid;
-use std::{sync::Arc, convert::Infallible, task::{Poll, Context}, pin::Pin};
 use validator::{Validate, ValidationError};
 
 use crate::{AppState, HeaderValueExt};
@@ -162,9 +167,9 @@ pub struct CreateUserBody {
 
 #[post("/register")]
 async fn register_user(
-    state: Data<AppState>, 
+    state: Data<AppState>,
     body: Json<CreateUserBody>,
-    hb: web::Data<Handlebars<'_>>
+    hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     let is_valid = body.validate();
     if is_valid.is_err() {
@@ -196,7 +201,6 @@ async fn register_user(
     }
 }
 
-
 #[derive(Debug, Validate, FromRow, Serialize, Deserialize)]
 pub struct SessionUpdate {
     // user_id: i32,
@@ -206,9 +210,9 @@ pub struct SessionUpdate {
 
 #[post("/login")]
 async fn basic_auth(
-    state: Data<AppState>, 
+    state: Data<AppState>,
     body: web::Form<LoginRequest>,
-    hb: web::Data<Handlebars<'_>>
+    hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     // let jwt_secret: Hmac<Sha256> = Hmac::new_from_slice(
     //     std::env::var("JWT_SECRET")
@@ -227,8 +231,7 @@ async fn basic_auth(
     .await
     {
         Ok(user) => {
-            let hash_secret =
-                std::env::var("HASH_SECRET").unwrap();
+            let hash_secret = std::env::var("HASH_SECRET").unwrap();
             // Build the verifier
             let mut verifier = Verifier::default();
             let is_valid = verifier
@@ -260,20 +263,19 @@ async fn basic_auth(
                             email: user.email,
                         };
                         let body = hb.render("homepage", &user).unwrap();
-        
+
                         return HttpResponse::Ok()
                             .header("HX-Redirect", "/homepage")
                             .header("Set-Cookie", cookie)
                             .body(body);
-                    },
+                    }
                     Err(err) => {
                         dbg!(err);
                         let err = "Invalid Login Request".to_owned();
                         let body = hb.render("error", &err).unwrap();
                         return HttpResponse::Ok().body(body);
-                    },
+                    }
                 }
-
             } else {
                 let err = "Invalid Login Request".to_owned();
                 let body = hb.render("error", &err).unwrap();
@@ -309,9 +311,9 @@ pub struct LogoutResult {
 
 #[get("/logout")]
 async fn logout(
-    state: Data<AppState>, 
+    state: Data<AppState>,
     req: HttpRequest,
-    hb: web::Data<Handlebars<'_>>
+    hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     let headers = req.headers();
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
@@ -367,7 +369,7 @@ async fn logout(
 
 //     let cookie_token = Uuid::new_v4().to_string();
 //     let cookie = format!("token={}; Path=/; HttpOnly; Max-Age=1209600", cookie_token);
-    
+
 //     match user {
 //         Ok(user) => {
 //             let body = hb.render("homepage", &user).unwrap();
@@ -382,4 +384,3 @@ async fn logout(
 //         }
 //     }
 // }
-

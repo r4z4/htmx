@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
-use crate::config::{SelectOptions, ResponseConsultant};
+use crate::config::{ResponseConsultant, SelectOptions};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsultantPostRequest {

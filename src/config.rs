@@ -2,9 +2,9 @@ use mini_markdown::render;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sqlx::FromRow;
-use validator::Validate;
 use std::fmt::Debug;
 use std::fs::File;
+use validator::Validate;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Post {
@@ -26,7 +26,6 @@ pub struct SelectOptions {
     pub value: i32,
     pub key: Option<String>,
 }
-
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ResponseConsultant {

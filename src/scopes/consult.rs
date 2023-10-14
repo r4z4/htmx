@@ -1,8 +1,7 @@
 use actix_web::{
-    get,
-    post,
-    web::{Data, Json, self},
-    HttpResponse, Responder, Scope
+    get, post,
+    web::{self, Data, Json},
+    HttpResponse, Responder, Scope,
 };
 
 use handlebars::Handlebars;
@@ -10,10 +9,21 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use std::{sync::Arc, convert::Infallible, task::{Poll, Context}, pin::Pin};
+use std::{
+    convert::Infallible,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
 use validator::Validate;
 
-use crate::{AppState, config::{FilterOptions, SelectOptions}, models::consult::{ConsultPost, ConsultFormRequest, ConsultList, ConsultFormTemplate, ConsultListResponse}};
+use crate::{
+    config::{FilterOptions, SelectOptions},
+    models::consult::{
+        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultListResponse, ConsultPost,
+    },
+    AppState,
+};
 
 lazy_static! {
     static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -134,26 +144,26 @@ async fn consult_edit_form(
     println!("consults_form firing");
     let consult_id = path.into_inner();
 
-        let query_result = sqlx::query_as!(
-            ConsultFormRequest,
-            "SELECT consultant_id, location_id, client_id, consult_start, consult_end, notes 
+    let query_result = sqlx::query_as!(
+        ConsultFormRequest,
+        "SELECT consultant_id, location_id, client_id, consult_start, consult_end, notes 
             FROM consults 
             WHERE consult_id = $1
             ORDER by consult_id",
-            consult_id
-        )
-        .fetch_one(&state.db)
-        .await;
+        consult_id
+    )
+    .fetch_one(&state.db)
+    .await;
 
-        dbg!(&query_result);
+    dbg!(&query_result);
 
-        if query_result.is_err() {
-            let err = "Error occurred while fetching all consult records";
-            // return HttpResponse::InternalServerError()
-            //     .json(json!({"status": "error","message": message}));
-            let body = hb.render("error", &err).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
+    if query_result.is_err() {
+        let err = "Error occurred while fetching all consult records";
+        // return HttpResponse::InternalServerError()
+        //     .json(json!({"status": "error","message": message}));
+        let body = hb.render("error", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
 
     let consult = query_result.unwrap();
 
@@ -200,7 +210,8 @@ pub async fn get_consults_handler(
         name: "Hello".to_owned(),
     };
 
-    let body = hb.render("consult/consult-list", &consults_response).unwrap();
+    let body = hb
+        .render("consult/consult-list", &consults_response)
+        .unwrap();
     return HttpResponse::Ok().body(body);
-
 }

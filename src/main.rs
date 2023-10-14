@@ -1,21 +1,33 @@
-use std::env;
+use actix_files::Files;
+use actix_web::{
+    get,
+    http::{
+        header::{Header, HeaderValue},
+        Error,
+    },
+    post,
+    web::{self, post, Data},
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use config::Post;
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
-use actix_files::Files;
-use actix_web::{get, web::{self, post, Data}, App, HttpResponse, HttpServer, Responder, post, http::{Error, header::{Header, HeaderValue}}, HttpRequest};
 use handlebars::Handlebars;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlx::{postgres::PgPoolOptions, Postgres, Pool, FromRow};
+use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
+use std::env;
 use validator::Validate;
 
-use crate::{scopes::auth::ResponseUser};
+use crate::scopes::auth::ResponseUser;
 
-use scopes::{auth::auth_scope, consult::consult_scope, consultant::consultant_scope, user::user_scope};
+use scopes::{
+    auth::auth_scope, consult::consult_scope, consultant::consultant_scope,
+    location::location_scope, user::user_scope,
+};
 mod config;
-mod scopes;
 mod models;
+mod scopes;
 
 use handlebars::handlebars_helper;
 
@@ -40,59 +52,169 @@ pub struct IndexData {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct FixedTableData {
     pub table_headers: Vec<String>,
-    pub table_rows: Vec<TableRow>
+    pub table_rows: Vec<TableRow>,
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct TableRow {
     pub th: String,
-    pub tds: Vec<String>
+    pub tds: Vec<String>,
 }
 
 fn mock_fixed_table_data() -> FixedTableData {
-    let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec();
+    let table_headers = [
+        "One".to_owned(),
+        "Two".to_owned(),
+        "Three".to_owned(),
+        "Four".to_owned(),
+        "Five".to_owned(),
+        "Six".to_owned(),
+        "Seven".to_owned(),
+        "Eight".to_owned(),
+        "Nine".to_owned(),
+    ]
+    .to_vec();
     let th = "One".to_owned();
-    let tds = ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec();
+    let tds = [
+        "Two".to_owned(),
+        "Three".to_owned(),
+        "Four".to_owned(),
+        "Five".to_owned(),
+        "Six".to_owned(),
+        "Seven".to_owned(),
+        "Eight".to_owned(),
+        "Nine".to_owned(),
+    ]
+    .to_vec();
     let table_row_1 = TableRow {
         th: th.clone(),
         tds: tds.clone(),
     };
-    let table_row_2 = TableRow {
-        th: th,
-        tds: tds,
-    };
+    let table_row_2 = TableRow { th: th, tds: tds };
     let table_row_3 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_4 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_5 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_6 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_7 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_8 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_9 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
     let table_row_10 = TableRow {
         th: "One".to_owned(),
-        tds: ["Two".to_owned(),"Three".to_owned(),"Four".to_owned(), "Five".to_owned(), "Six".to_owned(), "Seven".to_owned(), "Eight".to_owned(), "Nine".to_owned()].to_vec(),
+        tds: [
+            "Two".to_owned(),
+            "Three".to_owned(),
+            "Four".to_owned(),
+            "Five".to_owned(),
+            "Six".to_owned(),
+            "Seven".to_owned(),
+            "Eight".to_owned(),
+            "Nine".to_owned(),
+        ]
+        .to_vec(),
     };
-    let table_rows = [table_row_1, table_row_2, table_row_3, table_row_4, table_row_5, table_row_6, table_row_7, table_row_8, table_row_9, table_row_10].to_vec();
+    let table_rows = [
+        table_row_1,
+        table_row_2,
+        table_row_3,
+        table_row_4,
+        table_row_5,
+        table_row_6,
+        table_row_7,
+        table_row_8,
+        table_row_9,
+        table_row_10,
+    ]
+    .to_vec();
     let fixed_table_data = FixedTableData {
         table_headers: table_headers,
         table_rows: table_rows,
@@ -104,11 +226,11 @@ fn mock_fixed_table_data() -> FixedTableData {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct ResponsiveTableData {
     pub table_headers: Vec<String>,
-    pub table_rows: Vec<ResponsiveTableRow>
+    pub table_rows: Vec<ResponsiveTableRow>,
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct ResponsiveTableRow {
-    pub tds: Vec<String>
+    pub tds: Vec<String>,
 }
 
 // #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
@@ -118,7 +240,7 @@ pub struct ResponsiveTableRow {
 // }
 
 fn mock_responsive_table_data() -> ResponsiveTableData {
-    let table_headers = ["One".to_owned(),"Two".to_owned(),"Three".to_owned()].to_vec();
+    let table_headers = ["One".to_owned(), "Two".to_owned(), "Three".to_owned()].to_vec();
     let table_row = ResponsiveTableRow {
         tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
     };
@@ -140,9 +262,14 @@ fn mock_responsive_table_data() -> ResponsiveTableData {
     return responsive_table_data;
 }
 
-
 #[get("/")]
-async fn index(hb: web::Data<Handlebars<'_>>, data: web::Data<AppState>, state: Data<AppState>, req: HttpRequest, config: web::Data<config::Config>) -> impl Responder {
+async fn index(
+    hb: web::Data<Handlebars<'_>>,
+    data: web::Data<AppState>,
+    state: Data<AppState>,
+    req: HttpRequest,
+    config: web::Data<config::Config>,
+) -> impl Responder {
     let headers = req.headers();
     for (pos, e) in headers.iter().enumerate() {
         println!("Element at position {}: {:?}", pos, e);
@@ -151,7 +278,7 @@ async fn index(hb: web::Data<Handlebars<'_>>, data: web::Data<AppState>, state: 
         dbg!(cookie.clone());
         match validate_and_get_user(cookie, state).await {
             Ok(user_option) => {
-                if let Some(user) = user_option { 
+                if let Some(user) = user_option {
                     let user = ResponseUser {
                         username: "Jim".to_owned(),
                         email: "Jim@jim.com".to_owned(),
@@ -161,20 +288,21 @@ async fn index(hb: web::Data<Handlebars<'_>>, data: web::Data<AppState>, state: 
                         .header("HX-Redirect", "/homepage")
                         .body(body);
                 } else {
-                    let message = "Your session seems to have expired. Please login again.".to_owned();
+                    let message =
+                        "Your session seems to have expired. Please login again.".to_owned();
                     let body = hb.render("index", &message).unwrap();
-                
+
                     HttpResponse::Ok().body(body)
                 }
-            },
+            }
             Err(_err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let message = "Error in validate and get user.".to_owned();
                 let body = hb.render("index", &message).unwrap();
-            
+
                 HttpResponse::Ok().body(body)
-            },
+            }
         }
     } else {
         let data = json!({
@@ -233,12 +361,18 @@ async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
 #[get("/responsive")]
 async fn responsive_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let responsive_table_data = mock_responsive_table_data();
-    let body = hb.render("responsive-table", &responsive_table_data).unwrap();
+    let body = hb
+        .render("responsive-table", &responsive_table_data)
+        .unwrap();
     HttpResponse::Ok().body(body)
 }
 
 #[get("/homepage")]
-async fn homepage(hb: web::Data<Handlebars<'_>>, state: Data<AppState>, req: HttpRequest) -> impl Responder {
+async fn homepage(
+    hb: web::Data<Handlebars<'_>>,
+    state: Data<AppState>,
+    req: HttpRequest,
+) -> impl Responder {
     dbg!(&req);
     // FIXME unwrap()
     let headers = req.headers();
@@ -253,17 +387,20 @@ async fn homepage(hb: web::Data<Handlebars<'_>>, state: Data<AppState>, req: Htt
                     HttpResponse::Ok().body(body)
                 } else {
                     let data = HbError {
-                        str: "Seems your session has expired. Please login again".to_owned()
+                        str: "Seems your session has expired. Please login again".to_owned(),
                     };
                     let body = hb.render("homepage", &data).unwrap();
                     HttpResponse::Ok().body(body)
                 }
-            },
+            }
             Err(err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let data = HbError {
-                    str: format!("Something quite unexpected has happened in your session: {}", err.error)
+                    str: format!(
+                        "Something quite unexpected has happened in your session: {}",
+                        err.error
+                    ),
                 };
                 let body = hb.render("homepage", &data).unwrap();
                 HttpResponse::Ok().body(body)
@@ -271,7 +408,7 @@ async fn homepage(hb: web::Data<Handlebars<'_>>, state: Data<AppState>, req: Htt
         }
     } else {
         let data = HbError {
-            str: "Cookie is missing.".to_owned()
+            str: "Cookie is missing.".to_owned(),
         };
         let body = hb.render("homepage", &data).unwrap();
         HttpResponse::Ok().body(body)
@@ -341,15 +478,18 @@ pub struct ValidatedUser {
 
 pub trait HeaderValueExt {
     fn to_string(&self) -> String;
-  }
-  
-  impl HeaderValueExt for HeaderValue {
-    fn to_string(&self) -> String {
-      self.to_str().unwrap_or_default().to_string()
-    }
-  }
+}
 
-async fn validate_and_get_user(cookie: &actix_web::http::header::HeaderValue, state: Data<AppState>,) -> Result<Option<ValidatedUser>, ValidationError>{
+impl HeaderValueExt for HeaderValue {
+    fn to_string(&self) -> String {
+        self.to_str().unwrap_or_default().to_string()
+    }
+}
+
+async fn validate_and_get_user(
+    cookie: &actix_web::http::header::HeaderValue,
+    state: Data<AppState>,
+) -> Result<Option<ValidatedUser>, ValidationError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email 
@@ -364,11 +504,10 @@ async fn validate_and_get_user(cookie: &actix_web::http::header::HeaderValue, st
     {
         Ok(user_option) => Ok(user_option),
         Err(err) => Err(ValidationError {
-            error: format!("You must not be verfied: {}", err)
+            error: format!("You must not be verfied: {}", err),
         }),
     }
 }
-
 
 pub fn make_todo(todo: String) -> Result<String, String> {
     if todo == "" {
@@ -399,7 +538,7 @@ async fn create_todo(
         "todo": todo,
         "date": body_clone.date,
     });
-    
+
     match todo {
         Ok(todo) => {
             let body = hb.render("todo-list", &data).unwrap();
@@ -463,6 +602,7 @@ async fn main() -> std::io::Result<()> {
             .service(user_scope())
             .service(consult_scope())
             .service(consultant_scope())
+            .service(location_scope())
             .service(index)
             .service(about_us)
             .service(fixed_table)

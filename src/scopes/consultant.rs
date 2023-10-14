@@ -1,8 +1,7 @@
 use actix_web::{
-    get,
-    post,
-    web::{Data, Json, self},
-    HttpResponse, Responder, Scope
+    get, post,
+    web::{self, Data, Json},
+    HttpResponse, Responder, Scope,
 };
 
 use handlebars::Handlebars;
@@ -10,8 +9,11 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-
-use crate::{AppState, config::{FilterOptions, SelectOptions, ResponseConsultant}, models::consultant::{ConsultantList, ConsultantFormTemplate, ConsultantListResponse}};
+use crate::{
+    config::{FilterOptions, ResponseConsultant, SelectOptions},
+    models::consultant::{ConsultantFormTemplate, ConsultantList, ConsultantListResponse},
+    AppState,
+};
 
 lazy_static! {
     static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -72,10 +74,10 @@ pub async fn get_consultants_handler(
 
     let consultants = query_result.unwrap();
 
-//     let consultants_response = ConsultantListResponse {
-//         consultants: consultants,
-//         name: "Hello".to_owned()
-// ,    };
+    //     let consultants_response = ConsultantListResponse {
+    //         consultants: consultants,
+    //         name: "Hello".to_owned()
+    // ,    };
 
     // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
 
@@ -86,9 +88,10 @@ pub async fn get_consultants_handler(
         consultants: consultants,
     };
 
-    let body = hb.render("responsive-table", &consultants_table_data).unwrap();
+    let body = hb
+        .render("responsive-table", &consultants_table_data)
+        .unwrap();
     return HttpResponse::Ok().body(body);
-
 }
 
 #[get("/form")]
@@ -120,7 +123,9 @@ async fn consultant_form(
         account_options: account_options,
     };
 
-    let body = hb.render("consultant/consultant-form", &template_data).unwrap();
+    let body = hb
+        .render("consultant/consultant-form", &template_data)
+        .unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
