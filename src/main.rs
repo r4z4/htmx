@@ -9,10 +9,10 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::{Post, ResponseConsultant};
+use config::Post;
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
-use handlebars::{Handlebars, Context, Output, Helper, RenderContext, HelperResult};
+use handlebars::Handlebars;
 use models::location::LocationList;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
