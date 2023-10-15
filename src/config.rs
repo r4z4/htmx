@@ -79,6 +79,15 @@ impl Config {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct ResponsiveTableData<T> {
+    pub table_title: String,
+    pub page: usize,
+    pub vec_len: usize,
+    pub lookup_url: String,
+    pub entities: Vec<T>,
+}
+
 pub fn states() -> Vec<StringSelectOption> {
     vec![
         StringSelectOption{key:Some("AL".to_string()),value:"AL".to_string()},

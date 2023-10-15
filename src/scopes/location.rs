@@ -7,29 +7,13 @@ use actix_web::{
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::{FilterOptions, SelectOptions, self}, models::location::{LocationList, LocationFormTemplate}, AppState};
+use crate::{config::{FilterOptions, SelectOptions, self, ResponsiveTableData}, models::location::{LocationList, LocationFormTemplate}, AppState};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
         // .route("/users", web::get().to(get_users_handler))
         .service(location_form)
         .service(get_locations_handler)
-}
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct ResponsiveLocationData {
-    table_title: String,
-    page: usize,
-    lookup_url: String,
-    entities: Vec<LocationList>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct ResponsiveTableData<T> {
-    table_title: String,
-    page: usize,
-    vec_len: i32,
-    lookup_url: String,
-    entities: Vec<T>,
 }
 
 #[get("/list")]
@@ -82,7 +66,7 @@ pub async fn get_locations_handler(
     // let load_more_url_base = "/location/list?page=".to_owned();
     let locations_table_data = ResponsiveTableData {
         table_title: "Locations".to_owned(),
-        vec_len: locations.len() as i32,
+        vec_len: locations.len(),
         lookup_url: "/location/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: locations,

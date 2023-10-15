@@ -8,8 +8,8 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, ResponseConsultant, SelectOptions},
-    models::consultant::{ConsultantFormTemplate, ConsultantList, ConsultantListResponse},
+    config::{FilterOptions, ResponseConsultant, SelectOptions, ResponsiveTableData},
+    models::consultant::{ConsultantFormTemplate},
     AppState,
 };
 
@@ -74,9 +74,10 @@ pub async fn get_consultants_handler(
 
     // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
 
-    let consultants_table_data = ResponsiveConsultantData {
-        // table_headers: table_headers,
-        // This is where we need to impl TableRows for ResponseConsultant :)
+    let consultants_table_data = ResponsiveTableData {
+        vec_len: consultants.len(),
+        lookup_url: "/consultant/list?page=".to_string(),
+        page: opts.page.unwrap_or(1),
         table_title: "Consultants".to_owned(),
         entities: consultants,
     };

@@ -40,8 +40,8 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
         }
     });
 
-handlebars_helper!(int_eq: |int: i32| {
-    if int == 10 {
+handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
+    if int_1 == int_2 {
         true
     } else {
         false
@@ -667,7 +667,7 @@ async fn main() -> std::io::Result<()> {
 
     handlebars.register_helper("to_title_case", Box::new(to_title_case));
     handlebars.register_helper("str_eq", Box::new(str_eq));
-    handlebars.register_helper("str_eq", Box::new(int_eq));
+    handlebars.register_helper("int_eq", Box::new(int_eq));
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
     handlebars.register_helper("concat_args", Box::new(concat_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
