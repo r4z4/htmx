@@ -20,7 +20,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
-use crate::scopes::auth::ResponseUser;
+use crate::{scopes::auth::ResponseUser, config::mock_fixed_table_data};
 
 use scopes::{
     auth::auth_scope, consult::consult_scope, consultant::consultant_scope,
@@ -66,38 +66,29 @@ handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
     }
 });
 
-fn gen_len<T>(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc:
-&mut RenderContext<'_, '_>, out: &mut dyn Output)
-    -> HelperResult {
-   // get parameter from helper or throw an error
-   let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
-   out.write(param.to_uppercase().as_ref())?;
-   Ok(())
-}
-
 // Not Working
 
-handlebars_helper!(gen_vec_len_ten: |vec: EntityList<EntityType>| {
-    vec.list.len();
-});
+// handlebars_helper!(gen_vec_len_ten: |vec: EntityList<EntityType>| {
+//     vec.list.len();
+// });
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum EntityType {
-    Location(LocationList),
-    Consultant(ResponseConsultant),
-}
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub enum EntityType {
+//     Location(LocationList),
+//     Consultant(ResponseConsultant),
+// }
 
-fn vec_len_eq_ten<T>(vec: Vec<T>) -> bool {
-    if vec.len() == 10 {
-        true
-    } else {
-        false
-    }
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EntityList<T> {
-    list: Vec<T>,
-}
+// fn vec_len_eq_ten<T>(vec: Vec<T>) -> bool {
+//     if vec.len() == 10 {
+//         true
+//     } else {
+//         false
+//     }
+// }
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct EntityList<T> {
+//     list: Vec<T>,
+// }
 
 // handlebars_helper!(vec_len_ten: |vec: Vec<Entity>| {
 //     match &vec[0] {
@@ -131,180 +122,6 @@ pub struct IndexData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct FixedTableData {
-    pub table_headers: Vec<String>,
-    pub table_rows: Vec<TableRow>,
-}
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct TableRow {
-    pub th: String,
-    pub tds: Vec<String>,
-}
-
-fn mock_fixed_table_data() -> FixedTableData {
-    let table_headers = [
-        "One".to_owned(),
-        "Two".to_owned(),
-        "Three".to_owned(),
-        "Four".to_owned(),
-        "Five".to_owned(),
-        "Six".to_owned(),
-        "Seven".to_owned(),
-        "Eight".to_owned(),
-        "Nine".to_owned(),
-    ]
-    .to_vec();
-    let th = "One".to_owned();
-    let tds = [
-        "Two".to_owned(),
-        "Three".to_owned(),
-        "Four".to_owned(),
-        "Five".to_owned(),
-        "Six".to_owned(),
-        "Seven".to_owned(),
-        "Eight".to_owned(),
-        "Nine".to_owned(),
-    ]
-    .to_vec();
-    let table_row_1 = TableRow {
-        th: th.clone(),
-        tds: tds.clone(),
-    };
-    let table_row_2 = TableRow { th: th, tds: tds };
-    let table_row_3 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_4 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_5 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_6 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_7 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_8 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_9 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_row_10 = TableRow {
-        th: "One".to_owned(),
-        tds: [
-            "Two".to_owned(),
-            "Three".to_owned(),
-            "Four".to_owned(),
-            "Five".to_owned(),
-            "Six".to_owned(),
-            "Seven".to_owned(),
-            "Eight".to_owned(),
-            "Nine".to_owned(),
-        ]
-        .to_vec(),
-    };
-    let table_rows = [
-        table_row_1,
-        table_row_2,
-        table_row_3,
-        table_row_4,
-        table_row_5,
-        table_row_6,
-        table_row_7,
-        table_row_8,
-        table_row_9,
-        table_row_10,
-    ]
-    .to_vec();
-    let fixed_table_data = FixedTableData {
-        table_headers: table_headers,
-        table_rows: table_rows,
-    };
-
-    return fixed_table_data;
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct ResponsiveTableData {
     pub table_headers: Vec<String>,
     pub table_rows: Vec<ResponsiveTableRow>,
@@ -319,29 +136,6 @@ pub struct ResponsiveTableRow {
 //     pub table_data: String,
 //     pub value: String,
 // }
-
-fn mock_responsive_table_data() -> ResponsiveTableData {
-    let table_headers = ["One".to_owned(), "Two".to_owned(), "Three".to_owned()].to_vec();
-    let table_row = ResponsiveTableRow {
-        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
-    };
-    let table_row_2 = ResponsiveTableRow {
-        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
-    };
-    let table_row_3 = ResponsiveTableRow {
-        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
-    };
-    let table_row_4 = ResponsiveTableRow {
-        tds: ["Steve".to_owned(), "Jim".to_owned(), "Lehr".to_owned()].to_vec(),
-    };
-    let table_rows = [table_row, table_row_2, table_row_3, table_row_4].to_vec();
-    let responsive_table_data = ResponsiveTableData {
-        table_headers: table_headers,
-        table_rows: table_rows,
-    };
-
-    return responsive_table_data;
-}
 
 #[get("/")]
 async fn index(
@@ -439,14 +233,14 @@ async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     HttpResponse::Ok().body(body)
 }
 
-#[get("/responsive")]
-async fn responsive_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let responsive_table_data = mock_responsive_table_data();
-    let body = hb
-        .render("responsive-table", &responsive_table_data)
-        .unwrap();
-    HttpResponse::Ok().body(body)
-}
+// #[get("/responsive")]
+// async fn responsive_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+//     let responsive_table_data = mock_responsive_table_data();
+//     let body = hb
+//         .render("responsive-table", &responsive_table_data)
+//         .unwrap();
+//     HttpResponse::Ok().body(body)
+// }
 
 #[get("/homepage")]
 async fn homepage(
@@ -672,7 +466,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("concat_args", Box::new(concat_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
 
-    handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
+    // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
     handlebars.set_dev_mode(true);
 
@@ -693,7 +487,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(about_us)
             .service(fixed_table)
-            .service(responsive_table)
+            // .service(responsive_table)
             .service(homepage)
             .service(crud_api)
             .service(list_api)
