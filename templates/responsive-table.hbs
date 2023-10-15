@@ -90,9 +90,9 @@
           {{#each entities}}
             <tr>
               {{#each this}}
-                <td id={{@key}}>{{this}}</td>
+                <td class="entity_cell" id={{@key}}>{{this}}</td>
               {{/each}}
-                <td id="td_action"><button onclick="window.dialog.show();">Edit</button></td>
+                <td class="action_cell" id="td_action"><button class="action_btn" onclick="window.dialog.show();">Edit</button></td>
             </tr>
           {{/each}}
           {{#if (int_eq vec_len 10)}}
@@ -104,7 +104,7 @@
                           hx-swap="outerHTML"
                           hx-select="tbody > tr"
                           {{!-- hx-get={{load_more_url_base + (page + 1)}} --}}
-                          hx-get={{concat_args lookup_url page }}
+                          hx-get={{concat_args lookup_url page}}
                           {{!-- hx-get="/{{ lower_and_single table_title }}/list?page={{ page + 1 }}" --}}
                       >Loading More...</span>
                 </td>

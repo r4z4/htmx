@@ -776,6 +776,20 @@ tfoot td:first-child {
 ** Responsive Table **
 *********************/
 
+.action_btn {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #4c60ad;
+    background-color: #fff;
+    border: none;
+    border-radius: 45px;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease 0s;
+    cursor: pointer;
+    outline: none;
+}
+
 .responsive_table h2{
     text-align: center;
     font-size: 18px;
@@ -813,6 +827,9 @@ tfoot td:first-child {
 .fl-table td {
     border-right: 1px solid #f8f8f8;
     font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .fl-table thead th {
@@ -893,5 +910,6 @@ tfoot td:first-child {
     .fl-table tbody td {
         display: block;
         text-align: center;
+         max-width: 0;
     }
 }

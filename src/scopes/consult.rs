@@ -14,7 +14,7 @@ use std::{
 use validator::Validate;
 
 use crate::{
-    config::{FilterOptions, SelectOptions},
+    config::{FilterOptions, SelectOptions, ResponsiveTableData},
     models::consult::{
         ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultListResponse, ConsultPost,
     },
@@ -196,13 +196,16 @@ pub async fn get_consults_handler(
 
     let consults = query_result.unwrap();
 
-    let consults_response = ConsultListResponse {
-        consults: consults,
-        name: "Hello".to_owned(),
+    let consultants_table_data = ResponsiveTableData {
+        vec_len: consults.len(),
+        lookup_url: "/consult/list?page=".to_string(),
+        page: opts.page.unwrap_or(1),
+        table_title: "Consults".to_owned(),
+        entities: consults,
     };
 
     let body = hb
-        .render("consult/consult-list", &consults_response)
+        .render("responsive-table", &consultants_table_data)
         .unwrap();
     return HttpResponse::Ok().body(body);
 }

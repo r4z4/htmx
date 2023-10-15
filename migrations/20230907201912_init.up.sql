@@ -406,7 +406,7 @@ VALUES
 ('LAX Sidepost',            '1 World Way',          NULL,       'Los Angeles',                      'CA', '90045', '555-555-5555', DEFAULT, 4),
 ('Grosse Pointe Main',      '1212 Main Ln.',        NULL,       'Village of Grosse Pointe Shores',  'MI', '48236', '555-555-5555', DEFAULT, 5),
 ('Austin Heights',          '6379 Redis Lane',      NULL,       'Austin',                           'TX', '78799', '555-555-5555', 2,       5),
-('Princpal Arean',          '98 Santana Ave',       'Ofc. 2',   'Rapid City',                       'SD', '57701', '555-555-5555', DEFAULT, 5),
+('Princpal Arena',          '98 Santana Ave',       'Ofc. 2',   'Rapid City',                       'SD', '57701', '555-555-5555', DEFAULT, 5),
 ('New Bluth Home',          '801 Haliburton Dr.',   'Ste. 101', 'Phoenix',                          'AZ', '85007', '555-555-5555', DEFAULT, 4),
 ('McGillicuddy & Sons',     '300 South Beach Dr.',  NULL,       'Miami',                            'FL', '33109', '555-555-5555', DEFAULT, 3),
 ('Boston Ceremonial',       '7878 Paul Revere St.', NULL,       'Boston',                           'MA', '02117', '555-555-5555', DEFAULT, 2),
@@ -429,7 +429,15 @@ VALUES
 INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes) 
 VALUES 
 (1, 4, 2, '2023-09-11 19:10:25', '2023-09-11 19:30:25', ARRAY[2], NULL),
+(2, 1, 1, '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks'),
+(1, 2, 1, '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks'),
+(2, 2, 2, '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL),
+(7, 3, 9, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
+(6, 3, 5, '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
+(1, 3, 2, '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),
+(6, 3, 7, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
 (3, 5, 4, '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one'),
+(6, 3, 7, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
 (4, 2, 3, '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.'),
 (2, 2, 1, '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
 
