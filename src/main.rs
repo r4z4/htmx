@@ -20,6 +20,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
+
 use crate::{scopes::auth::ResponseUser, config::mock_fixed_table_data};
 
 use scopes::{
@@ -29,6 +30,8 @@ use scopes::{
 mod config;
 mod models;
 mod scopes;
+#[cfg(test)]
+mod test_common;
 
 use handlebars::handlebars_helper;
 handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));

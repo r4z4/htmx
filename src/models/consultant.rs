@@ -1,10 +1,10 @@
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
 use crate::config::{ResponseConsultant, SelectOptions};
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsultantPostRequest {
     pub consultant_f_name: String,
@@ -40,4 +40,26 @@ pub struct ConsultantList {
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub account_options: Vec<SelectOptions>,
+}
+
+impl ConsultantPostRequest {
+    pub fn full_name(&self) -> String {
+        format!("{} {}", self.consultant_f_name, self.consultant_l_name)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_common::{*, self};
+    use test_context::{test_context, TestContext};
+
+    #[test_context(Context)]
+    #[test]
+    fn full_name_is_first_name_space_last_name(ctx: &mut Context) {
+        let full_name = ctx.sut.full_name();
+        // Assert
+        assert_eq!(full_name, test_common::GC_FULL_NAME, "Unexpected full_name");
+    }
 }
