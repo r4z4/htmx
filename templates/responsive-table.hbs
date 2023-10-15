@@ -67,6 +67,7 @@
 
 <div class="responsive_table">
   <h2>{{table_title}}</h2>
+  <h4>{{vec_len}}</h4>
   <dialog id="dialog">
     {{#if (str_eq table_title "Consultants")}}
       {{> consultant/consultant-form}}
@@ -95,7 +96,8 @@
                 <td id="td_action"><button onclick="window.dialog.show();">Edit</button></td>
             </tr>
           {{/each}}
-          {{#if (vec_len_ten entities)}}
+          {{!-- {{#if (int_eq vec_len)}} --}}
+          {{#if (int_eq 5)}}
               <tr>
                 {{!-- entities.[0].keys.length for colspan --}}
                 <td colspan="5" style="text-align: center">

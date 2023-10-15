@@ -87,3 +87,42 @@ pub fn states() -> Vec<StringSelectOption> {
         StringSelectOption{key:Some("AZ".to_string()),value:"AZ".to_string()},
     ]
 }
+
+// use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, Renderable, Output};
+
+// const FACTOR_OF_INTEREST_IDX: usize = 0;
+// const CANDIDATE_IDX: usize = 1;
+// pub fn if_multiple_of_helper<'reg, 'rc>(
+//     helper: &Helper<'reg, 'rc>,
+//     r: &'reg Handlebars<'reg>,
+//     ctx: &'rc Context,
+//     rc: &mut RenderContext<'reg, 'rc>,
+//     out: &mut dyn Output,) -> Result<(), RenderError> {
+//     let factor_of_interest = 
+//         helper.param(FACTOR_OF_INTEREST_IDX)
+//             .map(|json| json.value())
+//             .and_then(|val| val.as_u64())
+//             .and_then(|u64_val| if u64_val > 0 { Some(u64_val) } else { None } )
+//             .ok_or_else(|| RenderError::new("Factor of interest must be a number greater than 0."))
+//     ?;
+
+//     let candidate = 
+//         helper.param(CANDIDATE_IDX)
+//             .map(|json| json.value())
+//             .and_then(|val| val.as_u64())
+//             .ok_or_else(|| RenderError::new("Candidate must be a number greater than or equal to 0."))
+//     ?;
+
+//     let possible_template = if candidate % factor_of_interest == 0 {
+//         helper.template()
+//     } else {
+//         helper.inverse()
+//     };
+
+//     out.write("Hey")?;
+
+//     match possible_template {
+//         Some(t) => t.render(r, ctx, rc, out),
+//         None => Ok(()),
+//     }
+// }

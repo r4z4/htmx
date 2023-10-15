@@ -413,6 +413,12 @@ VALUES
 ('The Machine Shed',        '1674 Grant St.',       NULL,       'Des Moines',                       'IA', '96805', '555-555-5555', DEFAULT, 5),
 ('Big Little Building',     '1 Luca Ave',           NULL,       'Reno',                             'NV', '90045', '555-555-5555', DEFAULT, 4),
 ('The ATL Sky',             '1212 Main Ln.',        NULL,       'Atlanta',                          'GA', '48236', '555-555-5555', DEFAULT, 3),
+('Meyer Home',              '771 Benny Dr.',        NULL,       'Dallas',                           'TX', '75001', '555-555-5555', DEFAULT, 5),
+('Patton & Smoler',         '0909 Smith Road',      NULL,       'Olympia',                          'WA', '98506', '555-555-5555', DEFAULT, 4),
+('Mudra International',     '7878 Homewater St.',   NULL,       'Edina',                            'MN', '55343', '555-555-5555', DEFAULT, 5),
+('St. Olaf College',        '1500 St. Olaf Ave.',   NULL,       'Northfield',                       'MN', '55057', '555-555-5555', DEFAULT, 5),
+('Thompson Palace',         '1 Mesmer Ave',         'Ste. 222', 'Philadelphia',                     'PA', '19099', '555-555-5555', DEFAULT, 2),
+('NOLA Center',             '434 Main Dr.',         NULL,       'New Orleans',                      'LA', '70115', '555-555-5555', DEFAULT, 3),
 ('MP Heights',              '09 Hermes Way',        NULL,       'Montpelier',                       'VT', '05604', '555-555-5555', 2,       2);
 
 INSERT INTO engagements (rating, text, user_id) 

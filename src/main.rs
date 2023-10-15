@@ -12,7 +12,7 @@ use actix_web::{
 use config::{Post, ResponseConsultant};
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
-use handlebars::Handlebars;
+use handlebars::{Handlebars, Context, Output, Helper, RenderContext, HelperResult};
 use models::location::LocationList;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -40,6 +40,14 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
         }
     });
 
+handlebars_helper!(int_eq: |int: i32| {
+    if int == 10 {
+        true
+    } else {
+        false
+    }
+});
+
 handlebars_helper!(lower_and_single: |plural: String| {
     let mut m_plural = plural;
     m_plural.pop();
@@ -50,7 +58,7 @@ handlebars_helper!(concat_args: |lookup_url: String, page_num: i32| {
     lookup_url.to_owned() + &added.to_string()
 });
 
-handlebars_helper!(vec_len_ten: |vec: Vec<LocationList>| {
+handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
     if vec.len() == 10 {
         true
     } else {
@@ -58,11 +66,51 @@ handlebars_helper!(vec_len_ten: |vec: Vec<LocationList>| {
     }
 });
 
+fn gen_len<T>(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc:
+&mut RenderContext<'_, '_>, out: &mut dyn Output)
+    -> HelperResult {
+   // get parameter from helper or throw an error
+   let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
+   out.write(param.to_uppercase().as_ref())?;
+   Ok(())
+}
+
+// Not Working
+
+handlebars_helper!(gen_vec_len_ten: |vec: EntityList<EntityType>| {
+    vec.list.len();
+});
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
-enum Entity {
+pub enum EntityType {
     Location(LocationList),
     Consultant(ResponseConsultant),
 }
+
+fn vec_len_eq_ten<T>(vec: Vec<T>) -> bool {
+    if vec.len() == 10 {
+        true
+    } else {
+        false
+    }
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntityList<T> {
+    list: Vec<T>,
+}
+
+// handlebars_helper!(vec_len_ten: |vec: Vec<Entity>| {
+//     match &vec[0] {
+//         Entity::Location(first) => vec_len_eq_ten(vec),
+//         Entity::Consultant(first) => vec_len_eq_ten(vec),
+//     };
+// });
+
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub enum Entity {
+//     Location(LocationList),
+//     Consultant(ResponseConsultant),
+// }
 
 #[derive(Debug)]
 pub struct AppState {
@@ -525,9 +573,9 @@ async fn validate_and_get_user(
 ) -> Result<Option<ValidatedUser>, ValidationError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email 
+        "SELECT username, email
         FROM users
-        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
         WHERE session_id = $1
         AND expires > NOW()",
     )
@@ -619,9 +667,12 @@ async fn main() -> std::io::Result<()> {
 
     handlebars.register_helper("to_title_case", Box::new(to_title_case));
     handlebars.register_helper("str_eq", Box::new(str_eq));
+    handlebars.register_helper("str_eq", Box::new(int_eq));
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
     handlebars.register_helper("concat_args", Box::new(concat_args));
-    handlebars.register_helper("vec_len_ten", Box::new(vec_len_ten));
+    handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
+
+    handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
     handlebars.set_dev_mode(true);
 
