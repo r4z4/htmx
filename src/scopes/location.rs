@@ -18,6 +18,8 @@ pub fn location_scope() -> Scope {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveLocationData {
     table_title: String,
+    page: usize,
+    lookup_url: String,
     entities: Vec<LocationList>,
 }
 
@@ -68,9 +70,11 @@ pub async fn get_locations_handler(
     // ,    };
 
     // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-
+    let load_more_url_base = "/location/list?page=".to_owned();
     let locations_table_data = ResponsiveLocationData {
         table_title: "Locations".to_owned(),
+        lookup_url: "/location/list?page=".to_string(),
+        page: opts.page.unwrap_or(1),
         entities: locations,
     };
 

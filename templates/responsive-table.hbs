@@ -94,7 +94,22 @@
               {{/each}}
                 <td id="td_action"><button onclick="window.dialog.show();">Edit</button></td>
             </tr>
-          {{/each}} 
+          {{/each}}
+          {{#if (vec_len_ten entities)}}
+              <tr>
+                {{!-- entities.[0].keys.length for colspan --}}
+                <td colspan="5" style="text-align: center">
+                    <span hx-target="closest tr"
+                          hx-trigger="revealed"
+                          hx-swap="outerHTML"
+                          hx-select="tbody > tr"
+                          {{!-- hx-get={{load_more_url_base + (page + 1)}} --}}
+                          hx-get={{concat_args lookup_url page }}
+                          {{!-- hx-get="/{{ lower_and_single table_title }}/list?page={{ page + 1 }}" --}}
+                      >Loading More...</span>
+                </td>
+              </tr>
+          {{/if}}
         <tbody>
       </table>
   </div>

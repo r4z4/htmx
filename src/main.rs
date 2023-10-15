@@ -9,10 +9,11 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::Post;
+use config::{Post, ResponseConsultant};
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
 use handlebars::Handlebars;
+use models::location::LocationList;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -38,6 +39,30 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
             false
         }
     });
+
+handlebars_helper!(lower_and_single: |plural: String| {
+    let mut m_plural = plural;
+    m_plural.pop();
+    m_plural.to_case(Case::Lower)
+});
+handlebars_helper!(concat_args: |lookup_url: String, page_num: i32| {
+    let added = page_num + 1;
+    lookup_url.to_owned() + &added.to_string()
+});
+
+handlebars_helper!(vec_len_ten: |vec: Vec<LocationList>| {
+    if vec.len() == 10 {
+        true
+    } else {
+        false
+    }
+});
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+enum Entity {
+    Location(LocationList),
+    Consultant(ResponseConsultant),
+}
 
 #[derive(Debug)]
 pub struct AppState {
@@ -594,6 +619,9 @@ async fn main() -> std::io::Result<()> {
 
     handlebars.register_helper("to_title_case", Box::new(to_title_case));
     handlebars.register_helper("str_eq", Box::new(str_eq));
+    handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
+    handlebars.register_helper("concat_args", Box::new(concat_args));
+    handlebars.register_helper("vec_len_ten", Box::new(vec_len_ten));
 
     handlebars.set_dev_mode(true);
 
