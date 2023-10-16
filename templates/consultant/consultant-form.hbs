@@ -3,32 +3,58 @@
  form-layout }}
 <div>
   <h2 class="text-center">Add Consultant</h2>
-  <form class="form-style">
+  <form 
+    class="form-style"
+    hx-boost="true"
+    action="/consultant/form" 
+    method="post"
+    hx-target="#consultant_errors"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML"
+  >
     <ul>
+      <div id="consultant_errors"></div>
       <li>
           <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" />
-          <input type="email" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
+          <input type="text" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
       </li>
-    <div>
-      <label for="email">Consultant</label>
-      <input id="email" type="email" />
-    </div>
-    <div class="full-width">
-      <label for="message">Message</label>
-      <textarea id="message"></textarea>
-    </div>
-    <div class="full-width">
-      <label for="message">Attachment</label>
-      <input type="file" id="file_input" />
-    </div>
-    <div class="full-width">
-      <input type="checkbox" id="newsletter" />
-      <label for="newsletter">Receive our newsletter?</label>
-    </div>
-    <div>
-      <button class="field-style field-split align-left" type="submit">Send Response</button>
-      <button class="field-style field-split align-right" type="reset">Clear Form</button>
-    </div>
+
+      {{!-- This'll be an admin thing. Can only add an existing Subadmin level user as consultant. Hire them, then add them as consultant etc. --}}
+      <li>
+        <input type="tel" name="location_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
+        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+            {{#each admin_user_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+      </li>
+      <li>
+        <select class="field-style field-split align-left" id="location_contact_id" name="location_contact_id">
+            {{#each account_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+        <input type="tel" name="consultant_phone" class="field-style field-split align-right" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
+
+      </li>
+      <li>
+        <select class="field-style field-split align-left" id="location_contact_id" name="location_contact_id">
+            {{#each specialty_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+            {{#each territory_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+      </li>
+      <li>
+        <div>
+          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+        </div>
+    </li>
   </form>
 </div>
 {{/form-layout}}

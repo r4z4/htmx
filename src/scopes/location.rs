@@ -9,7 +9,7 @@ use actix_web::{
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES}, models::location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse}, AppState};
+use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse}, AppState};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
@@ -164,6 +164,7 @@ async fn create_location(
                 dbg!(loc.location_id);
                 let user_alert = UserAlert {
                     msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                    class: "alert_success".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -172,14 +173,27 @@ async fn create_location(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error adding location: {:?}", err),
+                    class: "alert_error".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }
     } else {
-        let msg = "Validation error".to_owned();
-        let body = hb.render("validation", &msg).unwrap();
+        println!("Val error");
+        let validation_response = ValidationResponse {
+            msg: "Validation error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
+
+        // // To test the alert more easily
+        // let user_alert = UserAlert {
+        //     msg: "Error adding location:".to_owned(),
+        //     class: "alert_error".to_owned(),
+        // };
+        // let body = hb.render("crud-api", &user_alert).unwrap();
+        // return HttpResponse::Ok().body(body);
     }
 }

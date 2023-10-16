@@ -83,6 +83,13 @@ impl Config {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct UserAlert {
     pub msg: String,
+    pub class: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct ValidationResponse {
+    pub msg: String,
+    pub class: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -110,44 +117,31 @@ pub fn location_contacts() -> Vec<SelectOption> {
     ]
 }
 
-// use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, Renderable, Output};
+pub fn admin_user_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption{key:Some("User 1".to_string()),value: 1},
+        SelectOption{key:Some("User 2".to_string()),value: 2},
+    ]
+}
 
-// const FACTOR_OF_INTEREST_IDX: usize = 0;
-// const CANDIDATE_IDX: usize = 1;
-// pub fn if_multiple_of_helper<'reg, 'rc>(
-//     helper: &Helper<'reg, 'rc>,
-//     r: &'reg Handlebars<'reg>,
-//     ctx: &'rc Context,
-//     rc: &mut RenderContext<'reg, 'rc>,
-//     out: &mut dyn Output,) -> Result<(), RenderError> {
-//     let factor_of_interest = 
-//         helper.param(FACTOR_OF_INTEREST_IDX)
-//             .map(|json| json.value())
-//             .and_then(|val| val.as_u64())
-//             .and_then(|u64_val| if u64_val > 0 { Some(u64_val) } else { None } )
-//             .ok_or_else(|| RenderError::new("Factor of interest must be a number greater than 0."))
-//     ?;
+pub fn territory_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption{key:Some("National".to_string()),value: 1},
+        SelectOption{key:Some("Northeast".to_string()),value: 2},
+        SelectOption{key:Some("West".to_string()),value: 3},
+        SelectOption{key:Some("Southeast".to_string()),value: 4},
+        SelectOption{key:Some("Midwest".to_string()),value: 5},
+    ]
+}
 
-//     let candidate = 
-//         helper.param(CANDIDATE_IDX)
-//             .map(|json| json.value())
-//             .and_then(|val| val.as_u64())
-//             .ok_or_else(|| RenderError::new("Candidate must be a number greater than or equal to 0."))
-//     ?;
-
-//     let possible_template = if candidate % factor_of_interest == 0 {
-//         helper.template()
-//     } else {
-//         helper.inverse()
-//     };
-
-//     out.write("Hey")?;
-
-//     match possible_template {
-//         Some(t) => t.render(r, ctx, rc, out),
-//         None => Ok(()),
-//     }
-// }
+pub fn specialty_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption{key:Some("Finance".to_string()),value: 1},
+        SelectOption{key:Some("Insurance".to_string()),value: 2},
+        SelectOption{key:Some("Technology".to_string()),value: 3},
+        SelectOption{key:Some("Government".to_string()),value: 4},
+    ]
+}
 
 // pub fn mock_responsive_table_data() -> ResponsiveTableData {
 //     let table_headers = ["One".to_owned(), "Two".to_owned(), "Three".to_owned()].to_vec();

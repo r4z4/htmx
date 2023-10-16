@@ -21,7 +21,7 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{AppState, HeaderValueExt};
+use crate::{AppState, HeaderValueExt, config::ValidationResponse};
 use crate::config::{RE_USER_NAME, RE_EMAIL, RE_SPECIAL_CHAR};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -351,12 +351,6 @@ pub fn validate_email_fmt(email: String) -> bool {
     }
 } 
 
-#[derive(Deserialize, Serialize, FromRow, Validate)]
-pub struct ValidationResponse {
-    pub error_msg: Option<String>,
-    pub success_msg: Option<String>,
-}
-
 #[get("/validate/email")]
 async fn validate_email(
     state: Data<AppState>,
@@ -378,8 +372,8 @@ async fn validate_email(
                 if result.exists {
                     let error_msg = "Email already taken!".to_owned();
                     let validation_response = ValidationResponse {
-                        error_msg: Some(error_msg),
-                        success_msg: None,
+                        msg: error_msg,
+                        class: "validation_error".to_owned(),
                     };
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok()
@@ -387,8 +381,8 @@ async fn validate_email(
                 } else {
                     let success_msg = "Email is available for use".to_owned();
                     let validation_response = ValidationResponse {
-                        error_msg: None,
-                        success_msg: Some(success_msg),
+                        msg: success_msg,
+                        class: "validation_success".to_owned(),
                     };
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok()
@@ -399,8 +393,8 @@ async fn validate_email(
                 dbg!(&err);
                 let error_msg = "Error occurred in (DB layer).".to_owned();
                 let validation_response = ValidationResponse {
-                    error_msg: Some(error_msg),
-                    success_msg: None,
+                    msg: error_msg,
+                    class: "validation_error".to_owned(),
                 };
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -410,8 +404,8 @@ async fn validate_email(
     } else {
         let error_msg = "Incorrect Format.".to_owned();
         let validation_response = ValidationResponse {
-            error_msg: Some(error_msg),
-            success_msg: None,
+            msg: error_msg,
+            class: "validation_error".to_owned(),
         };
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);

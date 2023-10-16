@@ -34,6 +34,7 @@ DROP TYPE IF EXISTS mime_type;
 CREATE TYPE user_type AS ENUM (
        'guest',
        'regular',
+       'subadmin',
        'admin'
 );
 
@@ -332,11 +333,12 @@ VALUES
 ('second_client',       3, 'client_two@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Consultants
 ('hulk_hogan',          2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('gregs_lobos',         2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('mike_ryan',           2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('zardos',              2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('gregs_lobos',         2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('rob_bower',           2, 'rob_bower@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('v_smith',             2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('mike_ryan',           2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+('joe_z',               2, 'joe_z@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
 
 INSERT INTO user_settings (user_id, theme_id) 
 VALUES 
@@ -368,13 +370,13 @@ VALUES
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 
-('Terry',   'Bolea',    1, 7, '/images/consultants/hulk_hogan.svg'),
-('Mike',    'Ryan',     3, 7, '/images/consultants/m_w.svg'),
-('Mister',  'Zardos',   4, 7, '/images/consultants/m_w.svg'),
-('Greg',    'Cote',     2, 7, '/images/consultants/m_w.svg'),
-('Robert',  'Bower',    1, 7, '/images/consultants/m_w.svg'),
-('Vanessa', 'Smith',    3, 7, '/images/consultants/f_w.svg'),
-('Joe',     'Zagacki',  2, 8, '/images/consultants/m_w.svg');
+('Terry',   'Bolea',    1, 7,  '/images/consultants/hulk_hogan.svg'),
+('Mike',    'Ryan',     3, 8,  '/images/consultants/m_w.svg'),
+('Mister',  'Zardos',   4, 9,  '/images/consultants/m_w.svg'),
+('Greg',    'Cote',     2, 10, '/images/consultants/m_w.svg'),
+('Robert',  'Bower',    1, 11, '/images/consultants/m_w.svg'),
+('Vanessa', 'Smith',    3, 12, '/images/consultants/f_w.svg'),
+('Joe',     'Zagacki',  2, 13, '/images/consultants/m_w.svg');
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 

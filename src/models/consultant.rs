@@ -40,6 +40,9 @@ pub struct ConsultantList {
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub account_options: Vec<SelectOption>,
+    pub territory_options: Vec<SelectOption>,
+    pub specialty_options: Vec<SelectOption>,
+    pub admin_user_options: Vec<SelectOption>,
 }
 
 impl ConsultantPostRequest {

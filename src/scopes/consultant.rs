@@ -8,7 +8,7 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, ResponseConsultant, SelectOption, ResponsiveTableData},
+    config::{FilterOptions, ResponseConsultant, SelectOption, ResponsiveTableData, admin_user_options, specialty_options, territory_options},
     models::consultant::{ConsultantFormTemplate},
     AppState,
 };
@@ -115,6 +115,9 @@ async fn consultant_form(
 
     let template_data = ConsultantFormTemplate {
         account_options: account_options,
+        territory_options: territory_options(),
+        specialty_options: specialty_options(),
+        admin_user_options: admin_user_options(),
     };
 
     let body = hb

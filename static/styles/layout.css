@@ -476,20 +476,44 @@ p,ul,ol {
 	float:right;
 }
 
+/*****************
+*** Validation ***
+*****************/
+
+.validation_div {
+    text-align: center;
+    font-weight: bold;
+}
+
+.validation_error {
+    color: #d23f35;
+  }
+
+.validation_success {
+    color: #0aec24;
+  }
+
 /**************
 **** Alert ****
 **************/
 
-/* The alert message box */
-.alert {
-    padding: 20px;
-    background-color: #f44336; /* Red */
+
+.alert_error {
+    padding: 10px;
+    background-color: #d23f35; 
     color: white;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+  }
+
+.alert_success {
+    padding: 10px;
+    background-color: #0aec24;
+    color: white;
+    margin-bottom: 10px;
   }
   
-  /* The close button */
-  .closebtn {
+
+.closebtn {
     margin-left: 15px;
     color: white;
     font-weight: bold;
@@ -500,8 +524,8 @@ p,ul,ol {
     transition: 0.3s;
   }
   
-  /* When moving the mouse over the close button */
-  .closebtn:hover {
+
+.closebtn:hover {
     color: black;
   }
 
