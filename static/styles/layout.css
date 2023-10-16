@@ -476,18 +476,55 @@ p,ul,ol {
 	float:right;
 }
 
+/**************
+**** Alert ****
+**************/
+
+/* The alert message box */
+.alert {
+    padding: 20px;
+    background-color: #f44336; /* Red */
+    color: white;
+    margin-bottom: 15px;
+  }
+  
+  /* The close button */
+  .closebtn {
+    margin-left: 15px;
+    color: white;
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  /* When moving the mouse over the close button */
+  .closebtn:hover {
+    color: black;
+  }
+
 /*****************
 ** Address Form **
 *****************/
 
 .form-style ul li .field-state{
-	width: 10%;
+	width: 11%;
 }
 .form-style ul li .field-city{
-	width: 59%;
+	width: 66%;
 }
 .form-style ul li .field-zip{
-	width: 28%;
+	width: 20%;
+}
+
+.form-style ul li .field-addr-one{
+	width: 68%;
+}
+.form-style ul li .field-addr-two{
+	width: 29%;
+    float:right;
 }
 
 .form-style ul li textarea{

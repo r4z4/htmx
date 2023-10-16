@@ -12,6 +12,7 @@ lazy_static! {
     pub static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
     pub static ref RE_EMAIL: Regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
+    pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec!["Apt".to_owned(), "Apt.".to_owned(), "Ste".to_owned(), "Ste.".to_owned(), "Suite".to_owned(), "Apartment".to_owned(), "#".to_owned(), "No.".to_owned(), "No".to_owned()];
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -30,7 +31,7 @@ pub struct FilterOptions {
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
-pub struct SelectOptions {
+pub struct SelectOption {
     pub value: i32,
     pub key: Option<String>,
 }
@@ -80,6 +81,11 @@ impl Config {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct UserAlert {
+    pub msg: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
     pub table_title: String,
     pub page: usize,
@@ -94,6 +100,13 @@ pub fn states() -> Vec<StringSelectOption> {
         StringSelectOption{key:Some("AR".to_string()),value:"AK".to_string()},
         StringSelectOption{key:Some("AK".to_string()),value:"AR".to_string()},
         StringSelectOption{key:Some("AZ".to_string()),value:"AZ".to_string()},
+    ]
+}
+
+pub fn location_contacts() -> Vec<SelectOption> {
+    vec![
+        SelectOption{key:Some("Location Admin".to_string()),value: 1},
+        SelectOption{key:Some("Site Manager".to_string()),value: 2},
     ]
 }
 

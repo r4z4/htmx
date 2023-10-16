@@ -1,5 +1,5 @@
 use crate::{
-    config::{self, SelectOptions},
+    config::{self, SelectOption},
     models::user::{
         UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
@@ -23,13 +23,13 @@ pub fn user_scope() -> Scope {
         .service(edit_settings)
 }
 
-pub fn theme_options() -> Vec<SelectOptions> {
+pub fn theme_options() -> Vec<SelectOption> {
     [
-        SelectOptions {
+        SelectOption {
             key: Some("classic".to_owned()),
             value: 1,
         },
-        SelectOptions {
+        SelectOption {
             key: Some("dark".to_owned()),
             value: 2,
         },

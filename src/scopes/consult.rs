@@ -14,7 +14,7 @@ use std::{
 use validator::Validate;
 
 use crate::{
-    config::{FilterOptions, SelectOptions, ResponsiveTableData},
+    config::{FilterOptions, SelectOption, ResponsiveTableData},
     models::consult::{
         ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultListResponse, ConsultPost,
     },
@@ -67,7 +67,7 @@ async fn consult_form(
     println!("consults_form firing");
 
     let location_result = sqlx::query_as!(
-        SelectOptions,
+        SelectOption,
         "SELECT location_id AS value, location_name AS key 
         FROM locations 
         ORDER by location_name"
@@ -84,7 +84,7 @@ async fn consult_form(
     let location_options = location_result.unwrap();
 
     let client_result = sqlx::query_as!(
-        SelectOptions,
+        SelectOption,
         "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, client_id AS value 
         FROM clients ORDER BY key"
     )
@@ -100,7 +100,7 @@ async fn consult_form(
     let client_options = client_result.unwrap();
 
     let consultant_result = sqlx::query_as!(
-        SelectOptions,
+        SelectOption,
         "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, consultant_id AS value 
         FROM consultants ORDER BY key"
     )

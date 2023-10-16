@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::config::SelectOptions;
+use crate::config::SelectOption;
 
 // #[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
 // // #[serde(rename_all = "camelCase")]
@@ -36,7 +36,7 @@ pub struct UserHomeQuery {
     // pub last_name: Option<String>,
     pub email: String,
     pub settings_updated: DateTime<Utc>,
-    // pub theme_options: Vec<SelectOptions>,
+    // pub theme_options: Vec<SelectOption>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     // pub created_at_fmt: String,
@@ -56,7 +56,7 @@ pub struct UserHomeModel {
     // pub last_name: Option<String>,
     pub email: String,
     pub settings_updated: String,
-    pub theme_options: Vec<SelectOptions>,
+    pub theme_options: Vec<SelectOption>,
     pub created_at_fmt: String,
     pub updated_at_fmt: String,
     // user_type: UserType,
@@ -80,7 +80,7 @@ pub struct UserSettingsQuery {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserSettingsObj {
-    pub theme_options: Vec<SelectOptions>,
+    pub theme_options: Vec<SelectOption>,
     // user_settings table updated_at, not user table
     pub updated_at_fmt: String,
 }

@@ -6,37 +6,44 @@
   <form 
     class="form-style"
     hx-boost="true"
-    action="/location/create" 
+    action="/location/form" 
     method="post"
   >
     <ul>
+      {{#if err}}
+      <div>
+        <p>{{err}}</p>
+      </div>
+      {{/if}}
+      
       <li>
         <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" />
       </li>
       <li>
-        <input type="text" name="consultant_l_name" class="field-style field-full align-none" placeholder="Address" />
+        <input type="text" name="location_address_one" class="field-style field-addr-one" placeholder="Address" />
+        <input type="text" name="location_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" />
       </li>
       <li>
-        <input type="text" name="city" class="field-style field-city" placeholder="City" />
+        <input type="text" name="location_city" class="field-style field-city" placeholder="City" />
         {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
         <select class="field-style field-state" id="location_state" name="location_state">
             {{#each state_options}}
               <option value="{{this.value}}">{{this.key}}</option>
             {{/each}}
         </select>
-        <input type="text" name="zip" class="field-style field-zip" placeholder="Zip" />
+        <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" />
       </li>
       <li>
-        <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" />
-        <input type="email" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
+        <input type="tel" name="location_phone" class="field-style field-split align-left" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
+        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+            {{#each location_contact_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
       </li>
-    <div class="full-width">
-      <input type="checkbox" id="newsletter" />
-      <label for="newsletter">Receive our newsletter?</label>
-    </div>
-    <div class="full-width">
-      <button type="submit">Send Response</button>
-      <button type="reset">Clear Form</button>
+    <div>
+      <button class="field-style field-split align-left" type="submit">Send Response</button>
+      <button class="field-style field-split align-right" type="reset">Clear Form</button>
     </div>
   </form>
 </div>

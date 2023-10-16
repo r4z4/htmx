@@ -11,6 +11,9 @@
 {{#if true}}
     {{> navbar session=session}}
 {{/if}}
+{{#if user_alert}}
+    {{> user-alert msg=user_alert}}
+{{/if}}
 <body hx-boost="true">
 {{> @partial-block }}
 </body>

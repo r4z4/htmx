@@ -8,7 +8,7 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, ResponseConsultant, SelectOptions, ResponsiveTableData},
+    config::{FilterOptions, ResponseConsultant, SelectOption, ResponsiveTableData},
     models::consultant::{ConsultantFormTemplate},
     AppState,
 };
@@ -97,7 +97,7 @@ async fn consultant_form(
     println!("consultant_form firing");
 
     let account_result = sqlx::query_as!(
-        SelectOptions,
+        SelectOption,
         "SELECT account_id AS value, account_name AS key 
         FROM accounts 
         ORDER by account_name"

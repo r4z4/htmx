@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
-use crate::config::{ResponseConsultant, SelectOptions};
+use crate::config::{ResponseConsultant, SelectOption};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsultantPostRequest {
     pub consultant_f_name: String,
@@ -39,7 +39,7 @@ pub struct ConsultantList {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
-    pub account_options: Vec<SelectOptions>,
+    pub account_options: Vec<SelectOption>,
 }
 
 impl ConsultantPostRequest {

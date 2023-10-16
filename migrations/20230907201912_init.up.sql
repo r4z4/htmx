@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS locations (
         location_zip VARCHAR (5) NOT NULL,
         location_phone TEXT NULL,
         location_contact_id INTEGER DEFAULT 1,
-        territory_id INTEGER NOT NULL,
+        territory_id INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_contact
@@ -417,6 +417,7 @@ VALUES
 ('Patton & Smoler',         '0909 Smith Road',      NULL,       'Olympia',                          'WA', '98506', '555-555-5555', DEFAULT, 4),
 ('Mudra International',     '7878 Homewater St.',   NULL,       'Edina',                            'MN', '55343', '555-555-5555', DEFAULT, 5),
 ('St. Olaf College',        '1500 St. Olaf Ave.',   NULL,       'Northfield',                       'MN', '55057', '555-555-5555', DEFAULT, 5),
+('National Location #1',    '101 National Dr.',     NULL,       'Kansas City',                      'MO', '64109', '555-555-5555', DEFAULT, DEFAULT),
 ('Thompson Palace',         '1 Mesmer Ave',         'Ste. 222', 'Philadelphia',                     'PA', '19099', '555-555-5555', DEFAULT, 2),
 ('NOLA Center',             '434 Main Dr.',         NULL,       'New Orleans',                      'LA', '70115', '555-555-5555', DEFAULT, 3),
 ('MP Heights',              '09 Hermes Way',        NULL,       'Montpelier',                       'VT', '05604', '555-555-5555', 2,       2);

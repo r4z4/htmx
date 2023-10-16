@@ -1,3 +1,5 @@
+use std::{fs::create_dir, ops::Deref, borrow::Borrow};
+
 use actix_web::{
     get, post,
     web::{self, Data, Json},
@@ -7,12 +9,13 @@ use actix_web::{
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::{FilterOptions, SelectOptions, self, ResponsiveTableData}, models::location::{LocationList, LocationFormTemplate}, AppState};
+use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES}, models::location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse}, AppState};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
         // .route("/users", web::get().to(get_users_handler))
         .service(location_form)
+        .service(create_location)
         .service(get_locations_handler)
 }
 
@@ -89,7 +92,7 @@ async fn location_form(
     println!("location_form firing");
 
     let account_result = sqlx::query_as!(
-        SelectOptions,
+        SelectOption,
         "SELECT account_id AS value, account_name AS key 
         FROM accounts 
         ORDER by account_name"
@@ -105,6 +108,7 @@ async fn location_form(
 
     let template_data = LocationFormTemplate {
         state_options: config::states(),
+        location_contact_options: config::location_contacts(),
     };
 
     let body = hb
@@ -112,4 +116,70 @@ async fn location_form(
         .unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
+}
+
+
+fn validate_location_input(body: &LocationPostRequest) -> bool {
+    // Woof
+    dbg!(&body);
+    if let Some(addr_two) = &body.location_address_two {
+        let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
+        let first = apt_ste[0].to_owned();
+        dbg!(&first);
+        if ACCEPTED_SECONDARIES.contains(first.borrow()) {
+            true
+        } else {
+            false
+        }
+    } else {
+        true
+    }
+}
+
+#[post("/form")]
+async fn create_location(
+    body: web::Form<LocationPostRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+) -> impl Responder {
+    dbg!(&body);
+
+    if validate_location_input(&body) {
+        match sqlx::query_as::<_, LocationPostResponse>(
+            "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, DEFAULT) RETURNING location_id",
+        )
+        .bind(&body.location_name)
+        .bind(&body.location_address_one)
+        .bind(&body.location_address_two)
+        .bind(&body.location_city)
+        .bind(&body.location_state)
+        .bind(&body.location_zip)
+        .bind(&body.location_phone)
+        .bind(&body.location_contact_id)
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(loc) => {
+                dbg!(loc.location_id);
+                let user_alert = UserAlert {
+                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+            Err(err) => {
+                dbg!(&err);
+                let user_alert = UserAlert {
+                    msg: format!("Error adding location: {:?}", err),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
+    } else {
+        let msg = "Validation error".to_owned();
+        let body = hb.render("validation", &msg).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
 }
