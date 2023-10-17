@@ -24,7 +24,7 @@
       </li>
       <li>
         <input type="text" name="address_one" class="field-style field-addr-one" placeholder="Address" required />
-        <input type="text" name="address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" />
+        <input type="text" id="address_two" name="address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" disabled="true"/>
       </li>
       <li>
         <input type="text" name="location_city" class="field-style field-city" placeholder="City" required />
@@ -38,7 +38,7 @@
       </li>
       <li>
         <input type="tel" name="phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
-        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" _="on select toggle @disabled on #address_two">
             {{#each user_type_options}}
               <option value="{{this.value}}">{{this.key}}</option>
             {{/each}}
@@ -47,7 +47,7 @@
       <li>
         <div>
           <button class="field-style field-split align-left" type="submit">Send Response</button>
-          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+          <button id="reset_btn" class="field-style field-split align-right" type="reset">Clear Form</button>
         </div>
     </li>
   </form>
