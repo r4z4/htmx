@@ -67,6 +67,8 @@
 
 <div class="responsive_table">
   <h2>{{table_title}}</h2>
+  <div class="modal-container" id="edit_form_modal"></div>
+  </div>
   <dialog id="dialog">
     {{#if (str_eq table_title "Consultants")}}
       {{> consultant/consultant-form}}
@@ -84,6 +86,7 @@
               <th>{{to_title_case @key}}</th>
             {{/each}}
               <th>Action(s)</th>
+              <th>Action_2</th>
           </tr>
         </thead>
         <tbody id="table_body">
@@ -93,6 +96,15 @@
                 <td class="entity_cell" id={{@key}}>{{this}}</td>
               {{/each}}
                 <td class="action_cell" id="td_action"><button class="action_btn" onclick="window.dialog.show();">Edit</button></td>
+                <td class="action_cell" id="td_action">
+                  <button 
+                    class="action_btn" 
+                    onclick="window.dialog.show();"
+                    hx-get={{form_rte_usr this.user_id}}
+                    hx-target="#edit_form_modal"
+                  >Edit_2
+                  </button>
+                </td>
             </tr>
           {{/each}}
           {{#if (int_eq vec_len 10)}}

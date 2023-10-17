@@ -1,0 +1,55 @@
+{{
+#>
+ modal-layout }}
+<div>
+  <h2 class="text-center">Edit User</h2>
+  <form 
+    class="form-style"
+    hx-boost="true"
+    action="/location/form" 
+    method="post"
+    hx-target="#location_errors"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML"
+  >
+    <ul>
+      <div id="location_errors"></div>
+      <li>
+          <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" value={{username}} />
+          <input type="text" name="user_slug" class="field-style field-split align-right" placeholder="User Slug" />
+      </li>
+      <li>
+          <input type="text" name="f_name" class="field-style field-split align-left" placeholder="First Name" />
+          <input type="text" name="l_name" class="field-style field-split align-right" placeholder="Last Name" />
+      </li>
+      <li>
+        <input type="text" name="address_one" class="field-style field-addr-one" placeholder="Address" required />
+        <input type="text" name="address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" />
+      </li>
+      <li>
+        <input type="text" name="location_city" class="field-style field-city" placeholder="City" required />
+        {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
+        <select class="field-style field-state" id="location_state" name="location_state" required>
+            {{#each state_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+        <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" required />
+      </li>
+      <li>
+        <input type="tel" name="phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
+        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+            {{#each user_type_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+      </li>
+      <li>
+        <div>
+          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+        </div>
+    </li>
+  </form>
+</div>
+{{/modal-layout}}

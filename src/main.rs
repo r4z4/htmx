@@ -9,11 +9,11 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::Post;
+use config::{Post, ResponseConsultant};
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
 use handlebars::Handlebars;
-use models::location::LocationList;
+use models::{location::LocationList, admin::{self, AdminUserList}};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -25,7 +25,7 @@ use crate::{scopes::auth::ResponseUser, config::mock_fixed_table_data};
 
 use scopes::{
     auth::auth_scope, consult::consult_scope, consultant::consultant_scope,
-    location::location_scope, user::user_scope,
+    location::location_scope, user::user_scope, admin::admin_scope,
 };
 mod config;
 mod models;
@@ -42,6 +42,18 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
             false
         }
     });
+
+handlebars_helper!(form_rte: |entity: Entity| {
+    match entity {
+        Entity::Location(location) => String::from("location/form") + &location.location_id.to_string(),
+        Entity::Consultant(consultant) => String::from("admin/form") + &consultant.consultant_id.to_string(),
+        Entity::User(user) => String::from("admin/form") + &user.user_id.to_string(),
+    };
+});
+
+handlebars_helper!(form_rte_usr: |id: i32| {
+    String::from("admin/form/") + &id.to_string()
+});
 
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
     if int_1 == int_2 {
@@ -100,11 +112,12 @@ handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
 //     };
 // });
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub enum Entity {
-//     Location(LocationList),
-//     Consultant(ResponseConsultant),
-// }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Entity {
+    Location(LocationList),
+    Consultant(ResponseConsultant),
+    User(AdminUserList),
+}
 
 #[derive(Debug)]
 pub struct AppState {
@@ -225,6 +238,17 @@ async fn list_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
         "title": "View Records",
     });
     let body = hb.render("list-api", &data).unwrap();
+
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/admin_home")]
+async fn admin_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+    let data = json!({
+        "name": "Admin",
+        "title": "Admin Actions",
+    });
+    let body = hb.render("admin-home", &data).unwrap();
 
     HttpResponse::Ok().body(body)
 }
@@ -468,6 +492,8 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
     handlebars.register_helper("concat_args", Box::new(concat_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
+    handlebars.register_helper("form_rte", Box::new(form_rte));
+    handlebars.register_helper("form_rte_usr", Box::new(form_rte_usr));
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
@@ -484,6 +510,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(handlebars.clone()))
             .service(auth_scope())
             .service(user_scope())
+            .service(admin_scope())
             .service(consult_scope())
             .service(consultant_scope())
             .service(location_scope())
@@ -494,6 +521,7 @@ async fn main() -> std::io::Result<()> {
             .service(homepage)
             .service(crud_api)
             .service(list_api)
+            .service(admin_api)
             .service(detail)
             .service(content)
             .service(create_todo)

@@ -11,6 +11,9 @@ DROP TYPE IF EXISTS us_territories;
 DROP TYPE IF EXISTS attachment_channel;
 DROP TYPE IF EXISTS mime_type;
 
+-- When I forget to add it to DOWN file
+-- DROP TABLE IF EXISTS user_types;
+
 -- CREATE TYPE consultant_specialty AS ENUM ('Insurance', 'Finance', 'Government');
 
 -- CREATE TYPE mime_type AS ENUM ('application/pdf', 'application/json', 'video/mp4', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/png');
@@ -31,12 +34,12 @@ DROP TYPE IF EXISTS mime_type;
 
 -- CREATE TYPE us_territories AS ENUM ('American_Samoa', 'Guam', 'Northern_Mariana_Islands', 'Puerto_Rico', 'Virgin_Islands', 'District_of_Columbia');
 
-CREATE TYPE user_type AS ENUM (
-       'guest',
-       'regular',
-       'subadmin',
-       'admin'
-);
+-- CREATE TYPE user_type AS ENUM (
+--        'guest',
+--        'regular',
+--        'subadmin',
+--        'admin'
+-- );
 
 CREATE TABLE IF NOT EXISTS accounts (
         account_id SERIAL PRIMARY KEY,
@@ -51,14 +54,34 @@ CREATE TABLE IF NOT EXISTS users (
         account_id INTEGER NOT NULL DEFAULT 3,
         username TEXT NOT NULL UNIQUE,
         email TEXT NOT NULL UNIQUE,
+        user_type_id INT NOT NULL DEFAULT 2,
         secret TEXT DEFAULT NULL,
         password TEXT NOT NULL,
         avatar_path TEXT NOT NULL DEFAULT '/images/default_avatar.svg',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_account_id
             FOREIGN KEY(account_id) 
 	            REFERENCES accounts(account_id)
+    );
+
+CREATE TABLE IF NOT EXISTS subadmins (
+        subadmin_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        address_one TEXT NOT NULL,
+        address_two TEXT NULL,
+        city TEXT NOT NULL,
+        state CHAR(2) NOT NULL,
+        zip VARCHAR (5) NOT NULL,
+        dob DATE NOT NULL, 
+        primary_phone TEXT NOT NULL,
+        mobile_phone TEXT NULL,
+        secondary_phone TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT fk_user_id
+            FOREIGN KEY(user_id) 
+	            REFERENCES users(user_id)
     );
 
 CREATE TABLE IF NOT EXISTS user_settings (
@@ -95,6 +118,12 @@ CREATE TABLE IF NOT EXISTS mime_types (
         mime_type_name TEXT NOT NULL
     );
 
+CREATE TABLE IF NOT EXISTS user_types (
+        user_type_id SERIAL PRIMARY KEY,
+        user_type_name TEXT NOT NULL UNIQUE
+    );
+
+
 CREATE TABLE IF NOT EXISTS territories (
         territory_id SERIAL PRIMARY KEY,
         territory_name TEXT NOT NULL,
@@ -103,6 +132,7 @@ CREATE TABLE IF NOT EXISTS territories (
 
 CREATE TABLE IF NOT EXISTS consultants (
         consultant_id SERIAL PRIMARY KEY,
+        subadmin_id INTEGER NOT NULL,
         consultant_slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         -- specialty consultant_specialty NOT NULL,
         -- territory consultant_territory NULL,
@@ -110,13 +140,12 @@ CREATE TABLE IF NOT EXISTS consultants (
         consultant_l_name TEXT NOT NULL,
         specialty_id INTEGER NOT NULL,
         territory_id INTEGER NOT NULL DEFAULT 1,
-        user_id INTEGER NOT NULL,
         img_path TEXT DEFAULT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        CONSTRAINT fk_user
-            FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id),
+        CONSTRAINT fk_subadmin
+            FOREIGN KEY(subadmin_id) 
+	            REFERENCES subadmins(subadmin_id),
         CONSTRAINT fk_specialty
             FOREIGN KEY(specialty_id) 
 	            REFERENCES specialties(specialty_id),
@@ -281,18 +310,26 @@ CREATE TABLE IF NOT EXISTS consults (
 
 INSERT INTO territories (territory_id, territory_name, territory_states)
 VALUES
-(1, 'National',     NULL),
-(2, 'Northeast',    ARRAY['DE', 'MD', 'PA', 'NJ', 'NY', 'MA', 'CT', 'VT', 'NH', 'RI', 'ME', 'OH']),
-(3, 'Southeast',    ARRAY['AR', 'LA', 'MS', 'TN', 'AL', 'KY', 'WV', 'VA', 'NC', 'SC', 'GA', 'FL']),
-(4, 'West',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID', 'MT', 'AK', 'CO', 'WY']),
-(5, 'Midwest',      ARRAY['NE', 'IA', 'KS', 'OK', 'MO', 'SD', 'ND', 'MN', 'WI', 'MI', 'IN', 'IL', 'TX']);
+(1, 'national',     NULL),
+(2, 'northeast',    ARRAY['DE', 'MD', 'PA', 'NJ', 'NY', 'MA', 'CT', 'VT', 'NH', 'RI', 'ME', 'OH']),
+(3, 'southeast',    ARRAY['AR', 'LA', 'MS', 'TN', 'AL', 'KY', 'WV', 'VA', 'NC', 'SC', 'GA', 'FL']),
+(4, 'west',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID', 'MT', 'AK', 'CO', 'WY']),
+(5, 'midwest',      ARRAY['NE', 'IA', 'KS', 'OK', 'MO', 'SD', 'ND', 'MN', 'WI', 'MI', 'IN', 'IL', 'TX']);
 
 INSERT INTO specialties (specialty_id, specialty_name)
 VALUES
-(1, 'Finance'),
-(2, 'Insurance'),
-(3, 'Technology'),
-(4, 'Government');
+(1, 'finance'),
+(2, 'insurance'),
+(3, 'technology'),
+(4, 'government');
+
+INSERT INTO user_types (user_type_id, user_type_name)
+VALUES
+(1, 'admin'),
+(2, 'subadmin'),
+(3, 'regular'),
+(4, 'guest');
+
 
 INSERT INTO mime_types (mime_type_id, mime_type_name)
 VALUES
@@ -321,24 +358,37 @@ VALUES
 ('default_client',          'client_secret'),
 ('default_company_client',  'company_client_secret');
 
-INSERT INTO users (username, account_id, email, password) 
+INSERT INTO users (username, user_type_id, account_id, email, password) 
 VALUES 
-('root',                1, 'root@consultancy.com',              '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('admin',               2, 'admin@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('root',                1,    1, 'root@consultancy.com',              '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('admin',               1,    2, 'admin@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Users
-('jim_jam',             2, 'jim@jam.com',                       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('aaron',               2, 'aaron@aaron.com',                   '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('jim_jam',             3,    2, 'jim@jam.com',                       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('aaron',               3,    2, 'aaron@aaron.com',                   '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Clients
-('first_client',        3, 'client_one@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('second_client',       3, 'client_two@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('first_client',        3,  3, 'client_one@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('second_client',       3,  3, 'client_two@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+-- Subadmins
+('audadmin_one',        2, 3, 'subadmin_one@subadmin.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Consultants
-('hulk_hogan',          2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('mike_ryan',           2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('zardos',              2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('gregs_lobos',         2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('rob_bower',           2, 'rob_bower@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('v_smith',             2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('joe_z',               2, 'joe_z@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+('hulk_hogan',          2, 2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('mike_ryan',           2, 2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('zardos',              2, 2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('gregs_lobos',         2, 2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('rob_bower',           2, 2, 'rob_bower@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('v_smith',             2, 2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('joe_z',               2, 2, 'joe_z@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+
+INSERT INTO subadmins (user_id, address_one, address_two, city, state, zip, dob, primary_phone) 
+VALUES 
+(7, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(8, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(9, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(10, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(11, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(12, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(13, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
+(14, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333');
 
 INSERT INTO user_settings (user_id, theme_id) 
 VALUES 
@@ -368,15 +418,15 @@ VALUES
 (NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4),
 (NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1);
 
-INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
+INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, subadmin_id, img_path) 
 VALUES 
-('Terry',   'Bolea',    1, 7,  '/images/consultants/hulk_hogan.svg'),
-('Mike',    'Ryan',     3, 8,  '/images/consultants/m_w.svg'),
-('Mister',  'Zardos',   4, 9,  '/images/consultants/m_w.svg'),
-('Greg',    'Cote',     2, 10, '/images/consultants/m_w.svg'),
-('Robert',  'Bower',    1, 11, '/images/consultants/m_w.svg'),
-('Vanessa', 'Smith',    3, 12, '/images/consultants/f_w.svg'),
-('Joe',     'Zagacki',  2, 13, '/images/consultants/m_w.svg');
+('Terry',   'Bolea',    1, 2,  '/images/consultants/hulk_hogan.svg'),
+('Mike',    'Ryan',     3, 3,  '/images/consultants/m_w.svg'),
+('Mister',  'Zardos',   4, 4,  '/images/consultants/m_w.svg'),
+('Greg',    'Cote',     2, 5, '/images/consultants/m_w.svg'),
+('Robert',  'Bower',    1, 6, '/images/consultants/m_w.svg'),
+('Vanessa', 'Smith',    3, 7, '/images/consultants/f_w.svg'),
+('Joe',     'Zagacki',  2, 8, '/images/consultants/m_w.svg');
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 

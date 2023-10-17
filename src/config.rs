@@ -124,6 +124,15 @@ pub fn admin_user_options() -> Vec<SelectOption> {
     ]
 }
 
+pub fn user_type_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption{key:Some("admin".to_string()),value: 1},
+        SelectOption{key:Some("subadmin".to_string()),value: 2},
+        SelectOption{key:Some("regular".to_string()),value: 3},
+        SelectOption{key:Some("guest".to_string()),value: 4},
+    ]
+}
+
 pub fn territory_options() -> Vec<SelectOption> {
     vec![
         SelectOption{key:Some("National".to_string()),value: 1},

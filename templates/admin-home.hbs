@@ -1,0 +1,42 @@
+{{
+#>
+ main-layout session=true}}
+ <div class="user_home">
+    <h1>Admin</h1>
+    <div class="btn_div">
+        {{!-- <button
+            hx-get="/user/settings" 
+            hx-target="#user_op_container" 
+        >
+            Edit Settings
+        </button> --}}
+        <button onclick="window.dialog.show();">Edit Settings</button>
+
+        <dialog id="dialog">
+            {{> admin/user-form}}
+        <button onclick="window.dialog.close();">Cancel</button>
+        </dialog>
+        <button
+            hx-get="/admin/list" 
+            hx-target="#admin_op_container" 
+        >
+            View Users
+        </button>
+    </div>
+
+    <div id="user_op_response">
+        {{#if err}}
+            {{err}}
+        {{/if}}
+    </div>
+
+    <div class="op_container" id="admin_op_container">
+        {{!-- <div class="info_section">
+            <p>Username: {{username}}</p>
+            <p>Email: {{email}}</p>
+            <p>User Since: {{created_at_fmt}}</p>
+            <p>Last Updated: {{updated_at_fmt}}</p>
+        </div> --}}
+    </div>
+</div>
+{{/main-layout}}
