@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::user::UserModel;
+use super::model_user::UserModel;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 struct Sessions {

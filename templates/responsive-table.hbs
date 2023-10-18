@@ -66,18 +66,9 @@
        hx-indicator=".htmx-indicator">
 
 <div class="responsive_table">
-  <h2>{{table_title}}</h2>
+  <h2>{{get_table_title entity_type_id}}</h2>
   <div class="modal-container" id="edit_form_modal"></div>
   </div>
-  <dialog id="dialog">
-    {{#if (str_eq table_title "Consultants")}}
-      {{> consultant/consultant-form}}
-    {{/if}}
-    {{#if (str_eq table_title "Locations")}}
-      {{> consult/consult-form}}
-    {{/if}}
-    <button onclick="window.dialog.close();">Cancel</button>
-  </dialog>
   <div class="table-wrapper">
       <table class="fl-table">
         <thead>

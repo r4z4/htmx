@@ -113,6 +113,11 @@ CREATE TABLE IF NOT EXISTS specialties (
         specialty_name TEXT NOT NULL
     );
 
+CREATE TABLE IF NOT EXISTS entities (
+        entity_id SERIAL PRIMARY KEY,
+        entity_name TEXT NOT NULL
+    );
+
 CREATE TABLE IF NOT EXISTS mime_types (
         mime_type_id SERIAL PRIMARY KEY,
         mime_type_name TEXT NOT NULL
@@ -330,6 +335,15 @@ VALUES
 (3, 'regular'),
 (4, 'guest');
 
+INSERT INTO entities (entity_id, entity_name)
+VALUES
+(1, 'user'),
+(2, 'admin'),
+(3, 'subadmin'),
+(4, 'consultant'),
+(5, 'location'),
+(6, 'consult'),
+(7, 'client');
 
 INSERT INTO mime_types (mime_type_id, mime_type_name)
 VALUES

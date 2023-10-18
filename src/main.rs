@@ -13,7 +13,8 @@ use config::{Post, ResponseConsultant};
 use convert_case::{Case, Casing};
 use dotenv::dotenv;
 use handlebars::Handlebars;
-use models::{location::LocationList, admin::{self, AdminUserList}};
+use hbs_helpers::{get_table_title, form_rte_usr, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case};
+use models::{model_location::LocationList, model_admin::{self, AdminUserList}};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -30,91 +31,9 @@ use scopes::{
 mod config;
 mod models;
 mod scopes;
+mod hbs_helpers;
 #[cfg(test)]
 mod test_common;
-
-use handlebars::handlebars_helper;
-handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));
-handlebars_helper!(str_eq: |s_1: String, s_2: String| {
-        if s_1 == s_2 {
-            true
-        } else {
-            false
-        }
-    });
-
-handlebars_helper!(form_rte: |entity: Entity| {
-    match entity {
-        Entity::Location(location) => String::from("location/form") + &location.location_id.to_string(),
-        Entity::Consultant(consultant) => String::from("admin/form") + &consultant.consultant_id.to_string(),
-        Entity::User(user) => String::from("admin/form") + &user.user_id.to_string(),
-    };
-});
-
-handlebars_helper!(form_rte_usr: |id: i32, user_type_id: i32| {
-    match user_type_id {
-        2 => String::from("admin/form/subadmin/") + &id.to_string(),
-        _ => String::from("admin/form/user/") + &id.to_string()
-    }
-});
-
-handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
-    println!("int_eq firing w/ {} & {}", int_1, int_2);
-    if int_1 == int_2 {
-        true
-    } else {
-        false
-    }
-});
-
-handlebars_helper!(lower_and_single: |plural: String| {
-    let mut m_plural = plural;
-    m_plural.pop();
-    m_plural.to_case(Case::Lower)
-});
-handlebars_helper!(concat_args: |lookup_url: String, page_num: i32| {
-    let added = page_num + 1;
-    lookup_url.to_owned() + &added.to_string()
-});
-
-handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
-    if vec.len() == 10 {
-        true
-    } else {
-        false
-    }
-});
-
-// Not Working
-
-// handlebars_helper!(gen_vec_len_ten: |vec: EntityList<EntityType>| {
-//     vec.list.len();
-// });
-
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub enum EntityType {
-//     Location(LocationList),
-//     Consultant(ResponseConsultant),
-// }
-
-// fn vec_len_eq_ten<T>(vec: Vec<T>) -> bool {
-//     if vec.len() == 10 {
-//         true
-//     } else {
-//         false
-//     }
-// }
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct EntityList<T> {
-//     list: Vec<T>,
-// }
-
-// handlebars_helper!(vec_len_ten: |vec: Vec<Entity>| {
-//     match &vec[0] {
-//         Entity::Location(first) => vec_len_eq_ten(vec),
-//         Entity::Consultant(first) => vec_len_eq_ten(vec),
-//     };
-// });
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Entity {
@@ -498,6 +417,8 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
     handlebars.register_helper("form_rte", Box::new(form_rte));
     handlebars.register_helper("form_rte_usr", Box::new(form_rte_usr));
+    handlebars.register_helper("get_table_title", Box::new(get_table_title));
+
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 

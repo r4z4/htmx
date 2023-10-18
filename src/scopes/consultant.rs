@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{FilterOptions, ResponseConsultant, SelectOption, ResponsiveTableData, admin_user_options, specialty_options, territory_options},
-    models::consultant::{ConsultantFormTemplate},
+    models::model_consultant::{ConsultantFormTemplate},
     AppState,
 };
 
@@ -75,10 +75,10 @@ pub async fn get_consultants_handler(
     // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
 
     let consultants_table_data = ResponsiveTableData {
+        entity_type_id: 4,
         vec_len: consultants.len(),
         lookup_url: "/consultant/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
-        table_title: "Consultants".to_owned(),
         entities: consultants,
     };
 

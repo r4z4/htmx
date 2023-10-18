@@ -10,7 +10,7 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, ACCEPTED_SECONDARIES, UserAlert, ValidationResponse}, 
-    models::{admin::{AdminUserList, AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserPostRequest}, admin::{AdminUserFormQuery, AdminUserPostResponse, AdminSubadminFormTemplate, AdminSubadminPostRequest}}, AppState};
+    models::{model_admin::{AdminUserList, AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserPostRequest}, model_admin::{AdminUserFormQuery, AdminUserPostResponse, AdminSubadminFormTemplate, AdminSubadminPostRequest}}, AppState};
 
 pub fn admin_scope() -> Scope {
     web::scope("/admin")
@@ -20,6 +20,17 @@ pub fn admin_scope() -> Scope {
         .service(edit_user)
         //.service(edit_subadmin)
         .service(get_users_handler)
+}
+
+fn entity_type_from_user_type(user_type_id: i32) -> i32 {
+    match user_type_id {
+        1 => 3,
+        2 => 3,
+        3 => 1,
+        4 => 1,
+        // FIXME
+        _ => 0,
+    }
 }
 
 #[get("/list/{user_type_id}")]
@@ -61,7 +72,7 @@ pub async fn get_users_handler(
     let users = query_result.unwrap();
 
     let users_table_data = ResponsiveTableData {
-        table_title: "Users".to_owned(),
+        entity_type_id: entity_type_from_user_type(user_type_id),
         vec_len: users.len(),
         lookup_url: "/admin/list?page=".to_string(),
         page: opts.page.unwrap_or(1),

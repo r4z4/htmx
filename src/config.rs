@@ -94,7 +94,7 @@ pub struct ValidationResponse {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
-    pub table_title: String,
+    pub entity_type_id: i32,
     pub page: usize,
     pub vec_len: usize,
     pub lookup_url: String,

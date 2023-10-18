@@ -1,6 +1,6 @@
 use test_context::{test_context, AsyncTestContext};
 
-use crate::models::consultant::ConsultantPostRequest;
+use crate::models::model_consultant::ConsultantPostRequest;
 
 pub struct Context {
     pub sut: ConsultantPostRequest,

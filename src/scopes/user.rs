@@ -1,6 +1,6 @@
 use crate::{
     config::{self, SelectOption},
-    models::user::{
+    models::model_user::{
         UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
     },

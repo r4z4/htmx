@@ -8,7 +8,7 @@ use handlebars::Handlebars;
 
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData},
-    models::consult::{
+    models::model_consult::{
         ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
     },
     AppState,
@@ -190,10 +190,10 @@ pub async fn get_consults_handler(
     let consults = query_result.unwrap();
 
     let consultants_table_data = ResponsiveTableData {
+        entity_type_id: 6,
         vec_len: consults.len(),
         lookup_url: "/consult/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
-        table_title: "Consults".to_owned(),
         entities: consults,
     };
 
