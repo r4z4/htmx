@@ -51,11 +51,15 @@ handlebars_helper!(form_rte: |entity: Entity| {
     };
 });
 
-handlebars_helper!(form_rte_usr: |id: i32| {
-    String::from("admin/form/") + &id.to_string()
+handlebars_helper!(form_rte_usr: |id: i32, user_type_id: i32| {
+    match user_type_id {
+        2 => String::from("admin/form/subadmin/") + &id.to_string(),
+        _ => String::from("admin/form/user/") + &id.to_string()
+    }
 });
 
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
+    println!("int_eq firing w/ {} & {}", int_1, int_2);
     if int_1 == int_2 {
         true
     } else {

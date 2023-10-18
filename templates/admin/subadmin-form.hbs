@@ -2,7 +2,7 @@
 #>
  modal-layout }}
 <div>
-  <h2 class="text-center">Edit User</h2>
+  <h2 class="text-center">Edit Subadmin</h2>
   <form 
     class="form-style"
     hx-boost="true"
@@ -18,10 +18,26 @@
           <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" value={{username}} />
           <input type="email" name="email" class="field-style field-split align-right" placeholder="Email" value={{email}} />
       </li>
-
-
       <li>
-        <input type="text" name="avatar_path" class="field-style field-split align-left" placeholder="Avatar Path" value={{avatar_path}}  />
+          <input type="text" name="f_name" class="field-style field-split align-left" placeholder="First Name" />
+          <input type="text" name="l_name" class="field-style field-split align-right" placeholder="Last Name" />
+      </li>
+      <li>
+        <input type="text" name="address_one" class="field-style field-addr-one" placeholder="Address" required />
+        <input type="text" id="address_two" name="address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" disabled="true"/>
+      </li>
+      <li>
+        <input type="text" name="location_city" class="field-style field-city" placeholder="City" required />
+        {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
+        <select class="field-style field-state" id="location_state" name="location_state" required>
+            {{#each state_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+        </select>
+        <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" required />
+      </li>
+      <li>
+        <input type="tel" name="primary_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
         <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" value="{{user_type_id}}" _="on select toggle @disabled on #address_two">
             {{#each user_type_options}}
               {{#if int_eq this.value user_type_id}}

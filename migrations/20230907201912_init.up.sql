@@ -65,15 +65,15 @@ CREATE TABLE IF NOT EXISTS users (
 	            REFERENCES accounts(account_id)
     );
 
-CREATE TABLE IF NOT EXISTS subadmins (
-        subadmin_id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS user_details (
+        user_details_id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         address_one TEXT NOT NULL,
         address_two TEXT NULL,
         city TEXT NOT NULL,
         state CHAR(2) NOT NULL,
         zip VARCHAR (5) NOT NULL,
-        dob DATE NOT NULL, 
+        dob DATE NOT NULL,
         primary_phone TEXT NOT NULL,
         mobile_phone TEXT NULL,
         secondary_phone TEXT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS territories (
 
 CREATE TABLE IF NOT EXISTS consultants (
         consultant_id SERIAL PRIMARY KEY,
-        subadmin_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
         consultant_slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         -- specialty consultant_specialty NOT NULL,
         -- territory consultant_territory NULL,
@@ -143,9 +143,9 @@ CREATE TABLE IF NOT EXISTS consultants (
         img_path TEXT DEFAULT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        CONSTRAINT fk_subadmin
-            FOREIGN KEY(subadmin_id) 
-	            REFERENCES subadmins(subadmin_id),
+        CONSTRAINT fk_user
+            FOREIGN KEY(user_id) 
+	            REFERENCES users(user_id),
         CONSTRAINT fk_specialty
             FOREIGN KEY(specialty_id) 
 	            REFERENCES specialties(specialty_id),
@@ -360,16 +360,16 @@ VALUES
 
 INSERT INTO users (username, user_type_id, account_id, email, password) 
 VALUES 
-('root',                1,    1, 'root@consultancy.com',              '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('admin',               1,    2, 'admin@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('root',                1,    1, 'root@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('admin',               1,    2, 'admin@consultancy.com',          '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Users
-('jim_jam',             3,    2, 'jim@jam.com',                       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('aaron',               3,    2, 'aaron@aaron.com',                   '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('jim_jam',             3,    2, 'jim@jam.com',                    '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('aaron',               3,    2, 'aaron@aaron.com',                '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Clients
-('first_client',        3,  3, 'client_one@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('second_client',       3,  3, 'client_two@client.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('first_client',        3,  3, 'client_one@client.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('second_client',       3,  3, 'client_two@client.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Subadmins
-('audadmin_one',        2, 3, 'subadmin_one@subadmin.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('sudadmin_one',        2, 3, 'subadmin_one@subadmin.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 -- Consultants
 ('hulk_hogan',          2, 2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('mike_ryan',           2, 2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
@@ -379,7 +379,7 @@ VALUES
 ('v_smith',             2, 2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('joe_z',               2, 2, 'joe_z@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
 
-INSERT INTO subadmins (user_id, address_one, address_two, city, state, zip, dob, primary_phone) 
+INSERT INTO user_details (user_id, address_one, address_two, city, state, zip, dob, primary_phone) 
 VALUES 
 (7, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
 (8, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
@@ -418,15 +418,15 @@ VALUES
 (NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4),
 (NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1);
 
-INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, subadmin_id, img_path) 
+INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 
-('Terry',   'Bolea',    1, 2,  '/images/consultants/hulk_hogan.svg'),
-('Mike',    'Ryan',     3, 3,  '/images/consultants/m_w.svg'),
-('Mister',  'Zardos',   4, 4,  '/images/consultants/m_w.svg'),
-('Greg',    'Cote',     2, 5, '/images/consultants/m_w.svg'),
-('Robert',  'Bower',    1, 6, '/images/consultants/m_w.svg'),
-('Vanessa', 'Smith',    3, 7, '/images/consultants/f_w.svg'),
-('Joe',     'Zagacki',  2, 8, '/images/consultants/m_w.svg');
+('Terry',   'Bolea',    1, 8,  '/images/consultants/hulk_hogan.svg'),
+('Mike',    'Ryan',     3, 9,  '/images/consultants/m_w.svg'),
+('Mister',  'Zardos',   4, 10, '/images/consultants/m_w.svg'),
+('Greg',    'Cote',     2, 11, '/images/consultants/m_w.svg'),
+('Robert',  'Bower',    1, 12, '/images/consultants/m_w.svg'),
+('Vanessa', 'Smith',    3, 13, '/images/consultants/f_w.svg'),
+('Joe',     'Zagacki',  2, 14, '/images/consultants/m_w.svg');
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 

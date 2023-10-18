@@ -5,18 +5,11 @@ use actix_web::{
 };
 
 use handlebars::Handlebars;
-use std::{
-    convert::Infallible,
-    pin::Pin,
-    sync::Arc,
-    task::{Context, Poll},
-};
-use validator::Validate;
 
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData},
     models::consult::{
-        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultListResponse, ConsultPost,
+        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
     },
     AppState,
 };

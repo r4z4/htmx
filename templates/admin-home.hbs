@@ -17,10 +17,17 @@
         <button onclick="window.dialog.close();">Cancel</button>
         </dialog>
         <button
-            hx-get="/admin/list" 
+            hx-get="/admin/list/3" 
             hx-target="#admin_op_container" 
         >
             View Users
+        </button>
+
+        <button
+            hx-get="/admin/list/2" 
+            hx-target="#admin_op_container" 
+        >
+            View Subadmin
         </button>
     </div>
 
