@@ -1,20 +1,16 @@
 use actix_files::Files;
 use actix_web::{
     get,
-    http::{
-        header::{Header, HeaderValue},
-        Error,
-    },
+    http::header::{Header, HeaderValue},
     post,
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use config::{Post, ResponseConsultant};
-use convert_case::{Case, Casing};
 use dotenv::dotenv;
 use handlebars::Handlebars;
-use hbs_helpers::{get_table_title, form_rte_usr, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case};
-use models::{model_location::LocationList, model_admin::{self, AdminUserList}};
+use hbs_helpers::{get_table_title, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case};
+use models::{model_location::LocationList, model_admin::AdminUserList};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -26,7 +22,7 @@ use crate::{scopes::auth::ResponseUser, config::mock_fixed_table_data};
 
 use scopes::{
     auth::auth_scope, consult::consult_scope, consultant::consultant_scope,
-    location::location_scope, user::user_scope, admin::admin_scope,
+    location::location_scope, user::user_scope, admin::admin_scope, client::client_scope,
 };
 mod config;
 mod models;
@@ -416,7 +412,6 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("concat_args", Box::new(concat_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
     handlebars.register_helper("form_rte", Box::new(form_rte));
-    handlebars.register_helper("form_rte_usr", Box::new(form_rte_usr));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
 
 
@@ -439,6 +434,7 @@ async fn main() -> std::io::Result<()> {
             .service(consult_scope())
             .service(consultant_scope())
             .service(location_scope())
+            .service(client_scope())
             .service(index)
             .service(about_us)
             .service(fixed_table)

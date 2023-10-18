@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use uuid::Uuid;
 use validator::Validate;
 
 use crate::config::{SelectOption, StringSelectOption};
@@ -20,6 +21,8 @@ pub struct LocationListResponse {
 #[derive(Debug, Validate, Serialize, Clone, FromRow, Deserialize)]
 pub struct LocationList {
     pub location_id: i32,
+    // FIXME Make Uuid
+    pub slug: String,
     pub location_name: String,
     pub location_address_one: String,
     pub location_address_two: Option<String>,

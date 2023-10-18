@@ -11,25 +11,17 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
         }
     });
 
-handlebars_helper!(form_rte: |entity: Entity| {
-    match entity {
-        Entity::Location(location) => String::from("location/form") + &location.location_id.to_string(),
-        Entity::Consultant(consultant) => String::from("admin/form") + &consultant.consultant_id.to_string(),
-        Entity::User(user) => String::from("admin/form") + &user.user_id.to_string(),
-    };
-});
-
-handlebars_helper!(form_rte_usr: |id: i32, entity_type_id: i32| {
+handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
     match entity_type_id {
-        1 => String::from("admin/form/subadmin/") + &id.to_string(),
-        2 => String::from("admin/form/subadmin/") + &id.to_string(),
+        1 => String::from("admin/form/user/") + &slug,
+        2 => String::from("admin/form/subadmin/") + &slug,
         // Admin & Subadmin same form (for now)
-        3 => String::from("admin/form/user/") + &id.to_string(),
-        4 => String::from("consultant/form/") + &id.to_string(),
-        5 => String::from("location/form/") + &id.to_string(),
-        6 => String::from("consult/form/") + &id.to_string(),
-        7 => String::from("client/form/") + &id.to_string(),
-        _ => String::from("admin/form/user/") + &id.to_string()
+        3 => String::from("admin/form/subadmin/") + &slug,
+        4 => String::from("consultant/form/") + &slug,
+        5 => String::from("location/form/") + &slug,
+        6 => String::from("consult/form/") + &slug,
+        7 => String::from("client/form/") + &slug,
+        _ => String::from("admin/form/user/") + &slug
     }
 });
 

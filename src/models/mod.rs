@@ -4,3 +4,4 @@ pub mod model_location;
 pub mod model_session;
 pub mod model_user;
 pub mod model_admin;
+pub mod model_client;

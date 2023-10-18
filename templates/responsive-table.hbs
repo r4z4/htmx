@@ -91,7 +91,7 @@
                   <button 
                     class="action_btn" 
                     {{!-- onclick="window.dialog.show();" --}}
-                    hx-get={{form_rte_usr this.user_id this.user_type_id}}
+                    hx-get={{form_rte this.slug @root.entity_type_id}}
                     hx-target="#edit_form_modal"
                     {{!-- hx-target="body" 
                     hx-swap="beforeend" --}}

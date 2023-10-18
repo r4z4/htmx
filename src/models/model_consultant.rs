@@ -29,12 +29,9 @@ pub struct ConsultantListResponse {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantList {
-    pub consult_id: i32,
-    pub client_id: i32,
     pub consultant_id: i32,
-    pub location_id: i32,
+    pub slug: String,
     pub created_at: DateTime<Utc>,
-    pub notes: Option<String>,
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]

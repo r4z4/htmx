@@ -43,6 +43,7 @@ DROP TYPE IF EXISTS mime_type;
 
 CREATE TABLE IF NOT EXISTS accounts (
         account_id SERIAL PRIMARY KEY,
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         account_name TEXT NOT NULL UNIQUE,
         account_secret TEXT DEFAULT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS users (
         user_id SERIAL PRIMARY KEY,
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         account_id INTEGER NOT NULL DEFAULT 3,
         username TEXT NOT NULL UNIQUE,
         email TEXT NOT NULL UNIQUE,
@@ -138,7 +140,7 @@ CREATE TABLE IF NOT EXISTS territories (
 CREATE TABLE IF NOT EXISTS consultants (
         consultant_id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
-        consultant_slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         -- specialty consultant_specialty NOT NULL,
         -- territory consultant_territory NULL,
         consultant_f_name TEXT NOT NULL,
@@ -181,7 +183,7 @@ CREATE TABLE IF NOT EXISTS consultant_ties (
 
 CREATE TABLE IF NOT EXISTS clients (
         client_id SERIAL PRIMARY KEY,
-        client_slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         client_f_name TEXT NULL,
         client_l_name TEXT NULL,
 
@@ -194,10 +196,10 @@ CREATE TABLE IF NOT EXISTS clients (
         client_state CHAR(2) NOT NULL,
         client_zip VARCHAR (5) NOT NULL,
         client_dob DATE NULL, 
-        client_primary_phone TEXT NULL,
+        client_primary_phone TEXT NOT NULL,
         client_mobile_phone TEXT NULL,
         client_secondary_phone TEXT NULL,
-        client_email TEXT NULL,
+        client_email TEXT NOT NULL,
         account_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -226,7 +228,7 @@ CREATE TABLE IF NOT EXISTS contacts (
 -- FIXME: Add PostGIS and lat/long
 CREATE TABLE IF NOT EXISTS locations (
         location_id SERIAL PRIMARY KEY,
-        location_slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         location_name TEXT NOT NULL,
         location_address_one TEXT NOT NULL,
         location_address_two TEXT NULL,
@@ -293,6 +295,7 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE TABLE IF NOT EXISTS consults (
         consult_id SERIAL PRIMARY KEY,
+        slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         consultant_id INTEGER NOT NULL,
         client_id INTEGER NOT NULL,
         location_id INTEGER NOT NULL,
@@ -421,16 +424,16 @@ VALUES
 (1, '7d9527cb-44e5-4f2d-813f-6d2ed5ed92a2', NOW() - '15 days'::interval, NOW() - '16 days'::interval),
 (2, 'cb8984a0-d6cb-4f4c-8dc2-0209c5b5f027', NOW() - '14 days'::interval, NOW() - '15 days'::interval);
 
-INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, user_id) 
+INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, user_id, client_email) 
 VALUES 
-('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 5),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 5),
-('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 6),
-('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 3),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 2),
-(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 4),
-(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4),
-(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1);
+('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 5, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 5, 'client_1@gmail.com'),
+('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 6, 'client_1@gmail.com'),
+('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 3, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 2, 'client_1@gmail.com'),
+(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 4, 'client_1@gmail.com'),
+(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4, 'client_1@gmail.com'),
+(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1, 'client_1@gmail.com');
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 

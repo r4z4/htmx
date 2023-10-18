@@ -7,6 +7,7 @@ use crate::config::{SelectOption, StringSelectOption};
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AdminUserList {
     pub user_id: i32, 
+    pub slug: String,
     pub username: String, 
     pub user_type_id: i32,
     pub email: String, 

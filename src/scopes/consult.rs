@@ -119,22 +119,22 @@ async fn consult_form(
     return HttpResponse::Ok().body(body);
 }
 
-#[get("/form/{consult_id}")]
+#[get("/form/{slug}")]
 async fn consult_edit_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
-    path: web::Path<i32>,
+    path: web::Path<String>,
 ) -> impl Responder {
     println!("consults_form firing");
-    let consult_id = path.into_inner();
+    let consult_slug = path.into_inner();
 
     let query_result = sqlx::query_as!(
         ConsultFormRequest,
         "SELECT consultant_id, location_id, client_id, consult_start, consult_end, notes 
             FROM consults 
-            WHERE consult_id = $1
-            ORDER by consult_id",
-        consult_id
+            WHERE slug = $1
+            ORDER by consult_start",
+        consult_slug
     )
     .fetch_one(&state.db)
     .await;
@@ -167,7 +167,7 @@ pub async fn get_consults_handler(
 
     let query_result = sqlx::query_as!(
         ConsultList,
-        "SELECT consult_id, consultant_id, location_id, client_id, consult_start, consult_end, notes 
+        "SELECT consult_id, slug, consultant_id, location_id, client_id, consult_start, consult_end, notes 
         FROM consults
         ORDER by updated_at, created_at 
         LIMIT $1 OFFSET $2",

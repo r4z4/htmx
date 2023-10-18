@@ -29,6 +29,7 @@ pub struct ConsultFormRequest {
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
 pub struct ConsultList {
     pub consult_id: i32,
+    pub slug: String,
     pub client_id: i32,
     pub consultant_id: i32,
     pub location_id: i32,

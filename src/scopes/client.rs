@@ -1,4 +1,4 @@
-use std::{fs::create_dir, ops::Deref, borrow::Borrow};
+use std::borrow::Borrow;
 
 use actix_web::{
     get, post,
@@ -7,41 +7,42 @@ use actix_web::{
 };
 
 use handlebars::Handlebars;
-use serde::{Deserialize, Serialize};
+use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_client::{ClientList, ClientFormTemplate, ClientPostRequest, ClientPostResponse}, AppState};
 
-use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse}, AppState};
-
-pub fn location_scope() -> Scope {
-    web::scope("/location")
+pub fn client_scope() -> Scope {
+    web::scope("/client")
         // .route("/users", web::get().to(get_users_handler))
-        .service(location_form)
-        .service(create_location)
-        .service(get_locations_handler)
+        .service(client_form)
+        .service(create_client)
+        .service(get_clients_handler)
 }
 
 #[get("/list")]
-pub async fn get_locations_handler(
+pub async fn get_clients_handler(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    println!("get_locations_handler firing");
+    println!("get_clients_handler firing");
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
     let query_result = sqlx::query_as!(
-        LocationList,
+        ClientList,
         "SELECT 
-            location_id, 
+            client_id, 
             slug,
-            location_name,
-            location_address_one,
-            location_address_two,
-            location_city,
-            location_zip,
-            location_phone
-        FROM locations
-        ORDER by location_name
+            client_company_name,
+            client_f_name,
+            client_l_name,
+            client_email,
+            client_address_one,
+            client_address_two,
+            client_city,
+            client_zip,
+            client_primary_phone
+        FROM clients
+        ORDER by client_id
         LIMIT $1 OFFSET $2",
         limit as i32,
         offset as i32
@@ -52,45 +53,45 @@ pub async fn get_locations_handler(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all location records";
+        let err = "Error occurred while fetching all client records";
         // return HttpResponse::InternalServerError()
         //     .json(json!({"status": "error","message": message}));
         let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
-    let locations = query_result.unwrap();
+    let clients = query_result.unwrap();
 
     //     let consultants_response = ConsultantListResponse {
     //         consultants: consultants,
     //         name: "Hello".to_owned()
     // ,    };
 
-    // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-    // let load_more_url_base = "/location/list?page=".to_owned();
-    let locations_table_data = ResponsiveTableData {
-        entity_type_id: 5,
-        vec_len: locations.len(),
-        lookup_url: "/location/list?page=".to_string(),
+    // let table_headers = ["client_id".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
+    // let load_more_url_base = "/client/list?page=".to_owned();
+    let clients_table_data = ResponsiveTableData {
+        entity_type_id: 7,
+        vec_len: clients.len(),
+        lookup_url: "/client/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
-        entities: locations,
+        entities: clients,
     };
 
-    dbg!(&locations_table_data);
+    dbg!(&clients_table_data);
 
     let body = hb
-        .render("responsive-table", &locations_table_data)
+        .render("responsive-table", &clients_table_data)
         .unwrap();
     return HttpResponse::Ok().body(body);
 }
 
 #[get("/form")]
-async fn location_form(
+async fn client_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
     // path: web::Path<i32>,
 ) -> impl Responder {
-    println!("location_form firing");
+    println!("client_form firing");
 
     let account_result = sqlx::query_as!(
         SelectOption,
@@ -107,23 +108,22 @@ async fn location_form(
         return HttpResponse::Ok().body(body);
     }
 
-    let template_data = LocationFormTemplate {
+    let template_data = ClientFormTemplate {
         state_options: config::states(),
-        location_contact_options: config::location_contacts(),
     };
 
     let body = hb
-        .render("location/location-form", &template_data)
+        .render("client/client-form", &template_data)
         .unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
 
 
-fn validate_location_input(body: &LocationPostRequest) -> bool {
+fn validate_client_input(body: &ClientPostRequest) -> bool {
     // Woof
     dbg!(&body);
-    if let Some(addr_two) = &body.location_address_two {
+    if let Some(addr_two) = &body.client_address_two {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
         let first = apt_ste[0].to_owned();
         dbg!(&first);
@@ -138,33 +138,34 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
 }
 
 #[post("/form")]
-async fn create_location(
-    body: web::Form<LocationPostRequest>,
+async fn create_client(
+    body: web::Form<ClientPostRequest>,
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
 ) -> impl Responder {
     dbg!(&body);
 
-    if validate_location_input(&body) {
-        match sqlx::query_as::<_, LocationPostResponse>(
-            "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, DEFAULT) RETURNING location_id",
+    if validate_client_input(&body) {
+        match sqlx::query_as::<_, ClientPostResponse>(
+            "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_primary_phone) 
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, DEFAULT) RETURNING client_id",
         )
-        .bind(&body.location_name)
-        .bind(&body.location_address_one)
-        .bind(&body.location_address_two)
-        .bind(&body.location_city)
-        .bind(&body.location_state)
-        .bind(&body.location_zip)
-        .bind(&body.location_phone)
-        .bind(&body.location_contact_id)
+        .bind(&body.client_f_name)
+        .bind(&body.client_l_name)
+        .bind(&body.client_company_name)
+        .bind(&body.client_address_one)
+        .bind(&body.client_address_two)
+        .bind(&body.client_city)
+        .bind(&body.client_state)
+        .bind(&body.client_zip)
+        .bind(&body.client_primary_phone)
         .fetch_one(&state.db)
         .await
         {
             Ok(loc) => {
-                dbg!(loc.location_id);
+                dbg!(loc.client_id);
                 let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                    msg: format!("Client added successfully: client_id #{:?}", loc.client_id),
                     class: "alert_success".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
@@ -173,7 +174,7 @@ async fn create_location(
             Err(err) => {
                 dbg!(&err);
                 let user_alert = UserAlert {
-                    msg: format!("Error adding location: {:?}", err),
+                    msg: format!("Error adding client: {:?}", err),
                     class: "alert_error".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
@@ -191,7 +192,7 @@ async fn create_location(
 
         // // To test the alert more easily
         // let user_alert = UserAlert {
-        //     msg: "Error adding location:".to_owned(),
+        //     msg: "Error adding client:".to_owned(),
         //     class: "alert_error".to_owned(),
         // };
         // let body = hb.render("crud-api", &user_alert).unwrap();

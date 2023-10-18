@@ -1,6 +1,6 @@
 use actix_web::{
     get, post,
-    web::{self, Data, Json},
+    web::{self, Data},
     HttpResponse, Responder, Scope,
 };
 
