@@ -6,8 +6,12 @@
   <form 
     class="form-style"
     hx-boost="true"
-    action="/location/form" 
-    method="post"
+    action="/location/form"
+    {{#if username }} 
+      method="patch"
+    {{else}}
+      method="post"
+    {{/if}}
     hx-target="#location_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML"

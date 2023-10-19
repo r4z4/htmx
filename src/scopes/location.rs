@@ -3,12 +3,12 @@ use std::{fs::create_dir, ops::Deref, borrow::Borrow};
 use actix_web::{
     get, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope,
+    HttpResponse, Responder, Scope, patch,
 };
 
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-
+use struct_iterable::Iterable;
 use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest}, AppState};
 
 pub fn location_scope() -> Scope {
@@ -193,6 +193,88 @@ async fn create_location(
         .bind(&body.location_zip)
         .bind(&body.location_phone)
         .bind(&body.location_contact_id)
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(loc) => {
+                dbg!(loc.location_id);
+                let user_alert = UserAlert {
+                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                    class: "alert_success".to_owned(),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+            Err(err) => {
+                dbg!(&err);
+                let user_alert = UserAlert {
+                    msg: format!("Error adding location: {:?}", err),
+                    class: "alert_error".to_owned(),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
+    } else {
+        println!("Val error");
+        let validation_response = ValidationResponse {
+            msg: "Validation error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::Ok().body(body);
+
+        // // To test the alert more easily
+        // let user_alert = UserAlert {
+        //     msg: "Error adding location:".to_owned(),
+        //     class: "alert_error".to_owned(),
+        // };
+        // let body = hb.render("crud-api", &user_alert).unwrap();
+        // return HttpResponse::Ok().body(body);
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Iterable)]
+pub struct LocationPatchRequest {
+    pub location_name: Option<String>,
+    pub location_address_one: Option<String>,
+    pub location_address_two: Option<Option<String>>,
+    pub location_city: Option<String>,
+    pub location_state: Option<String>,
+    pub location_zip: Option<String>,
+    pub location_contact_id: Option<i32>,
+    pub location_phone: Option<Option<String>>,
+}
+
+fn valudate_patch(req: &LocationPatchRequest) -> bool {
+    true
+}
+
+#[patch("/form/{slug}")]
+async fn patch_location(
+    body: web::Form<LocationPatchRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let loc_slug = path.into_inner();
+    dbg!(&body);
+
+    let mut generated_sql = String::new();
+    for (field_name, field_value) in body.iter() {
+        let sql = String::from(format!("{} = {:?},", field_name, field_value));
+        generated_sql += &sql;
+    }
+
+    // Remove that last comma
+    generated_sql.pop();
+
+    if valudate_patch(&body) {
+        match sqlx::query_as::<_, LocationPostResponse>(
+            "UPDATE locations SET $1 WHERE slug = $3",
+        )
+        .bind(&generated_sql)
+        .bind(loc_slug)
         .fetch_one(&state.db)
         .await
         {
