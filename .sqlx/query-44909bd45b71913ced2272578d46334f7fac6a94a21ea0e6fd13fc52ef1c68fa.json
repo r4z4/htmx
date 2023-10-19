@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT users.username, users.email, user_type_id, avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at\n        FROM users\n        INNER JOIN user_details ON user_details.user_id = users.user_id\n        WHERE users.slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "avatar_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "address_one",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "address_two",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "state",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "zip",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "primary_phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "44909bd45b71913ced2272578d46334f7fac6a94a21ea0e6fd13fc52ef1c68fa"
+}
