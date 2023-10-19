@@ -1,6 +1,6 @@
 {{
 #>
- main-layout session=true title='Homepage' user=user}}
+ main-layout title='Homepage' user=user}}
  <div class="homepage">
     <h1>Welcome to External Review or Whatever</h1>
     {{#if str}}
@@ -15,14 +15,7 @@
             <li><a href="/crud">Create Records</a></li>
             <li><a href="/list">Read &amp; Edit</a></li>
         </ul>
-    <button
-        hx-get="/consultants" 
-        hx-target="#consultant-list" 
-    >
-        View Consultants
-    </button>
     </div>
-    <div id="consultant-list"></div>
     {{/if}}
 </div>
 {{/main-layout}}

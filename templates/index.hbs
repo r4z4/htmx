@@ -1,6 +1,6 @@
 {{
 #>
- main-layout session=false title='Index' }}
+ main-layout title='Index' }}
   <div>
     <p id="index_view"></p>
     {{!-- {{#if authorized}}
@@ -16,6 +16,7 @@
     {{!-- {{/if}}
     {{!-- if !cookie, show login form. Else, show homepage. Also, login form response = homepage if success --}}
     {{!-- {{> articles}} --}}
+      {{> default-links}}
   </div>
   {{!-- {{> simple-form}} --}}
    {{!-- {{> footer}}

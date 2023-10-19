@@ -141,18 +141,7 @@ pub struct HbError {
 }
 
 #[get("/crud")]
-async fn crud_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let data = json!({
-        "name": "CRUD Ops",
-        "title": "Create / Remove / Update / Delete",
-    });
-    let body = hb.render("crud-api", &data).unwrap();
-
-    HttpResponse::Ok().body(body)
-}
-
-#[get("/list")]
-async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+async fn crud_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id
@@ -167,7 +156,7 @@ async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
         {
             Ok(user) => {
                 if let Some(usr) = user {
-                    let body = hb.render("list-api", &usr).unwrap();
+                    let body = hb.render("crud-api", &usr).unwrap();
                     HttpResponse::Ok().body(body)
                 } else {
                     let message = "Cannot find you";
@@ -191,8 +180,8 @@ async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
     }
 }
 
-#[get("/admin_home")]
-async fn admin_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+#[get("/list")]
+async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id
@@ -207,7 +196,7 @@ async fn admin_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<
         {
             Ok(user) => {
                 if let Some(usr) = user {
-                    let body = hb.render("admin-home", &usr).unwrap();
+                    let body = hb.render("list-api", &usr).unwrap();
                     HttpResponse::Ok().body(body)
                 } else {
                     let message = "Cannot find you";
@@ -485,7 +474,6 @@ async fn main() -> std::io::Result<()> {
             .service(homepage)
             .service(crud_api)
             .service(list_api)
-            .service(admin_api)
             .service(detail)
             .service(content)
             .service(create_todo)

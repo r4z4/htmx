@@ -26,7 +26,7 @@
         {{#if (int_eq user_type_id 1)}}
             <li>    
                 <a
-                    href="/admin_home"
+                    href="/admin/home"
                     class="about-link"
                     >Admin</a
                 >
@@ -35,7 +35,7 @@
     {{/if}}
 
 
-    {{#if session}}
+    {{#if user_type_id}}
     <li style="float:right">  
         <div class="dropdown">
             <button class="dropbtn"><img width='1' height='1' src="images/user.svg" />
@@ -55,6 +55,14 @@
             </div>
         </div>
     </li> 
+    {{else}}
+    <li style="float:right">    
+        <a
+            href="/login"
+            class="about-link"
+            >Login</a
+        >
+    </li>
     {{/if}}
     </ul>
 </div>

@@ -30,6 +30,7 @@ pub struct UserModel {
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeQuery {
     pub user_id: i32,
+    pub user_type_id: i32,
     pub username: String,
     pub avatar_path: String,
     // pub first_name: Option<String>,
@@ -50,6 +51,7 @@ pub struct UserHomeQuery {
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeModel {
     pub user_id: i32,
+    pub user_type_id: i32,
     pub username: String,
     pub avatar_path: String,
     // pub first_name: Option<String>,

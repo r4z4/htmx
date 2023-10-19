@@ -3,13 +3,13 @@ use std::{borrow::Borrow, vec};
 use actix_web::{
     get, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope,
+    HttpResponse, Responder, Scope, HttpRequest,
 };
 
 use handlebars::Handlebars;
 
 use crate::{config::{FilterOptions, self, ResponsiveTableData, ACCEPTED_SECONDARIES, UserAlert, ValidationResponse}, 
-    models::{model_admin::{AdminUserList, AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserPostRequest}, model_admin::{AdminUserFormQuery, AdminUserPostResponse, AdminSubadminFormTemplate, AdminSubadminPostRequest}}, AppState};
+    models::{model_admin::{AdminUserList, AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserPostRequest}, model_admin::{AdminUserFormQuery, AdminUserPostResponse, AdminSubadminFormTemplate, AdminSubadminPostRequest}}, AppState, ValidatedUser, HeaderValueExt};
 
 pub fn admin_scope() -> Scope {
     web::scope("/admin")
@@ -17,6 +17,7 @@ pub fn admin_scope() -> Scope {
         .service(user_form)
         .service(subadmin_form)
         .service(edit_user)
+        .service(admin_home)
         //.service(edit_subadmin)
         .service(get_users_handler)
 }
@@ -29,6 +30,46 @@ fn entity_type_from_user_type(user_type_id: i32) -> i32 {
         4 => 1,
         // FIXME
         _ => 0,
+    }
+}
+
+#[get("/home")]
+async fn admin_home(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match sqlx::query_as::<_, ValidatedUser>(
+            "SELECT username, email, user_type_id
+            FROM users
+            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            WHERE session_id = $1
+            AND expires > NOW()",
+        )
+        .bind(cookie.to_string())
+        .fetch_optional(&state.db)
+        .await
+        {
+            Ok(user) => {
+                if let Some(usr) = user {
+                    let body = hb.render("admin-home", &usr).unwrap();
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+        // FIXME: Is this else right? Redirect?
+    } else {
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
 }
 

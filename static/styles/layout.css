@@ -49,6 +49,20 @@ button {
     font-weight: bold;
     font-size: small;
 }
+
+.default_index {
+    width: 60%;
+    margin: auto;
+    text-align: center;
+}
+
+.default_index ul {
+    list-style-type: none;
+}
+
+.default_index ul {
+    text-decoration: none;
+}
 /****************
 *** Home Page ***
 ****************/
