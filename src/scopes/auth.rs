@@ -53,6 +53,7 @@ pub struct UserNoPassword {
 pub struct ResponseUser {
     pub username: String,
     pub email: String,
+    pub user_type_id: i32,
 }
 
 // impl MessageBody for ResponseUser {
@@ -84,6 +85,7 @@ pub struct AuthUser {
     user_id: i32,
     username: String,
     password: String,
+    user_type_id: i32,
     email: String,
 }
 
@@ -197,7 +199,7 @@ async fn basic_auth(
     let password = &body.password;
 
     match sqlx::query_as::<_, AuthUser>(
-        "SELECT user_id, username, password, email FROM users WHERE username = $1",
+        "SELECT user_id, username, password, email, user_type_id FROM users WHERE username = $1",
     )
     .bind(username.to_string())
     .fetch_one(&state.db)
@@ -234,6 +236,7 @@ async fn basic_auth(
                         let user = ResponseUser {
                             username: user.username,
                             email: user.email,
+                            user_type_id: user.user_type_id,
                         };
                         let body = hb.render("homepage", &user).unwrap();
 

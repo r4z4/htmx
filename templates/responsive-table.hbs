@@ -77,7 +77,6 @@
               <th>{{to_title_case @key}}</th>
             {{/each}}
               <th>Action(s)</th>
-              <th>Action_2</th>
           </tr>
         </thead>
         <tbody id="table_body">
@@ -86,7 +85,6 @@
               {{#each this}}
                 <td class="entity_cell" id={{@key}}>{{this}}</td>
               {{/each}}
-                <td class="action_cell" id="td_action"><button class="action_btn" onclick="window.dialog.show();">Edit</button></td>
                 <td class="action_cell" id="td_action">
                   <button 
                     class="action_btn" 
@@ -95,7 +93,7 @@
                     hx-target="#edit_form_modal"
                     {{!-- hx-target="body" 
                     hx-swap="beforeend" --}}
-                  >Edit_2
+                  >Edit
                   </button>
                 </td>
             </tr>

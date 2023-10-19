@@ -21,13 +21,16 @@
             >Home</a
         >
     </li>
-    <li>    
-        <a
-            href="/admin_home"
-            class="about-link"
-            >Admin</a
-        >
-    </li>
+
+    {{#if (int_eq user_type_id 1)}}
+        <li>    
+            <a
+                href="/admin_home"
+                class="about-link"
+                >Admin</a
+            >
+        </li>
+    {{/if}}
 
 
 
@@ -45,6 +48,9 @@
                     </button>
                 <a class="text-white" href="/user/home">User Home</a>
                 <a class="active" href="#about">👤</a>
+                <a href="#">{{email}}</a>
+                <a href="#">{{username}}</a>
+                <a href="#">{{user_type_id}}</a>
             </div>
         </div>
     </li> 

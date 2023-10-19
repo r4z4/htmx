@@ -81,17 +81,18 @@ async fn index(
     config: web::Data<config::Config>,
 ) -> impl Responder {
     let headers = req.headers();
-    for (pos, e) in headers.iter().enumerate() {
-        println!("Element at position {}: {:?}", pos, e);
-    }
+    // for (pos, e) in headers.iter().enumerate() {
+    //     println!("Element at position {}: {:?}", pos, e);
+    // }
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
         match validate_and_get_user(cookie, state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let user = ResponseUser {
-                        username: "Jim".to_owned(),
-                        email: "Jim@jim.com".to_owned(),
+                        username: user.username,
+                        email: user.email,
+                        user_type_id: user.user_type_id,
                     };
                     let body = hb.render("homepage", &user).unwrap();
                     return HttpResponse::Ok()
@@ -151,25 +152,83 @@ async fn crud_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
 }
 
 #[get("/list")]
-async fn list_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let data = json!({
-        "name": "Lists",
-        "title": "View Records",
-    });
-    let body = hb.render("list-api", &data).unwrap();
-
-    HttpResponse::Ok().body(body)
+async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match sqlx::query_as::<_, ValidatedUser>(
+            "SELECT username, email, user_type_id
+            FROM users
+            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            WHERE session_id = $1
+            AND expires > NOW()",
+        )
+        .bind(cookie.to_string())
+        .fetch_optional(&state.db)
+        .await
+        {
+            Ok(user) => {
+                if let Some(usr) = user {
+                    let body = hb.render("list-api", &usr).unwrap();
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+        // FIXME: Is this else right? Redirect?
+    } else {
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
+    }
 }
 
 #[get("/admin_home")]
-async fn admin_api(hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let data = json!({
-        "name": "Admin",
-        "title": "Admin Actions",
-    });
-    let body = hb.render("admin-home", &data).unwrap();
-
-    HttpResponse::Ok().body(body)
+async fn admin_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match sqlx::query_as::<_, ValidatedUser>(
+            "SELECT username, email, user_type_id
+            FROM users
+            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            WHERE session_id = $1
+            AND expires > NOW()",
+        )
+        .bind(cookie.to_string())
+        .fetch_optional(&state.db)
+        .await
+        {
+            Ok(user) => {
+                if let Some(usr) = user {
+                    let body = hb.render("admin-home", &usr).unwrap();
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok()
+                    .body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+        // FIXME: Is this else right? Redirect?
+    } else {
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
+    }
 }
 
 #[get("/fixed")]
@@ -285,6 +344,7 @@ pub struct ValidationError {
 #[derive(Debug, FromRow, Validate, Serialize, Deserialize)]
 pub struct ValidatedUser {
     username: String,
+    user_type_id: i32,
     email: String,
 }
 
@@ -304,7 +364,7 @@ async fn validate_and_get_user(
 ) -> Result<Option<ValidatedUser>, ValidationError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email
+        "SELECT username, email, user_type_id
         FROM users
         LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
         WHERE session_id = $1

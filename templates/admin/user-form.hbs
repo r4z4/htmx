@@ -24,7 +24,7 @@
         <input type="text" name="avatar_path" class="field-style field-split align-left" placeholder="Avatar Path" value={{avatar_path}}  />
         <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" value="{{user_type_id}}" _="on select toggle @disabled on #address_two">
             {{#each user_type_options}}
-              {{#if int_eq this.value user_type_id}}
+              {{#if (int_eq this.value user_type_id)}}
                 <option value="{{this.value}}" selected="true">{{this.key}}</option>
               {{else}} 
                 <option value="{{this.value}}">{{this.key}}</option>
