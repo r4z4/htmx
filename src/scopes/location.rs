@@ -9,12 +9,13 @@ use actix_web::{
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse}, AppState};
+use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest}, AppState};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
         // .route("/users", web::get().to(get_users_handler))
         .service(location_form)
+        .service(location_edit_form)
         .service(create_location)
         .service(get_locations_handler)
 }
@@ -116,6 +117,40 @@ async fn location_form(
         .render("location/location-form", &template_data)
         .unwrap();
     dbg!(&body);
+    return HttpResponse::Ok().body(body);
+}
+
+#[get("/form/{slug}")]
+async fn location_edit_form(
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let loc_slug = path.into_inner();
+
+    let query_result = sqlx::query_as!(
+        LocationFormRequest,
+        "SELECT location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id
+            FROM locations 
+            WHERE slug = $1",
+            loc_slug
+    )
+    .fetch_one(&state.db)
+    .await;
+
+    dbg!(&query_result);
+
+    if query_result.is_err() {
+        let err = "Error occurred while fetching record for location form";
+        // return HttpResponse::InternalServerError()
+        //     .json(json!({"status": "error","message": message}));
+        let body = hb.render("validation", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let location = query_result.unwrap();
+
+    let body = hb.render("location/location-form", &location).unwrap();
     return HttpResponse::Ok().body(body);
 }
 

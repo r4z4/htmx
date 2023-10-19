@@ -18,9 +18,81 @@ pub fn consult_scope() -> Scope {
     web::scope("/consult")
         // .route("/users", web::get().to(get_users_handler))
         .service(consult_form)
+        .service(consult_edit_form)
         .service(create_consult)
         .service(get_consults_handler)
 }
+
+async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
+    let location_result = sqlx::query_as!(
+        SelectOption,
+        "SELECT location_id AS value, location_name AS key 
+        FROM locations 
+        ORDER by location_name"
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    if location_result.is_err() {
+        let err = "Error occurred while fetching location option KVs";
+        let default_options = SelectOption { 
+            key: Some("No Locations Found".to_owned()), 
+            value: 0 
+        };
+        // default_options
+        dbg!("Incoming Panic");
+    }
+
+    let location_options = location_result.unwrap();
+    location_options
+}
+
+async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
+    let consultant_result = sqlx::query_as!(
+        SelectOption,
+        "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, consultant_id AS value 
+        FROM consultants ORDER BY key"
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    if consultant_result.is_err() {
+        let err = "Error occurred while fetching location option KVs";
+        let default_options = SelectOption { 
+            key: Some("No Consultant Found".to_owned()), 
+            value: 0 
+        };
+        // default_options
+        dbg!("Incoming Panic");
+    }
+
+    let consultant_options = consultant_result.unwrap();
+    consultant_options
+}
+
+async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
+let client_result = sqlx::query_as!(
+        SelectOption,
+        "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, client_id AS value 
+        FROM clients ORDER BY key"
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    if client_result.is_err() {
+        let err = "Error occurred while fetching location option KVs";
+        let default_options = SelectOption { 
+            key: Some("No Clientt Found".to_owned()), 
+            value: 0 
+        };
+        // default_options
+        dbg!("Incoming Panic");
+    }
+
+    let client_options = client_result.unwrap();
+    client_options
+}
+
 
 #[post("/form")]
 async fn create_consult(
@@ -59,56 +131,12 @@ async fn consult_form(
 ) -> impl Responder {
     println!("consults_form firing");
 
-    let location_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT location_id AS value, location_name AS key 
-        FROM locations 
-        ORDER by location_name"
-    )
-    .fetch_all(&state.db)
-    .await;
-
-    if location_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("validation", &err).unwrap();
-        return HttpResponse::Ok().body(body);
-    }
-
-    let location_options = location_result.unwrap();
-
-    let client_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, client_id AS value 
-        FROM clients ORDER BY key"
-    )
-    .fetch_all(&state.db)
-    .await;
-
-    if client_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("validation", &err).unwrap();
-        return HttpResponse::Ok().body(body);
-    }
-
-    let client_options = client_result.unwrap();
-
-    let consultant_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, consultant_id AS value 
-        FROM consultants ORDER BY key"
-    )
-    .fetch_all(&state.db)
-    .await;
-
-    if consultant_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let body = hb.render("validation", &err).unwrap();
-        return HttpResponse::Ok().body(body);
-    }
-
-    let consultant_options = consultant_result.unwrap();
+    let location_options = location_options(&state).await;
+    let consultant_options = consultant_options(&state).await;
+    let client_options = client_options(&state).await;
 
     let template_data = ConsultFormTemplate {
+        entity: None,
         location_options: location_options,
         consultant_options: consultant_options,
         client_options: client_options,
@@ -151,7 +179,18 @@ async fn consult_edit_form(
 
     let consult = query_result.unwrap();
 
-    let body = hb.render("consult/consult-form", &consult).unwrap();
+    let location_options = location_options(&state).await;
+    let consultant_options = consultant_options(&state).await;
+    let client_options = client_options(&state).await;
+
+    let consult_form_template = ConsultFormTemplate {
+        entity: Some(consult),
+        location_options: location_options,
+        client_options: client_options,
+        consultant_options: consultant_options,
+    };
+
+    let body = hb.render("consult/consult-form", &consult_form_template).unwrap();
     return HttpResponse::Ok().body(body);
 }
 

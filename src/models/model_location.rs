@@ -50,6 +50,18 @@ pub struct LocationPostRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct LocationFormRequest {
+    pub location_name: String,
+    pub location_address_one: String,
+    pub location_address_two: Option<String>,
+    pub location_city: String,
+    pub location_state: String,
+    pub location_zip: String,
+    pub location_contact_id: i32,
+    pub location_phone: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct LocationPostResponse {
     pub location_id: i32,
 }

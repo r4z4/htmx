@@ -1,6 +1,6 @@
 {{
 #>
- form-layout }}
+ modal-layout }}
 <div>
   <h2 class="text-center">Add Consult</h2>
   <form 
@@ -62,7 +62,13 @@
 
       <li>
         <div>
-          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)"/>
+          <p>{{entity.client_id}}</p>
+        </div>
+      </li>
+
+      <li>
+        <div>
+          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" value={{entity.notes}} />
         </div>
       </li>
 
@@ -82,4 +88,4 @@
   </form>
 </div>
 
-{{/form-layout}}
+{{/modal-layout}}

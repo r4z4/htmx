@@ -8,8 +8,8 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, ResponseConsultant, SelectOption, ResponsiveTableData, admin_user_options, specialty_options, territory_options},
-    models::model_consultant::{ConsultantFormTemplate},
+    config::{FilterOptions, SelectOption, ResponsiveTableData, admin_user_options, specialty_options, territory_options},
+    models::model_consultant::{ConsultantFormTemplate, ResponseConsultant, ConsultantFormRequest},
     AppState,
 };
 
@@ -17,6 +17,7 @@ pub fn consultant_scope() -> Scope {
     web::scope("/consultant")
         // .route("/users", web::get().to(get_users_handler))
         .service(consultant_form)
+        .service(consultant_edit_form)
         .service(get_consultants_handler)
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -39,7 +40,8 @@ pub async fn get_consultants_handler(
     let query_result = sqlx::query_as!(
         ResponseConsultant,
         "SELECT 
-            consultant_id, 
+            consultant_id,
+            slug,
             specialty_name,
             territory_name,
             consultant_f_name,
@@ -124,5 +126,39 @@ async fn consultant_form(
         .render("consultant/consultant-form", &template_data)
         .unwrap();
     dbg!(&body);
+    return HttpResponse::Ok().body(body);
+}
+
+#[get("/form/{slug}")]
+async fn consultant_edit_form(
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let consultant_slug = path.into_inner();
+
+    let query_result = sqlx::query_as!(
+        ConsultantFormRequest,
+        "SELECT consultant_f_name, consultant_l_name, slug, specialty_id, territory_id, img_path
+            FROM consultants 
+            WHERE slug = $1",
+            consultant_slug
+    )
+    .fetch_one(&state.db)
+    .await;
+
+    dbg!(&query_result);
+
+    if query_result.is_err() {
+        let err = "Error occurred while fetching record for consultant form";
+        // return HttpResponse::InternalServerError()
+        //     .json(json!({"status": "error","message": message}));
+        let body = hb.render("validation", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let consultant = query_result.unwrap();
+
+    let body = hb.render("consultant/consultant-form", &consultant).unwrap();
     return HttpResponse::Ok().body(body);
 }

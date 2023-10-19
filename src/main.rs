@@ -6,11 +6,11 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::{Post, ResponseConsultant};
+use config::Post;
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{get_table_title, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case};
-use models::{model_location::LocationList, model_admin::AdminUserList};
+use models::{model_location::LocationList, model_admin::AdminUserList, model_consultant::ResponseConsultant};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -179,15 +179,6 @@ async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     HttpResponse::Ok().body(body)
 }
 
-// #[get("/responsive")]
-// async fn responsive_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
-//     let responsive_table_data = mock_responsive_table_data();
-//     let body = hb
-//         .render("responsive-table", &responsive_table_data)
-//         .unwrap();
-//     HttpResponse::Ok().body(body)
-// }
-
 #[get("/homepage")]
 async fn homepage(
     hb: web::Data<Handlebars<'_>>,
@@ -343,14 +334,6 @@ async fn create_todo(
     hb: web::Data<Handlebars<'_>>,
     // data: web::Data<AppState>,
 ) -> impl Responder {
-    // let query_result = sqlx::query_as!(
-    //     EngagementModel,
-    //     "INSERT INTO engagements (text,rating) VALUES ($1, $2) RETURNING *",
-    //     body.text.to_string(),
-    //     body.rating,
-    // )
-    // .fetch_one(&data.db)
-    // .await;
     let body_clone = body.clone();
     dbg!(&body_clone);
     let todo = make_todo(body_clone.todo);

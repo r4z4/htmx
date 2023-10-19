@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
-use crate::config::{ResponseConsultant, SelectOption};
+use crate::config::SelectOption;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsultantPostRequest {
     pub consultant_f_name: String,
@@ -34,12 +34,32 @@ pub struct ConsultantList {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, Clone, Deserialize)]
+pub struct ResponseConsultant {
+    pub consultant_id: i32,
+    pub slug: String,
+    pub specialty_name: String,
+    pub territory_name: String,
+    pub consultant_f_name: String,
+    pub consultant_l_name: String,
+}
+
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub account_options: Vec<SelectOption>,
     pub territory_options: Vec<SelectOption>,
     pub specialty_options: Vec<SelectOption>,
     pub admin_user_options: Vec<SelectOption>,
+}
+
+#[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
+pub struct ConsultantFormRequest {
+    pub consultant_f_name: String,
+    pub consultant_l_name: String,
+    pub slug: String,
+    pub specialty_id: i32,
+    pub territory_id: i32,
+    pub img_path: Option<String>,
 }
 
 impl ConsultantPostRequest {

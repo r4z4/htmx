@@ -46,6 +46,7 @@ pub struct ConsultListResponse {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultFormTemplate {
+    pub entity: Option<ConsultFormRequest>,
     pub location_options: Vec<SelectOption>,
     pub consultant_options: Vec<SelectOption>,
     pub client_options: Vec<SelectOption>,

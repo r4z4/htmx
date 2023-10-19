@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS locations (
         location_state CHAR(2) NOT NULL,
         location_zip VARCHAR (5) NOT NULL,
         location_phone TEXT NULL,
-        location_contact_id INTEGER DEFAULT 1,
+        location_contact_id INTEGER NOT NULL DEFAULT 1,
         territory_id INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
