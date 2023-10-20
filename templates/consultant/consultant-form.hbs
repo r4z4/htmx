@@ -2,50 +2,56 @@
 #>
  modal-layout }}
 <div>
-  <h2 class="text-center">Add Consultant</h2>
+  {{#if entity}}
+    <h2 class="text-center">Edit Consultant</h2>
+    <img id="consultant_img" src={{entity.img_path}} /> 
+  {{else}}
+    <h2 class="text-center">Add Consultant</h2> 
+  {{/if}}
+   <div id="consultant_errors"></div>
   <form 
     class="form-style"
     hx-boost="true"
-    action="/consultant/form" 
-    method="post"
-    hx-target="#consultant_errors"
+    {{#if entity}}
+      action={{concat_str_args "/consultant/form/" entity.slug}} 
+      method="patch"
+    {{else}}
+      action="/consultant/form" 
+      method="post"
+    {{/if}}
+    hx-target="#list_api"
+    hx-target-5*="#consultant_errors"
+    hx-target-404="#consultant_errors"
+    hx-target-400="#consultant_errors"
+    hx-target-4*="#consultant_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML"
   >
     <ul>
-      <div id="consultant_errors"></div>
       <li>
-          <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" />
-          <input type="text" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" />
-      </li>
-
-      {{!-- This'll be an admin thing. Can only add an existing Subadmin level user as consultant. Hire them, then add them as consultant etc. --}}
-      <li>
-        <input type="tel" name="location_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
-        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
-            {{#each admin_user_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
-            {{/each}}
-        </select>
+          <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" value="{{entity.consultant_f_name}}" required="true" />
+          <input type="text" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" value="{{entity.consultant_l_name}}" required="true" />
       </li>
       <li>
-        <select class="field-style field-split align-left" id="location_contact_id" name="location_contact_id">
-            {{#each account_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
-            {{/each}}
-        </select>
-        <input type="tel" name="consultant_phone" class="field-style field-split align-right" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />
-
+          <input type="text" name="img_path" class="field-style field-full align-none" placeholder="Image Path" value="{{entity.img_path}}" required="true" />
       </li>
       <li>
-        <select class="field-style field-split align-left" id="location_contact_id" name="location_contact_id">
+        <select class="field-style field-split align-left" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" >
             {{#each specialty_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{#if (int_eq this.value @root.entity.specialty_id)}}
+                <option value="{{this.value}}" selected="true">{{this.key}}</option>
+              {{else}} 
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
         </select>
-        <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id">
+        <select class="field-style field-split align-right" id="territory_id" name="territory_id" value="{{entity.territory_id}}" >
             {{#each territory_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{#if (int_eq this.value @root.entity.territory_id)}}
+                <option value="{{this.value}}" selected="true">{{this.key}}</option>
+              {{else}} 
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
         </select>
       </li>

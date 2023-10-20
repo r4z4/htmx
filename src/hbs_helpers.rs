@@ -62,7 +62,7 @@ handlebars_helper!(get_search_rte: |entity_type_id: i32| {
         1 => String::from("/users/search"),
         2 => String::from("admin/search"),
         3 => String::from("/users/search"),
-        4 => String::from("/consultant/search"),
+        4 => String::from("/consultant/list"),
         5 => String::from("/location/list"),
         6 => String::from("/consult/search"),
         7 => String::from("/client/search"),

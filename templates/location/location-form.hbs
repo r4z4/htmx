@@ -2,7 +2,11 @@
 #>
  modal-layout }}
 <div>
-  <h2 class="text-center">Add Location</h2>
+  {{#if entity}}
+    <h2 class="text-center">Edit Location</h2>
+  {{else}}
+    <h2 class="text-center">Add Location</h2> 
+  {{/if}}
   <div id="location_errors"></div>
   <form 
     class="form-style"
