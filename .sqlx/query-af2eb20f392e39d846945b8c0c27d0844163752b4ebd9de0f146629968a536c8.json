@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n                location_id, \n                slug,\n                location_name,\n                location_address_one,\n                location_address_two,\n                location_city,\n                location_zip,\n                location_phone\n            FROM locations\n            ORDER by location_name\n            LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "location_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "location_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "location_address_one",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "location_address_two",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "location_city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "location_zip",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "location_phone",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "af2eb20f392e39d846945b8c0c27d0844163752b4ebd9de0f146629968a536c8"
+}

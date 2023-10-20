@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id\n            FROM locations \n            WHERE slug = $1",
+  "query": "SELECT location_name, slug, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id\n            FROM locations \n            WHERE slug = $1",
   "describe": {
     "columns": [
       {
@@ -10,36 +10,41 @@
       },
       {
         "ordinal": 1,
-        "name": "location_address_one",
+        "name": "slug",
         "type_info": "Text"
       },
       {
         "ordinal": 2,
-        "name": "location_address_two",
+        "name": "location_address_one",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "location_city",
+        "name": "location_address_two",
         "type_info": "Text"
       },
       {
         "ordinal": 4,
+        "name": "location_city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
         "name": "location_state",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "location_zip",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "location_phone",
         "type_info": "Text"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "location_contact_id",
         "type_info": "Int4"
       }
@@ -52,6 +57,7 @@
     "nullable": [
       false,
       false,
+      false,
       true,
       false,
       false,
@@ -60,5 +66,5 @@
       false
     ]
   },
-  "hash": "f68f123fb2f194c5d5c28435fdae5f5daf0822ba8a96c6017e5ed33674a3f22d"
+  "hash": "f3d152f7b72c8ca68b5397f444d2d60c81b3d25cafa88e5eea6116d45de27cfe"
 }

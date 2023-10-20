@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            location_id, \n            slug,\n            location_name,\n            location_address_one,\n            location_address_two,\n            location_city,\n            location_zip,\n            location_phone\n        FROM locations\n        ORDER by location_name\n        LIMIT $1 OFFSET $2",
+  "query": "SELECT \n                location_id, \n                slug,\n                location_name,\n                location_address_one,\n                location_address_two,\n                location_city,\n                location_zip,\n                location_phone\n            FROM locations\n            WHERE location_name LIKE $3\n            ORDER by location_name\n            LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -47,7 +47,8 @@
     "parameters": {
       "Left": [
         "Int8",
-        "Int8"
+        "Int8",
+        "Text"
       ]
     },
     "nullable": [
@@ -61,5 +62,5 @@
       true
     ]
   },
-  "hash": "73132e47d449d3274755122a86c630ab22c894aef17750e9d15cfb57279fc541"
+  "hash": "057da6ab7c4954f752e45772d04e885ca34873d7417859e08267d268452b6206"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            consultant_id,\n            slug,\n            specialty_name,\n            territory_name,\n            consultant_f_name,\n            consultant_l_name\n        FROM consultants\n        INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id\n        INNER JOIN territories ON territories.territory_id = consultants.territory_id\n        ORDER by consultant_id \n        LIMIT $1 OFFSET $2",
+  "query": "SELECT \n                consultant_id,\n                slug,\n                specialty_name,\n                territory_name,\n                consultant_f_name,\n                consultant_l_name\n            FROM consultants\n            INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id\n            INNER JOIN territories ON territories.territory_id = consultants.territory_id\n            ORDER by consultant_id \n            LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -49,5 +49,5 @@
       false
     ]
   },
-  "hash": "c5455b66da495df1662165126ce352b10a74d5afd8b167084afb8c1bfa572103"
+  "hash": "28099071b14dba050f6c1da29790140fb2849e8ad947bfc89591853662ee83e6"
 }
