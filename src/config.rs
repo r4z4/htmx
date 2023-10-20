@@ -28,6 +28,7 @@ pub struct Post {
 pub struct FilterOptions {
     pub page: Option<usize>,
     pub limit: Option<usize>,
+    pub search: Option<String>,
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]

@@ -851,6 +851,10 @@ tfoot td:first-child {
 ** Responsive Table **
 *********************/
 
+#table_search {
+    margin-bottom: 1em;
+}
+
 .action_btn {
     font-size: 11px;
     text-transform: uppercase;

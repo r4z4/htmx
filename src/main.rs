@@ -9,7 +9,7 @@ use actix_web::{
 use config::Post;
 use dotenv::dotenv;
 use handlebars::Handlebars;
-use hbs_helpers::{get_table_title, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case};
+use hbs_helpers::{get_table_title, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case, concat_str_args, get_search_rte};
 use models::{model_location::LocationList, model_admin::AdminUserList, model_consultant::ResponseConsultant};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -442,8 +442,10 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("int_eq", Box::new(int_eq));
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
     handlebars.register_helper("concat_args", Box::new(concat_args));
+    handlebars.register_helper("concat_str_args", Box::new(concat_str_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
     handlebars.register_helper("form_rte", Box::new(form_rte));
+    handlebars.register_helper("get_search_rte", Box::new(get_search_rte));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
 
 

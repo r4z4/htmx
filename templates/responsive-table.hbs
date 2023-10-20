@@ -52,25 +52,27 @@
   </ul>
 </div> --}}
 
-<h3> 
-  Search
-  <span class="htmx-indicator"> 
-    <img src="/images/blocks-shuffle-2.svg"/> Searching... 
-   </span> 
-</h3>
-<input class="form-control" type="search" 
-       name="search" placeholder="Begin Typing To Search ..." 
-       hx-post="/search" 
-       hx-trigger="keyup changed delay:500ms, search" 
-       hx-target="#table_body" 
-       hx-indicator=".htmx-indicator">
-
-<div class="responsive_table">
+<div class="responsive_table" id="responsive_table">
   <h2>{{get_table_title entity_type_id}}</h2>
   <div class="modal-container" id="edit_form_modal"></div>
   </div>
   <div class="table-wrapper">
-      <table class="fl-table">
+      <div id="table_search">
+        <h3> 
+          Search
+          <span class="htmx-indicator"> 
+            <img src="/images/blocks-shuffle-2.svg"/> Searching... 
+          </span> 
+        </h3>
+        <input class="form-control" type="search" 
+              name="search" placeholder="Begin Typing To Search ..." 
+              hx-get={{get_search_rte entity_type_id}} 
+              hx-trigger="keyup changed delay:500ms, search" 
+              hx-target="#f1_table" 
+              hx-swap="outerHTML"
+              hx-indicator=".htmx-indicator">
+      </div>
+      <table class="fl-table" id="f1_table">
         <thead>
           <tr>
             {{#each entities.[0]}}

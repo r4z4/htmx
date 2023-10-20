@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use struct_iterable::Iterable;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -33,6 +34,7 @@ pub struct LocationList {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct LocationFormTemplate {
+    pub entity: Option<LocationFormRequest>,
     pub state_options: Vec<StringSelectOption>,
     pub location_contact_options: Vec<SelectOption>,
 }
@@ -52,6 +54,7 @@ pub struct LocationPostRequest {
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct LocationFormRequest {
     pub location_name: String,
+    pub slug: String,
     pub location_address_one: String,
     pub location_address_two: Option<String>,
     pub location_city: String,
@@ -59,6 +62,18 @@ pub struct LocationFormRequest {
     pub location_zip: String,
     pub location_contact_id: i32,
     pub location_phone: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Iterable)]
+pub struct LocationPatchRequest {
+    pub location_name: Option<String>,
+    pub location_address_one: Option<String>,
+    pub location_address_two: Option<Option<String>>,
+    pub location_city: Option<String>,
+    pub location_state: Option<String>,
+    pub location_zip: Option<String>,
+    pub location_contact_id: Option<i32>,
+    pub location_phone: Option<Option<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]

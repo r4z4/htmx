@@ -1,0 +1,45 @@
+<table class="fl-table" id="f1_table">
+  <thead>
+    <tr>
+      {{#each entities.[0]}}
+        <th>{{to_title_case @key}}</th>
+      {{/each}}
+        <th>Action(s)</th>
+    </tr>
+  </thead>
+  <tbody id="table_body">
+    {{#each entities}}
+      <tr>
+        {{#each this}}
+          <td class="entity_cell" id={{@key}}>{{this}}</td>
+        {{/each}}
+          <td class="action_cell" id="td_action">
+            <button 
+              class="action_btn" 
+              {{!-- onclick="window.dialog.show();" --}}
+              hx-get={{form_rte this.slug @root.entity_type_id}}
+              hx-target="#edit_form_modal"
+              {{!-- hx-target="body" 
+              hx-swap="beforeend" --}}
+            >Edit
+            </button>
+          </td>
+      </tr>
+    {{/each}}
+    {{#if (int_eq vec_len 10)}}
+        <tr>
+          {{!-- entities.[0].keys.length for colspan --}}
+          <td colspan="5" style="text-align: center">
+              <span hx-target="closest tr"
+                    hx-trigger="revealed"
+                    hx-swap="outerHTML"
+                    hx-select="tbody > tr"
+                    {{!-- hx-get={{load_more_url_base + (page + 1)}} --}}
+                    hx-get={{concat_args lookup_url page}}
+                    {{!-- hx-get="/{{ lower_and_single table_title }}/list?page={{ page + 1 }}" --}}
+                >Loading More...</span>
+          </td>
+        </tr>
+    {{/if}}
+  <tbody>
+</table>

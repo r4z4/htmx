@@ -45,11 +45,28 @@ handlebars_helper!(concat_args: |lookup_url: String, page_num: i32| {
     lookup_url.to_owned() + &added.to_string()
 });
 
+handlebars_helper!(concat_str_args: |url: String, slug: String| {
+    url + &slug
+});
+
 handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
     if vec.len() == 10 {
         true
     } else {
         false
+    }
+});
+
+handlebars_helper!(get_search_rte: |entity_type_id: i32| {
+    match entity_type_id {
+        1 => String::from("/users/search"),
+        2 => String::from("admin/search"),
+        3 => String::from("/users/search"),
+        4 => String::from("/consultant/search"),
+        5 => String::from("/location/list"),
+        6 => String::from("/consult/search"),
+        7 => String::from("/client/search"),
+        _ => String::from("/users/search"),
     }
 });
 
