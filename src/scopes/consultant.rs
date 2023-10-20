@@ -159,6 +159,7 @@ async fn consultant_form(
 
     let template_data = ConsultantFormTemplate {
         entity: None,
+        method: "POST".to_string(),
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
@@ -202,6 +203,7 @@ async fn consultant_edit_form(
 
     let template_data = ConsultantFormTemplate {
         entity: Some(consultant),
+        method: "PATCH".to_string(),
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
@@ -221,6 +223,7 @@ mod tests {
     fn create_form_does_not_render_image(ctx: &mut Context) {
         let template_data = ConsultantFormTemplate {
             entity: None,
+            method: "POST".to_string(),
             territory_options: territory_options(),
             specialty_options: specialty_options(),
         };

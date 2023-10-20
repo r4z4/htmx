@@ -47,6 +47,7 @@ pub struct ResponseConsultant {
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub entity: Option<ConsultantFormRequest>,
+    pub method: String,
     pub specialty_options: Vec<SelectOption>,
     pub territory_options: Vec<SelectOption>,
 }

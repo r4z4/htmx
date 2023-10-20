@@ -19,7 +19,11 @@
       action="/consultant/form" 
       method="post"
     {{/if}}
-    hx-target="#list_api"
+    {{#if entity}}
+      hx-target="#list_api"
+    {{else}}
+      hx-target="#crud_api"
+    {{/if}}
     hx-target-5*="#consultant_errors"
     hx-target-404="#consultant_errors"
     hx-target-400="#consultant_errors"

@@ -13,6 +13,7 @@ lazy_static! {
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
     pub static ref RE_EMAIL: Regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
     pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec!["Apt".to_owned(), "Apt.".to_owned(), "Ste".to_owned(), "Ste.".to_owned(), "Suite".to_owned(), "Apartment".to_owned(), "#".to_owned(), "No.".to_owned(), "No".to_owned()];
+    pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec!["St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.", "Dr", "Drive", "Ln", "Lane", "Ln."];
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -24,10 +25,11 @@ pub struct Post {
     pub body: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Validate)]
 pub struct FilterOptions {
     pub page: Option<usize>,
     pub limit: Option<usize>,
+    #[validate(length(max = 36, message = "Cannot exceed 36 characters in a table search"))]
     pub search: Option<String>,
 }
 
@@ -83,11 +85,12 @@ pub struct ValidationResponse {
     pub class: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
     pub entity_type_id: i32,
     pub page: usize,
     pub vec_len: usize,
+    // #[validate(url)]
     pub lookup_url: String,
     pub entities: Vec<T>,
 }

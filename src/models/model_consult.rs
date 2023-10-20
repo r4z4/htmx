@@ -25,6 +25,7 @@ pub struct ConsultFormRequest {
     pub location_id: i32,
     pub consult_start: DateTime<Utc>,
     pub consult_end: Option<DateTime<Utc>>,
+    #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: Option<String>,
 }
 
@@ -37,6 +38,7 @@ pub struct ConsultList {
     pub location_id: i32,
     pub consult_start: DateTime<Utc>,
     pub consult_end: Option<DateTime<Utc>>,
+    #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: Option<String>,
 }
 
@@ -46,7 +48,7 @@ pub struct ConsultListResponse {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
 pub struct ConsultWithDates {
     pub consult_start_date: String,
     pub consult_start_time: String,
@@ -56,6 +58,7 @@ pub struct ConsultWithDates {
     pub location_id: i32,
     pub consultant_id: i32,
     pub client_id: i32,
+    #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: Option<String>,
 }
 

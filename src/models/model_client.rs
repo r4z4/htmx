@@ -23,6 +23,7 @@ pub struct ClientList {
     pub client_company_name: Option<String>,
     pub client_f_name: Option<String>,
     pub client_l_name: Option<String>,
+    #[validate(email)]
     pub client_email: String,
     pub client_address_one: String,
     pub client_address_two: Option<String>,

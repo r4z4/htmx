@@ -28,7 +28,11 @@
   >
     <ul>
       <li>
-        <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" value="{{entity.location_name}}" required="true" />
+        <!-- If invalid, change aria-invalid attribute to "true" -->
+        <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" value="{{entity.location_name}}" required="true" aria-required="true" aria-invalid="false"/>
+        {{#if validation_errors.location_name}}
+          <strong>{{validation_errors.location_name}}</strong>
+        {{/if}}
       </li>
       <li>
         <input type="text" name="location_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.location_address_one}}" required="true" />

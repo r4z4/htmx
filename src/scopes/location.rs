@@ -8,6 +8,7 @@ use actix_web::{
 
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+use validator::{Validate, ValidationErrors, ValidationError};
 use crate::{
     config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, states, location_contacts}, 
     models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest, LocationPatchRequest}, 
@@ -371,12 +372,23 @@ async fn create_location(
     }
 }
 
-fn valudate_patch(req: &LocationPatchRequest) -> bool {
+fn validate_patch(req: &LocationPatchRequest) -> bool {
     true
 }
 
-fn valudate_post(req: &LocationPostRequest) -> bool {
+fn validate_post(req: &LocationPostRequest) -> bool {
     true
+}
+
+#[derive(Serialize)]
+pub struct ValidationErrorMap {
+    key: String,
+    errs: Vec<ValidationError>
+}
+
+#[derive(Serialize)]
+struct FormErrorResponse {
+    errors: Option<Vec<ValidationErrorMap>>,
 }
 
 #[patch("/form/{slug}")]
@@ -389,6 +401,21 @@ async fn patch_location(
     let loc_slug = path.into_inner();
     dbg!(&body);
 
+    let is_valid = body.validate();
+    if is_valid.is_err() {
+        let mut vec_errs = vec![];
+        let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
+            let (key, errs) = x;
+            vec_errs.push(ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()});
+        });
+        // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+        let validation_response = FormErrorResponse {
+            errors: Some(vec_errs),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::BadRequest().body(body);
+    }
+
     // For an actual Patch to only set altered fields
     // let mut generated_sql = String::new();
     // for (field_name, field_value) in body.iter() {
@@ -399,7 +426,7 @@ async fn patch_location(
     // // Remove that last comma
     // generated_sql.pop();
 
-    if valudate_post(&body) {
+    if validate_post(&body) {
         // match sqlx::query_as::<_, LocationPostResponse>(
         //     "UPDATE locations SET $1 WHERE slug = $3",
         // )
