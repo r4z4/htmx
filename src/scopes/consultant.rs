@@ -218,7 +218,7 @@ mod tests {
 
     #[test_context(Context)]
     #[test]
-    fn create_form_renders_correctly(ctx: &mut Context) {
+    fn create_form_does_not_render_image(ctx: &mut Context) {
         let template_data = ConsultantFormTemplate {
             entity: None,
             territory_options: territory_options(),
@@ -231,8 +231,21 @@ mod tests {
         let body = hb
             .render("consultant/consultant-form", &template_data)
             .unwrap();
-        dbg!(&body);
+        // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
+        let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
+        let parser = dom.parser();
+
+        let element = dom.get_element_by_id("consultant_form_header")
+            .expect("Failed to find element")
+            .get(parser)
+            .unwrap();
+        
+        let img = dom.query_selector("img[id=consultant_img]").unwrap().next();
         // Assert
-        assert_eq!(1, 1);
+        assert_eq!(element.inner_text(parser), "Add Consultant");
+        assert!(img.is_none());
+
+        // Assert
+        // assert_eq!(1, 1);
     }
 }

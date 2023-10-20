@@ -3,10 +3,10 @@
  modal-layout }}
 <div>
   {{#if entity}}
-    <h2 class="text-center">Edit Consultant</h2>
+    <h2 id="consultant_form_header" class="text-center">Edit Consultant</h2>
     <img id="consultant_img" src={{entity.img_path}} /> 
   {{else}}
-    <h2 class="text-center">Add Consultant</h2> 
+    <h2 id="consultant_form_header" class="text-center">Add Consultant</h2> 
   {{/if}}
    <div id="consultant_errors"></div>
   <form 
