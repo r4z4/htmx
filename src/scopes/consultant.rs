@@ -8,7 +8,7 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, SelectOption, ResponsiveTableData, admin_user_options, specialty_options, territory_options},
+    config::{FilterOptions, SelectOption, ResponsiveTableData, specialty_options, territory_options},
     models::model_consultant::{ConsultantFormTemplate, ResponseConsultant, ConsultantFormRequest},
     AppState,
 };
@@ -208,4 +208,31 @@ async fn consultant_edit_form(
 
     let body = hb.render("consultant/consultant-form", &template_data).unwrap();
     return HttpResponse::Ok().body(body);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{test_common::{*, self}, hbs_helpers::int_eq};
+    use test_context::{test_context, TestContext};
+
+    #[test_context(Context)]
+    #[test]
+    fn create_form_renders_correctly(ctx: &mut Context) {
+        let template_data = ConsultantFormTemplate {
+            entity: None,
+            territory_options: territory_options(),
+            specialty_options: specialty_options(),
+        };
+        let mut hb = Handlebars::new();
+        hb.register_templates_directory(".hbs", "./templates")
+            .unwrap();
+        hb.register_helper("int_eq", Box::new(int_eq));
+        let body = hb
+            .render("consultant/consultant-form", &template_data)
+            .unwrap();
+        dbg!(&body);
+        // Assert
+        assert_eq!(1, 1);
+    }
 }

@@ -38,18 +38,28 @@
       <li>
         <select class="field-style field-split align-left" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" >
             {{#each specialty_options}}
-              {{#if (int_eq this.value @root.entity.specialty_id)}}
-                <option value="{{this.value}}" selected="true">{{this.key}}</option>
-              {{else}} 
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.specialty_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
                 <option value="{{this.value}}">{{this.key}}</option>
               {{/if}}
             {{/each}}
         </select>
         <select class="field-style field-split align-right" id="territory_id" name="territory_id" value="{{entity.territory_id}}" >
             {{#each territory_options}}
-              {{#if (int_eq this.value @root.entity.territory_id)}}
-                <option value="{{this.value}}" selected="true">{{this.key}}</option>
-              {{else}} 
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.territory_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
                 <option value="{{this.value}}">{{this.key}}</option>
               {{/if}}
             {{/each}}

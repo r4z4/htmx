@@ -389,8 +389,8 @@ p,ul,ol {
 *************/
 
 #consultant_img {
-    width: 20;
-    height: 20;
+    width: 15em;
+    height: 15em;
     margin: auto;
     text-align: center;
 }
