@@ -27,7 +27,7 @@ handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
 });
 
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
-    println!("int_eq firing w/ {} & {}", int_1, int_2);
+    // println!("int_eq firing w/ {} & {}", int_1, int_2);
     if int_1 == int_2 {
         true
     } else {
@@ -64,7 +64,7 @@ handlebars_helper!(get_search_rte: |entity_type_id: i32| {
         3 => String::from("/users/search"),
         4 => String::from("/consultant/list"),
         5 => String::from("/location/list"),
-        6 => String::from("/consult/search"),
+        6 => String::from("/consult/list"),
         7 => String::from("/client/search"),
         _ => String::from("/users/search"),
     }

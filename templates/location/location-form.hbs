@@ -3,9 +3,9 @@
  modal-layout }}
 <div>
   {{#if entity}}
-    <h2 class="text-center">Edit Location</h2>
+    <h2 id="location_form_header" class="text-center">Edit Location</h2>
   {{else}}
-    <h2 class="text-center">Add Location</h2> 
+    <h2 id="location_form_header" class="text-center">Add Location</h2> 
   {{/if}}
   <div id="location_errors"></div>
   <form 
@@ -39,7 +39,16 @@
         {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
         <select class="field-style field-state" id="location_state" name="location_state" value="{{entity.location_state}}" required>
             {{#each state_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (str_eq this.value @root.entity.location_state)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
         </select>
         <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" value="{{entity.location_zip}}" required="true" />
@@ -48,7 +57,16 @@
         <input type="tel" name="location_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" value="{{entity.location_phone}}" />
         <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" value="{{entity.location_contact_id}}">
             {{#each location_contact_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.location_contact_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
         </select>
       </li>

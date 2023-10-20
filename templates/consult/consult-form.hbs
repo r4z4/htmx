@@ -2,21 +2,46 @@
 #>
  modal-layout }}
 <div>
-  <h2 class="text-center">Add Consult</h2>
+  {{#if entity}}
+    <h2 id="consult_form_header" class="text-center">Edit Consult</h2>
+  {{else}}
+    <h2 id="consult_form_header" class="text-center">Add Consult</h2> 
+  {{/if}}
+  <div id="consult_errors"></div>
   <form 
     class="form-style"
-    hx-post="/consult/form"
-    {{!-- Display Err/Success Msg in designated div --}}
-    hx-target="#crud_response"
+    hx-boost="true"
+    {{#if entity}}
+      action={{concat_str_args "/consult/form/" entity.slug}} 
+      method="patch"
+    {{else}}
+      action="/consult/form" 
+      method="post"
+    {{/if}}
+    hx-target="#list_api"
+    hx-target-5*="#consult_errors"
+    hx-target-404="#consult_errors"
+    hx-target-400="#consult_errors"
+    hx-target-4*="#consult_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
-    hx-swap="innerHTML">
+    hx-swap="innerHTML"
+  >
     <ul>
       <li>
         <div>
           <label for="location_id">Location</label>
           <select class="field-style field-full align-none" id="location_id" name="location_id">
             {{#each location_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.location_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
           </select>
         </div>
@@ -26,7 +51,16 @@
           <label for="client_id">Client</label>
           <select class="field-style field-full align-none" id="client_id" name="client_id">
             {{#each client_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.client_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
           </select>
         </div>
@@ -36,7 +70,16 @@
           <label for="consultant_id">Consultant</label>
           <select class="field-style field-full align-none" id="consultant_id" name="consultant_id">
             {{#each consultant_options}}
-              <option value="{{this.value}}">{{this.key}}</option>
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.consultant_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
             {{/each}}
           </select>
         </div>
@@ -44,19 +87,19 @@
 
       <li>
         <div>
-          <input type="date" class="field-style field-split align-left" id="start_date" name="start_date" placeholder="Start Date" />
+          <input type="date" class="field-style field-split align-left" id="consult_start_date" name="consult_start_date" placeholder="Start Date" value="{{entity.consult_start_date}}" required="true" />
         </div>
         <div>
-          <input type="time" class="field-style field-split align-right" id="start_time" name="start_time" placeholder="Start Time" />
+          <input type="time" class="field-style field-split align-right" id="consult_start_time" name="consult_start_time" placeholder="Start Time" value="{{entity.consult_start_time}}" required="true" />
         </div>
       </li>
 
       <li>
         <div>
-          <input type="date" class="field-style field-split align-left" id="end_date" name="end_date" placeholder="End Date" />
+          <input type="date" class="field-style field-split align-left" id="consult_end_date" name="consult_end_date" placeholder="End Date" value="{{entity.consult_end_date}}" />
         </div>
         <div>
-          <input type="time" class="field-style field-split align-right" id="end_time" name="end_time" placeholder="End Time" />
+          <input type="time" class="field-style field-split align-right" id="consult_end_time" name="consult_end_time" placeholder="End Time" value="{{entity.consult_end_time}}" />
         </div>
       </li>
 
@@ -68,7 +111,7 @@
 
       <li>
         <div>
-          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" value={{entity.notes}} />
+          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" value="{{entity.notes}}" />
         </div>
       </li>
 

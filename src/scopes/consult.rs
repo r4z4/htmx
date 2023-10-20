@@ -4,12 +4,13 @@ use actix_web::{
     HttpResponse, Responder, Scope,
 };
 
+use chrono::{NaiveDate, DateTime, Utc};
 use handlebars::Handlebars;
 
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData},
     models::model_consult::{
-        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
+        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost, ConsultWithDates,
     },
     AppState,
 };
@@ -147,6 +148,29 @@ async fn consult_form(
     return HttpResponse::Ok().body(body);
 }
 
+fn get_consult_end_date(dt: Option<DateTime<Utc>>) -> Option<String> {
+    if let Some(date) = dt {
+        let end_dt_str = date.format("%Y-%m-%d %H:%M:%S.%f").to_string();
+        let end_date = end_dt_str.split(" ").collect::<Vec<&str>>();
+        Some(end_date[0].to_string())
+    } else {
+        None
+    }
+}
+
+fn get_consult_end_time(dt: Option<DateTime<Utc>>) -> Option<String> {
+    if let Some(date) = dt {
+        let end_dt_str = date.format("%Y-%m-%d %H:%M:%S.%f").to_string();
+        let end_date = end_dt_str.split(" ").collect::<Vec<&str>>();
+        let end_date_str = end_date[1].to_string();
+        let time_extract = end_date_str.split(":").collect::<Vec<&str>>();
+        let end_time = format!("{}:{}", time_extract[0].to_string(), time_extract[1].to_string());
+        Some(end_time)
+    } else {
+        None
+    }
+}
+
 #[get("/form/{slug}")]
 async fn consult_edit_form(
     hb: web::Data<Handlebars<'_>>,
@@ -158,7 +182,7 @@ async fn consult_edit_form(
 
     let query_result = sqlx::query_as!(
         ConsultFormRequest,
-        "SELECT consultant_id, location_id, client_id, consult_start, consult_end, notes 
+        "SELECT consultant_id, slug, location_id, client_id, consult_start, consult_end, notes 
             FROM consults 
             WHERE slug = $1
             ORDER by consult_start",
@@ -178,13 +202,30 @@ async fn consult_edit_form(
     }
 
     let consult = query_result.unwrap();
+    let start_dt_str = consult.consult_start.format("%Y-%m-%d %H:%M:%S.%f").to_string();
+    let start_date = start_dt_str.split(" ").collect::<Vec<&str>>();
+    let start_str = start_date[1].to_string();
+    let time_extract = start_str.split(":").collect::<Vec<&str>>();
+    let start_time = format!("{}:{}", time_extract[0].to_string(), time_extract[1].to_string());
+
+    let consult_with_dates = ConsultWithDates {
+        notes: consult.notes,
+        slug: consult.slug,
+        location_id: consult.location_id,
+        consultant_id: consult.consultant_id,
+        client_id: consult.client_id,
+        consult_start_date: start_date[0].to_string(),
+        consult_start_time: start_time,
+        consult_end_date: get_consult_end_date(consult.consult_end),
+        consult_end_time: get_consult_end_time(consult.consult_end),
+    };
 
     let location_options = location_options(&state).await;
     let consultant_options = consultant_options(&state).await;
     let client_options = client_options(&state).await;
 
     let consult_form_template = ConsultFormTemplate {
-        entity: Some(consult),
+        entity: Some(consult_with_dates),
         location_options: location_options,
         client_options: client_options,
         consultant_options: consultant_options,
@@ -240,4 +281,93 @@ pub async fn get_consults_handler(
         .render("responsive-table", &consultants_table_data)
         .unwrap();
     return HttpResponse::Ok().body(body);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{test_common::{*, self}, hbs_helpers::{int_eq, concat_str_args}};
+    use test_context::{test_context, TestContext};
+
+    fn mock_locations() -> Vec<SelectOption> {
+        [SelectOption{key: Some("Loc 1".to_owned()), value: 1}, SelectOption{key: Some("Loc 2".to_owned()), value: 2}].to_vec()
+    }
+
+    fn mock_clients() -> Vec<SelectOption> {
+        [SelectOption{key: Some("Client 1".to_owned()), value: 1}, SelectOption{key: Some("Client 2".to_owned()), value: 2}].to_vec()
+    }
+
+    fn mock_consultants() -> Vec<SelectOption> {
+        [SelectOption{key: Some("Consultant 1".to_owned()), value: 1}, SelectOption{key: Some("Consultant 2".to_owned()), value: 2}].to_vec()
+    }
+
+    #[test_context(Context)]
+    #[test]
+    fn create_form_renders_add_header(ctx: &mut Context) {
+        let template_data = ConsultFormTemplate {
+            entity: None,
+            location_options: mock_locations(),
+            client_options: mock_clients(),
+            consultant_options: mock_consultants(),
+        };
+        let mut hb = Handlebars::new();
+        hb.register_templates_directory(".hbs", "./templates")
+            .unwrap();
+        hb.register_helper("int_eq", Box::new(int_eq));
+        let body = hb
+            .render("consult/consult-form", &template_data)
+            .unwrap();
+        let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
+        let parser = dom.parser();
+
+        let element = dom.get_element_by_id("consult_form_header")
+            .expect("Failed to find element")
+            .get(parser)
+            .unwrap();
+        
+        // Assert
+        assert_eq!(element.inner_text(parser), "Add Consult");
+        // assert_eq!(1, 1);
+    }
+
+    #[test_context(Context)]
+    #[test]
+    fn edit_form_renders_edit_header(ctx: &mut Context) {
+        let mock_consult_with_dates = ConsultWithDates {
+            consultant_id: 1,
+            location_id: 1,
+            client_id: 1,
+            slug: "d574a28d-909f-4b44-99c3-43a30f618185".to_string(),
+            notes: Some("Good meeting".to_string()),
+            consult_start_date: "2023-09-10".to_string(),
+            consult_start_time: "14:30".to_string(),
+            consult_end_date: Some("2023-09-10".to_string()),
+            consult_end_time: Some("15:30".to_string()),
+        };
+        let template_data = ConsultFormTemplate {
+            entity: Some(mock_consult_with_dates),
+            location_options: mock_locations(),
+            client_options: mock_clients(),
+            consultant_options: mock_consultants(),
+        };
+        let mut hb = Handlebars::new();
+        hb.register_templates_directory(".hbs", "./templates")
+            .unwrap();
+        hb.register_helper("int_eq", Box::new(int_eq));
+        hb.register_helper("concat_str_args", Box::new(concat_str_args));
+        let body = hb
+            .render("consult/consult-form", &template_data)
+            .unwrap();
+        let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
+        let parser = dom.parser();
+
+        let element = dom.get_element_by_id("consult_form_header")
+            .expect("Failed to find element")
+            .get(parser)
+            .unwrap();
+        
+        // Assert
+        assert_eq!(element.inner_text(parser), "Edit Consult");
+        // assert_eq!(1, 1);
+    }
 }

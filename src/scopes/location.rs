@@ -8,7 +8,10 @@ use actix_web::{
 
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse}, models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest, LocationPatchRequest}, AppState};
+use crate::{
+    config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, states, location_contacts}, 
+    models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest, LocationPatchRequest}, 
+    AppState};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
@@ -463,5 +466,45 @@ async fn patch_location(
         // };
         // let body = hb.render("crud-api", &user_alert).unwrap();
         // return HttpResponse::Ok().body(body);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{test_common::{*, self}, hbs_helpers::{int_eq, str_eq}};
+    use test_context::{test_context, TestContext};
+
+    #[test_context(Context)]
+    #[test]
+    fn create_form_renders_add_header(ctx: &mut Context) {
+        let template_data = LocationFormTemplate {
+            entity: None,
+            state_options: states(),
+            location_contact_options: location_contacts(),
+        };
+        let mut hb = Handlebars::new();
+        hb.register_templates_directory(".hbs", "./templates")
+            .unwrap();
+        hb.register_helper("int_eq", Box::new(int_eq));
+        hb.register_helper("str_eq", Box::new(str_eq));
+        let body = hb
+            .render("location/location-form", &template_data)
+            .unwrap();
+        // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
+        let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
+        let parser = dom.parser();
+
+        let element = dom.get_element_by_id("location_form_header")
+            .expect("Failed to find element")
+            .get(parser)
+            .unwrap();
+        
+        // Assert
+        assert_eq!(element.inner_text(parser), "Add Location");
+
+
+        // Assert
+        // assert_eq!(1, 1);
     }
 }
