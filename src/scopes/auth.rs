@@ -292,7 +292,7 @@ async fn register_form(
     hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     let message = "No cookie present at logout".to_owned();
-    let body = hb.render("register-form", &format!("{:?}", message)).unwrap();
+    let body = hb.render("forms/register-form", &format!("{:?}", message)).unwrap();
     return HttpResponse::Ok().body(body);
 }
 

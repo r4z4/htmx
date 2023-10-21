@@ -12,12 +12,12 @@
     {{else}}
       method="post"
     {{/if}}
-    hx-target="#location_errors"
+    hx-target="#user_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML"
   >
     <ul>
-      <div id="location_errors"></div>
+      <div id="user_errors"></div>
       <li>
           <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" value={{username}} />
           <input type="email" name="email" class="field-style field-split align-right" placeholder="Email" value={{email}} />

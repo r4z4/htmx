@@ -8,12 +8,12 @@
     hx-boost="true"
     action="/location/form" 
     method="post"
-    hx-target="#location_errors"
+    hx-target="#subadmin_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML"
   >
     <ul>
-      <div id="location_errors"></div>
+      <div id="subadmin_errors"></div>
       <li>
           <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" value={{username}} />
           <input type="email" name="email" class="field-style field-split align-right" placeholder="Email" value={{email}} />

@@ -1,0 +1,8 @@
+<div class="validation_div">
+  {{#each errors}}
+    <p>{{this.key}}</p>
+    {{#if str_eq this.key "location_name"}}
+      <p>Match</p>
+    {{/if}}
+  {{/each}}
+</div>

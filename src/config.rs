@@ -4,7 +4,7 @@ use serde_yaml::{self};
 use sqlx::FromRow;
 use std::fmt::Debug;
 use std::fs::File;
-use validator::Validate;
+use validator::{Validate, ValidationError};
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -14,6 +14,17 @@ lazy_static! {
     pub static ref RE_EMAIL: Regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
     pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec!["Apt".to_owned(), "Apt.".to_owned(), "Ste".to_owned(), "Ste.".to_owned(), "Suite".to_owned(), "Apartment".to_owned(), "#".to_owned(), "No.".to_owned(), "No".to_owned()];
     pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec!["St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.", "Dr", "Drive", "Ln", "Lane", "Ln."];
+}
+
+#[derive(Serialize, Debug)]
+pub struct ValidationErrorMap {
+    pub key: String,
+    pub errs: Vec<ValidationError>
+}
+
+#[derive(Serialize)]
+pub struct FormErrorResponse {
+    pub errors: Option<Vec<ValidationErrorMap>>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

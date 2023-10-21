@@ -143,7 +143,7 @@ async fn consult_form(
         client_options: client_options,
     };
 
-    let body = hb.render("consult/consult-form", &template_data).unwrap();
+    let body = hb.render("forms/consult-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -231,7 +231,7 @@ async fn consult_edit_form(
         consultant_options: consultant_options,
     };
 
-    let body = hb.render("consult/consult-form", &consult_form_template).unwrap();
+    let body = hb.render("forms/consult-form", &consult_form_template).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -315,7 +315,7 @@ mod tests {
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
         let body = hb
-            .render("consult/consult-form", &template_data)
+            .render("forms/consult-form", &template_data)
             .unwrap();
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
@@ -356,7 +356,7 @@ mod tests {
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("concat_str_args", Box::new(concat_str_args));
         let body = hb
-            .render("consult/consult-form", &template_data)
+            .render("forms/consult-form", &template_data)
             .unwrap();
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();

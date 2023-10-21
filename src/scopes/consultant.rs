@@ -8,8 +8,8 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, SelectOption, ResponsiveTableData, specialty_options, territory_options},
-    models::model_consultant::{ConsultantFormTemplate, ResponseConsultant, ConsultantFormRequest},
+    config::{FilterOptions, SelectOption, ResponsiveTableData, specialty_options, territory_options, UserAlert, ValidationResponse},
+    models::model_consultant::{ConsultantFormTemplate, ResponseConsultant, ConsultantFormRequest, ConsultantPostRequest, ConsultantPostResponse},
     AppState,
 };
 
@@ -159,13 +159,12 @@ async fn consultant_form(
 
     let template_data = ConsultantFormTemplate {
         entity: None,
-        method: "POST".to_string(),
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
 
     let body = hb
-        .render("consultant/consultant-form", &template_data)
+        .render("forms/consultant-form", &template_data)
         .unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
@@ -203,13 +202,90 @@ async fn consultant_edit_form(
 
     let template_data = ConsultantFormTemplate {
         entity: Some(consultant),
-        method: "PATCH".to_string(),
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
 
-    let body = hb.render("consultant/consultant-form", &template_data).unwrap();
+    let body = hb.render("forms/consultant-form", &template_data).unwrap();
     return HttpResponse::Ok().body(body);
+}
+
+fn validate_consultant_input(body: &ConsultantPostRequest) -> bool {
+    true
+}
+
+#[post("/form")]
+async fn create_consultant(
+    body: web::Form<ConsultantPostRequest>,
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+) -> impl Responder {
+    dbg!(&body);
+
+    // let is_valid = body.validate();
+    // if is_valid.is_err() {
+    //     let mut vec_errs = vec![];
+    //     let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
+    //         let (key, errs) = x;
+    //         vec_errs.push(ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()});
+    //     });
+    //     // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+    //     let validation_response = FormErrorResponse {
+    //         errors: Some(vec_errs),
+    //     };
+    //     let body = hb.render("validation", &validation_response).unwrap();
+    //     return HttpResponse::BadRequest().body(body);
+    // }
+
+    if validate_consultant_input(&body) {
+        match sqlx::query_as::<_, ConsultantPostResponse>(
+            "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path) 
+                    VALUES ($1, $2, $3, $4, $5) RETURNING consultant_id",
+        )
+        .bind(&body.consultant_f_name)
+        .bind(&body.consultant_l_name)
+        .bind(&body.specialty_id)
+        .bind(&body.territory_id)
+        .bind(&body.img_path)
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(consultant) => {
+                dbg!(consultant.consultant_id);
+                let user_alert = UserAlert {
+                    msg: format!("Consultant added successfully: ID #{:?}", consultant.consultant_id),
+                    class: "alert_success".to_owned(),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+            Err(err) => {
+                dbg!(&err);
+                let user_alert = UserAlert {
+                    msg: format!("Error adding consultant: {:?}", err),
+                    class: "alert_error".to_owned(),
+                };
+                let body = hb.render("crud-api", &user_alert).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
+    } else {
+        println!("Val error");
+        let validation_response = ValidationResponse {
+            msg: "Validation error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::Ok().body(body);
+
+        // // To test the alert more easily
+        // let user_alert = UserAlert {
+        //     msg: "Error adding location:".to_owned(),
+        //     class: "alert_error".to_owned(),
+        // };
+        // let body = hb.render("crud-api", &user_alert).unwrap();
+        // return HttpResponse::Ok().body(body);
+    }
 }
 
 #[cfg(test)]
@@ -223,7 +299,6 @@ mod tests {
     fn create_form_does_not_render_image(ctx: &mut Context) {
         let template_data = ConsultantFormTemplate {
             entity: None,
-            method: "POST".to_string(),
             territory_options: territory_options(),
             specialty_options: specialty_options(),
         };
@@ -232,7 +307,7 @@ mod tests {
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
         let body = hb
-            .render("consultant/consultant-form", &template_data)
+            .render("forms/consultant-form", &template_data)
             .unwrap();
         // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();

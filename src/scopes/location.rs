@@ -10,7 +10,7 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors, ValidationError};
 use crate::{
-    config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, states, location_contacts}, 
+    config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, states, location_contacts, ValidationErrorMap, FormErrorResponse}, 
     models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest, LocationPatchRequest}, 
     AppState};
 
@@ -246,7 +246,7 @@ async fn location_form(
     };
 
     let body = hb
-        .render("location/location-form", &template_data)
+        .render("forms/location-form", &template_data)
         .unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
@@ -288,7 +288,7 @@ async fn location_edit_form(
         location_contact_options: config::location_contacts(),
     };
 
-    let body = hb.render("location/location-form", &template_data).unwrap();
+    let body = hb.render("forms/location-form", &template_data).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -380,17 +380,6 @@ fn validate_post(req: &LocationPostRequest) -> bool {
     true
 }
 
-#[derive(Serialize)]
-pub struct ValidationErrorMap {
-    key: String,
-    errs: Vec<ValidationError>
-}
-
-#[derive(Serialize)]
-struct FormErrorResponse {
-    errors: Option<Vec<ValidationErrorMap>>,
-}
-
 #[patch("/form/{slug}")]
 async fn patch_location(
     body: web::Form<LocationPostRequest>,
@@ -403,17 +392,21 @@ async fn patch_location(
 
     let is_valid = body.validate();
     if is_valid.is_err() {
-        let mut vec_errs = vec![];
+        println!("Got err");
+        dbg!(is_valid.is_err());
         let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
             let (key, errs) = x;
-            vec_errs.push(ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()});
-        });
+            ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()}
+        }).collect::<Vec<ValidationErrorMap>>();
+        dbg!(&val_errs);
         // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
         let validation_response = FormErrorResponse {
-            errors: Some(vec_errs),
+            errors: Some(val_errs),
         };
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::BadRequest().body(body);
+        let body = hb.render("forms/form-validation", &validation_response).unwrap();
+        return HttpResponse::BadRequest()
+        .header("HX-Retarget", "#location_errors")
+        .body(body);
     }
 
     // For an actual Patch to only set altered fields
@@ -516,7 +509,7 @@ mod tests {
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("str_eq", Box::new(str_eq));
         let body = hb
-            .render("location/location-form", &template_data)
+            .render("forms/location-form", &template_data)
             .unwrap();
         // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();

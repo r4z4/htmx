@@ -19,9 +19,10 @@ impl AsyncTestContext for Context {
                 consultant_l_name: "Cote".to_string(),
                 specialty_id: 1,
                 territory_id: 1,
-                start_date: None,
-                end_date: None,
-                notes: None,
+                img_path: "".to_string(),
+                // start_date: None,
+                // end_date: None,
+                // notes: None,
             },
         }
     }

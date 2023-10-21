@@ -201,12 +201,8 @@ CREATE TABLE IF NOT EXISTS clients (
         client_secondary_phone TEXT NULL,
         client_email TEXT NOT NULL,
         account_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        CONSTRAINT fk_user
-            FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id),
         CONSTRAINT fk_account
             FOREIGN KEY(account_id) 
 	            REFERENCES accounts(account_id)
@@ -424,16 +420,16 @@ VALUES
 (1, '7d9527cb-44e5-4f2d-813f-6d2ed5ed92a2', NOW() - '15 days'::interval, NOW() - '16 days'::interval),
 (2, 'cb8984a0-d6cb-4f4c-8dc2-0209c5b5f027', NOW() - '14 days'::interval, NOW() - '15 days'::interval);
 
-INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, user_id, client_email) 
+INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, client_email) 
 VALUES 
-('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 5, 'client_1@gmail.com'),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 5, 'client_1@gmail.com'),
-('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 6, 'client_1@gmail.com'),
-('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 3, 'client_1@gmail.com'),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 2, 'client_1@gmail.com'),
-(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 4, 'client_1@gmail.com'),
-(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 4, 'client_1@gmail.com'),
-(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1, 'client_1@gmail.com');
+('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 'client_1@gmail.com'),
+('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 'client_1@gmail.com'),
+('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 'client_1@gmail.com'),
+(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 'client_1@gmail.com'),
+(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 'client_1@gmail.com'),
+(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 'client_1@gmail.com');
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 

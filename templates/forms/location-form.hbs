@@ -14,15 +14,20 @@
     {{#if entity}}
       action={{concat_str_args "/location/form/" entity.slug}} 
       method="patch"
+      hx-target="#list_api"
+      hx-push-url="/list"
     {{else}}
       action="/location/form" 
       method="post"
+      hx-target="#crud_api"
+      hx-push-url="/crud"
     {{/if}}
-    hx-target="#list_api"
-    hx-target-5*="#location_errors"
+    hx-target-400="#location_errors"
+    {{!-- hx-push-url="true" --}}
+    {{!-- hx-target-5*="#location_errors"
     hx-target-404="#location_errors"
     hx-target-400="#location_errors"
-    hx-target-4*="#location_errors"
+    hx-target-4*="#location_errors" --}}
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML"
   >

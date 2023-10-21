@@ -11,9 +11,15 @@ pub struct ConsultantPostRequest {
     pub consultant_l_name: String,
     pub specialty_id: i32,
     pub territory_id: i32,
-    pub start_date: Option<String>,
-    pub end_date: Option<String>,
-    pub notes: Option<String>,
+    pub img_path: String,
+    // pub start_date: Option<String>,
+    // pub end_date: Option<String>,
+    // pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct ConsultantPostResponse {
+    pub consultant_id: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,7 +53,6 @@ pub struct ResponseConsultant {
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub entity: Option<ConsultantFormRequest>,
-    pub method: String,
     pub specialty_options: Vec<SelectOption>,
     pub territory_options: Vec<SelectOption>,
 }

@@ -1,0 +1,90 @@
+{{
+#>
+ modal-layout }}
+<div>
+  {{#if entity}}
+    <h2 id="client_form_header" class="text-center">Edit Client</h2>
+  {{else}}
+    <h2 id="client_form_header" class="text-center">Add Client</h2> 
+  {{/if}}
+   <div id="client_errors"></div>
+  <form 
+    class="form-style"
+    hx-boost="true"
+    {{#if entity}}
+      action={{concat_str_args "/client/form/" entity.slug}} 
+      method="patch"
+      hx-target="#list_api"
+    {{else}}
+      action="/client/form" 
+      method="post"
+      hx-target="#crud_api"
+    {{/if}}
+    hx-target-5*="#client_errors"
+    hx-target-404="#client_errors"
+    hx-target-400="#client_errors"
+    hx-target-4*="#client_errors"
+    {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
+    hx-swap="innerHTML"
+  >
+    <ul>
+      <li>
+          <input type="text" name="client_company_name" class="field-style field-full align-none" placeholder="Client Company Name" value="{{entity.client_company_name}}" />
+          <input type="text" name="client_f_name" class="field-style field-split align-left" placeholder="First Name" value="{{entity.client_f_name}}" />
+          <input type="text" name="client_l_name" class="field-style field-split align-right" placeholder="Last Name" value="{{entity.client_l_name}}" />
+      </li>
+      <li>
+        <input type="text" name="client_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.client_address_one}}" required />
+        <input type="text" id="client_address_two" name="client_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" disabled="true" value="{{entity.client_address_two}}" />
+      </li>
+      <li>
+        <input type="text" name="client_city" class="field-style field-city" placeholder="City" value="{{entity.client_city}}" required />
+        {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
+        <select class="field-style field-state" id="client_state" name="client_state" value="{{entity.client_state}}" required>
+            {{#each state_options}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (str_eq this.value @root.entity.client_state)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
+            {{/each}}
+        </select>
+        <input type="text" name="client_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" value="{{entity.client_zip}}" required />
+      </li>
+      <li>
+          <input type="email" name="client_email" class="field-style field-full align-none" placeholder="Email" value="{{entity.client_email}}" required="true" />
+      </li>
+      <li>
+          <input type="tel" name="client_primary_phone" class="field-style field-split align-left" placeholder="Primary Phone" value="{{entity.client_primary_phone}}" required="true" />
+          <input type="date" name="client_dob" class="field-style field-split align-right" placeholder="DOB" value="{{entity.client_dob}}" />
+      </li>
+      <li>
+        <select class="field-style field-full align-none" id="account_id" name="account_id" value="{{entity.account_id}}" >
+            {{#each account_options}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.account_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
+            {{/each}}
+        </select>
+      </li>
+      <li>
+        <div>
+          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-right" type="reset">Clear Form</button>
+        </div>
+    </li>
+  </form>
+</div>
+{{/modal-layout}}
