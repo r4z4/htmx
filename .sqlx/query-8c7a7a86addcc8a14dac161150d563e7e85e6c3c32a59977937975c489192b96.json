@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH attachs AS (\n            SELECT consult_attachments AS ca FROM consults WHERE slug = $1\n        )\n        SELECT \n            attachment_id, \n            path,\n            short_desc,\n            mime_type_id \n        FROM attachments\n        WHERE attachment_id = ANY ( SELECT UNNEST(ca) FROM attachs)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "attachment_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "short_desc",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "mime_type_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8c7a7a86addcc8a14dac161150d563e7e85e6c3c32a59977937975c489192b96"
+}

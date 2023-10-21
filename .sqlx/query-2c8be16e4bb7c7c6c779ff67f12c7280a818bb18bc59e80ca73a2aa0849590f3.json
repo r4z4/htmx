@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n            consults.slug, \n            CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, \n            location_name, \n            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, \n            consult_start, \n            consult_end, \n            notes \n        FROM consults\n        INNER JOIN clients ON consults.client_id = clients.client_id\n        INNER JOIN locations ON consults.location_id = locations.location_id\n        INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id\n        ORDER by consults.updated_at, consults.created_at \n        LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "consultant_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "location_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "client_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "consult_start",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "consult_end",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "notes",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      false,
+      null,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "2c8be16e4bb7c7c6c779ff67f12c7280a818bb18bc59e80ca73a2aa0849590f3"
+}

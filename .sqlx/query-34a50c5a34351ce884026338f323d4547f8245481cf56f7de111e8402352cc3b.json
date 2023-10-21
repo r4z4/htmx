@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT client_company_name, client_f_name, client_l_name, slug, client_address_one, client_address_two, client_city, client_state, client_zip, client_email, client_dob, account_id, client_primary_phone\n            FROM clients \n            WHERE slug = $1",
+  "query": "SELECT client_company_name, client_f_name, client_l_name, slug, client_address_one, client_address_two, client_city, client_state, client_zip, client_email, client_dob, account_id, specialty_id, client_primary_phone\n            FROM clients \n            WHERE slug = $1",
   "describe": {
     "columns": [
       {
@@ -65,6 +65,11 @@
       },
       {
         "ordinal": 12,
+        "name": "specialty_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
         "name": "client_primary_phone",
         "type_info": "Text"
       }
@@ -87,8 +92,9 @@
       false,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "68473c1a16529317761b244c4403b79163f0befce7ba375f7499c08f06f4fc1c"
+  "hash": "34a50c5a34351ce884026338f323d4547f8245481cf56f7de111e8402352cc3b"
 }
