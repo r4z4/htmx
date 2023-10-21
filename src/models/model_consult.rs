@@ -31,11 +31,12 @@ pub struct ConsultFormRequest {
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
 pub struct ConsultList {
-    pub consult_id: i32,
+    // pub consult_id: i32,
     pub slug: String,
-    pub client_id: i32,
-    pub consultant_id: i32,
-    pub location_id: i32,
+    // If using CONCAT or COALSCE likely need to make them Option<_>
+    pub client_name: Option<String>,
+    pub consultant_name: Option<String>,
+    pub location_name: String,
     pub consult_start: DateTime<Utc>,
     pub consult_end: Option<DateTime<Utc>>,
     #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]

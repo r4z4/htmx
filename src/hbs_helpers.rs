@@ -26,6 +26,21 @@ handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
     }
 });
 
+handlebars_helper!(attachments_rte: |slug: String, entity_type_id: i32| {
+    match entity_type_id {
+        1 => String::from("/user/attachements/") + &slug,
+        // Relative to /admin for admin
+        2 => String::from("/user/attachements/") + &slug,
+        // Admin & Subadmin same form (for now)
+        3 => String::from("/user/attachments/") + &slug,
+        4 => String::from("consultant/attachments/") + &slug,
+        5 => String::from("location/attachments/") + &slug,
+        6 => String::from("consult/attachments/") + &slug,
+        7 => String::from("client/attachments/") + &slug,
+        _ => String::from("form/attachments/") + &slug
+    }
+});
+
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
     // println!("int_eq firing w/ {} & {}", int_1, int_2);
     if int_1 == int_2 {

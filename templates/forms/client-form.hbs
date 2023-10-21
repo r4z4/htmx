@@ -64,11 +64,25 @@
           <input type="date" name="client_dob" class="field-style field-split align-right" placeholder="DOB" value="{{entity.client_dob}}" />
       </li>
       <li>
-        <select class="field-style field-full align-none" id="account_id" name="account_id" value="{{entity.account_id}}" >
+        <select class="field-style field-split align-left" id="account_id" name="account_id" value="{{entity.account_id}}" >
             {{#each account_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
                 {{#if (int_eq this.value @root.entity.account_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
+            {{/each}}
+        </select>
+        <select class="field-style field-split align-right" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" >
+            {{#each specialty_options}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.specialty_id)}}
                   <option value="{{this.value}}" selected="true">{{this.key}}</option>
                 {{else}} 
                   <option value="{{this.value}}">{{this.key}}</option>

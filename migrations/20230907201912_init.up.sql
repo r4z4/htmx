@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS clients (
         client_mobile_phone TEXT NULL,
         client_secondary_phone TEXT NULL,
         client_email TEXT NOT NULL,
+        specialty_id INTEGER NOT NULL,
         account_id INTEGER NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -322,10 +323,12 @@ VALUES
 
 INSERT INTO specialties (specialty_id, specialty_name)
 VALUES
-(1, 'finance'),
-(2, 'insurance'),
-(3, 'technology'),
-(4, 'government');
+(1, 'general'),
+(2, 'finance'),
+(3, 'insurance'),
+(4, 'technology'),
+(5, 'government'),
+(6, 'legal');
 
 INSERT INTO user_types (user_type_id, user_type_name)
 VALUES
@@ -420,16 +423,20 @@ VALUES
 (1, '7d9527cb-44e5-4f2d-813f-6d2ed5ed92a2', NOW() - '15 days'::interval, NOW() - '16 days'::interval),
 (2, 'cb8984a0-d6cb-4f4c-8dc2-0209c5b5f027', NOW() - '14 days'::interval, NOW() - '15 days'::interval);
 
-INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, client_email) 
+INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_primary_phone, client_address_one, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email) 
 VALUES 
-('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 'client_1@gmail.com'),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 'client_1@gmail.com'),
-('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 'client_1@gmail.com'),
-('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 'client_1@gmail.com'),
-(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 'client_1@gmail.com'),
-(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 'client_1@gmail.com'),
-(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 'client_1@gmail.com'),
-(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 'client_1@gmail.com');
+('Mike',    'Ryan',     NULL,                       '555-555-5555', '1111 Client St.',      'Client City',      'NE', '68114', '1989-01-08',    3, 4, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Company Town',     'NE', '68114', NULL,            4, 4, 'client_1@gmail.com'),
+('Chris',   'Cote',     NULL,                       '555-555-5555', '2222 Client St.',      'Client Town',      'MN', '55057', '1966-07-22',    3, 1, 'client_1@gmail.com'),
+('Tobias',  'Funke',    NULL,                       '555-555-5555', '123 Haliburton Dr.',   'Los Angeles',      'CA', '90005', '1989-01-08',    4, 1, 'client_1@gmail.com'),
+(NULL,      NULL,       'McGillicuddy & Sons LLC',  '555-555-5555', '1111 Jupiter St.',     'Boca Raton',       'FL', '33427', NULL,            5, 6, 'client_1@gmail.com'),
+(NULL,      NULL,       'Proceed Finance',          '555-555-5555', '2700 Fletcher Ave.',   'Lincoln',          'NE', '68512', NULL,            5, 2, 'client_1@gmail.com'),
+(NULL,      NULL,       'Arp, Swanson & Muldoon',   '555-555-5555', '2424 Hough St.',       'Denver',           'CO', '80014', NULL,            5, 3, 'client_1@gmail.com'),
+('Steve',   'Greg',     NULL,                       '555-555-5555', '2222 Client St.',      'Omaha',            'NE', '68144', '1976-11-22',    3, 1, 'client_1@gmail.com'),
+('Rachel',  'Smith',    NULL,                       '555-555-5555', '99 Xerxes Dr.',        'Minneapolis',      'MN', '55111', '1989-09-08',    4, 1, 'client_1@gmail.com'),
+('Sarah',   'Paul',     NULL,                       '555-555-5555', '5353 Homer Ave.',      'Deer River',       'MN', '56636', '1966-07-22',    3, 1, 'client_1@gmail.com'),
+('Junior',  'Jones',    NULL,                       '555-555-5555', '123 Wellstone Dr.',    'Lincoln',          'NE', '68512', '1989-01-08',    4, 1, 'client_1@gmail.com'),
+(NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1, 'client_1@gmail.com');
 
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
 VALUES 
@@ -472,7 +479,7 @@ VALUES
 ('Grosse Pointe Main',      '1212 Main Ln.',        NULL,       'Village of Grosse Pointe Shores',  'MI', '48236', '555-555-5555', DEFAULT, 5),
 ('Austin Heights',          '6379 Redis Lane',      NULL,       'Austin',                           'TX', '78799', '555-555-5555', 2,       5),
 ('Princpal Arena',          '98 Santana Ave',       'Ofc. 2',   'Rapid City',                       'SD', '57701', '555-555-5555', DEFAULT, 5),
-('New Bluth Home',          '801 Haliburton Dr.',   'Ste. 101', 'Phoenix',                          'AZ', '85007', '555-555-5555', DEFAULT, 4),
+('New Bluth Home',          '801 Haliburton Dr.',   'Ste. 101', 'Phoenix',                          'AZ', '85007', '555-555-5555', DEFAULT, 4),  -- 10
 ('McGillicuddy & Sons',     '300 South Beach Dr.',  NULL,       'Miami',                            'FL', '33109', '555-555-5555', DEFAULT, 3),
 ('Boston Ceremonial',       '7878 Paul Revere St.', NULL,       'Boston',                           'MA', '02117', '555-555-5555', DEFAULT, 2),
 ('The Machine Shed',        '1674 Grant St.',       NULL,       'Des Moines',                       'IA', '96805', '555-555-5555', DEFAULT, 5),
@@ -482,7 +489,7 @@ VALUES
 ('Patton & Smoler',         '0909 Smith Road',      NULL,       'Olympia',                          'WA', '98506', '555-555-5555', DEFAULT, 4),
 ('Mudra International',     '7878 Homewater St.',   NULL,       'Edina',                            'MN', '55343', '555-555-5555', DEFAULT, 5),
 ('St. Olaf College',        '1500 St. Olaf Ave.',   NULL,       'Northfield',                       'MN', '55057', '555-555-5555', DEFAULT, 5),
-('National Location #1',    '101 National Dr.',     NULL,       'Kansas City',                      'MO', '64109', '555-555-5555', DEFAULT, DEFAULT),
+('National Location #1',    '101 National Dr.',     NULL,       'Kansas City',                      'MO', '64109', '555-555-5555', DEFAULT, DEFAULT),  -- 20
 ('Thompson Palace',         '1 Mesmer Ave',         'Ste. 222', 'Philadelphia',                     'PA', '19099', '555-555-5555', DEFAULT, 2),
 ('NOLA Center',             '434 Main Dr.',         NULL,       'New Orleans',                      'LA', '70115', '555-555-5555', DEFAULT, 3),
 ('MP Heights',              '09 Hermes Way',        NULL,       'Montpelier',                       'VT', '05604', '555-555-5555', 2,       2);
@@ -494,24 +501,28 @@ VALUES
 
 INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes) 
 VALUES 
-(1, 4, 2, '2023-09-11 19:10:25', '2023-09-11 19:30:25', ARRAY[2], NULL),
-(2, 1, 1, '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks'),
-(1, 2, 1, '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks'),
-(2, 2, 2, '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL),
-(7, 3, 9, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
-(6, 3, 5, '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
-(1, 3, 2, '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),
-(6, 3, 7, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
-(3, 5, 4, '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one'),
-(6, 3, 7, '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
-(4, 2, 3, '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.'),
-(2, 2, 1, '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
+(1, 4,  2,  '2023-09-11 19:10:25', '2023-09-11 19:30:25', ARRAY[2], NULL),
+(2, 1,  1,  '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks'),
+(1, 2,  1,  '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks'),
+(2, 2,  2,  '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL),
+(7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
+(6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
+(1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),
+(6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
+(3, 5,  4,  '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one'),
+(6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
+(4, 2,  3,  '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.'),
+(6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[6], 'Added a PDF that explains it all. It should be in attachments.'),
+(3, 9,  19, '2023-09-19 11:10:25', '2023-09-19 12:20:11', ARRAY[5], 'Almost met her at Xerxes ave but went to location instead.'),
+(6, 10, 7,  '2023-09-20 14:00:25', '2023-09-20 14:10:11', NULL, 'Very quick meeting. Just went cover some stuff.'),
+(2, 2,  1,  '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
 
 -- audio/flac
 INSERT INTO attachments (path, mime_type_id, user_id, channel, created_at) 
 VALUES 
-('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png',            1, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg',          2, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6, 3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9, 3, 'Upload', '2023-09-14 19:16:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1, 4, 'Email',  '2023-09-16 16:00:25-06');
+('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png',            1,  3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg',          2,  3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6,  3, 'Upload', '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9,  3, 'Upload', '2023-09-14 19:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1,  4, 'Email',  '2023-09-16 16:00:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', '2023-09-18 19:16:25-06');

@@ -6,6 +6,7 @@ use actix_web::{
 
 use chrono::{NaiveDate, DateTime, Utc};
 use handlebars::Handlebars;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData},
@@ -22,6 +23,7 @@ pub fn consult_scope() -> Scope {
         .service(consult_edit_form)
         .service(create_consult)
         .service(get_consults_handler)
+        .service(get_attachments)
 }
 
 async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
@@ -247,9 +249,19 @@ pub async fn get_consults_handler(
 
     let query_result = sqlx::query_as!(
         ConsultList,
-        "SELECT consult_id, slug, consultant_id, location_id, client_id, consult_start, consult_end, notes 
+        "SELECT 
+            consults.slug, 
+            CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
+            location_name, 
+            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
+            consult_start, 
+            consult_end, 
+            notes 
         FROM consults
-        ORDER by updated_at, created_at 
+        INNER JOIN clients ON consults.client_id = clients.client_id
+        INNER JOIN locations ON consults.location_id = locations.location_id
+        INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id
+        ORDER by consults.updated_at, consults.created_at 
         LIMIT $1 OFFSET $2",
         limit as i32,
         offset as i32
@@ -283,6 +295,43 @@ pub async fn get_consults_handler(
     return HttpResponse::Ok().body(body);
 }
 
+#[derive(Debug, Serialize, Clone, Deserialize)]
+pub struct AttachmentMap {
+    mime_type_id: i32,
+    path: String,
+}
+
+#[derive(Debug, Serialize, Clone, Deserialize)]
+pub struct ViewData {
+    attachments: Vec<AttachmentMap>
+}
+
+#[get("/attachments/{slug}")]
+async fn get_attachments(
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let slug = path.into_inner();
+    println!("Get Attachments firing");
+
+    let mock_att_map = [
+        AttachmentMap{mime_type_id: 1, path: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png".to_string()}, 
+        AttachmentMap{mime_type_id: 6, path: "https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav".to_string()}
+    ].to_vec();
+
+    let view_data = ViewData {
+        attachments: mock_att_map,
+    };
+
+    let body = hb.render("attachments-view", &view_data).unwrap();
+    dbg!(&body);
+    return HttpResponse::Ok().body(body);
+}
+
+/**** 
+Tests
+****/
 #[cfg(test)]
 mod tests {
     use super::*;

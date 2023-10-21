@@ -36,6 +36,7 @@ pub async fn get_clients_handler(
         "SELECT 
             client_id, 
             slug,
+            specialty_name,
             client_company_name,
             client_f_name,
             client_l_name,
@@ -46,6 +47,7 @@ pub async fn get_clients_handler(
             client_zip,
             client_primary_phone
         FROM clients
+        INNER JOIN specialties ON specialties.specialty_id = clients.specialty_id
         ORDER by client_id
         LIMIT $1 OFFSET $2",
         limit as i32,
@@ -101,6 +103,7 @@ async fn client_form(
     let template_data = ClientFormTemplate {
         entity: None,
         account_options: account_options,
+        specialty_options: config::specialty_options(),
         state_options: config::states(),
     };
 
@@ -145,7 +148,7 @@ async fn client_edit_form(
 
     let query_result = sqlx::query_as!(
         ClientFormRequest,
-        "SELECT client_company_name, client_f_name, client_l_name, slug, client_address_one, client_address_two, client_city, client_state, client_zip, client_email, client_dob, account_id, client_primary_phone
+        "SELECT client_company_name, client_f_name, client_l_name, slug, client_address_one, client_address_two, client_city, client_state, client_zip, client_email, client_dob, account_id, specialty_id, client_primary_phone
             FROM clients 
             WHERE slug = $1",
             loc_slug
@@ -167,6 +170,7 @@ async fn client_edit_form(
 
     let template_data = ClientFormTemplate {
         entity: Some(client),
+        specialty_options: config::specialty_options(),
         state_options: config::states(),
         account_options: account_options,
     };
@@ -203,8 +207,8 @@ async fn create_client(
 
     if validate_client_input(&body) {
         match sqlx::query_as::<_, ClientPostResponse>(
-            "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_primary_phone) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, DEFAULT) RETURNING client_id",
+            "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, account_id, specialty_id, client_email, client_primary_phone) 
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING client_id",
         )
         .bind(&body.client_f_name)
         .bind(&body.client_l_name)
@@ -214,6 +218,9 @@ async fn create_client(
         .bind(&body.client_city)
         .bind(&body.client_state)
         .bind(&body.client_zip)
+        .bind(&body.account_id)
+        .bind(&body.specialty_id)
+        .bind(&body.client_email)
         .bind(&body.client_primary_phone)
         .fetch_one(&state.db)
         .await
@@ -298,7 +305,7 @@ async fn patch_client(
         };
         let body = hb.render("forms/form-validation", &validation_response).unwrap();
         return HttpResponse::BadRequest()
-        .header("HX-Retarget", "#location_errors")
+        .header("HX-Retarget", "#client_errors")
         .body(body);
     }
 
@@ -315,7 +322,9 @@ async fn patch_client(
                     client_zip = $8,
                     client_primary_phone = $9,
                     client_email = $10,
-                WHERE slug = $11
+                    account_id = $11,
+                    specialty_id = $12
+                WHERE slug = $13
                 RETURNING client_id",
         )
         .bind(&body.client_company_name)
@@ -328,6 +337,8 @@ async fn patch_client(
         .bind(&body.client_zip)
         .bind(&body.client_primary_phone)
         .bind(&body.client_email)
+        .bind(&body.account_id)
+        .bind(&body.specialty_id)
         .bind(client_slug)
         .fetch_one(&state.db)
         .await
