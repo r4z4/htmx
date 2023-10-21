@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData},
     models::model_consult::{
-        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost, ConsultWithDates,
+        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost, ConsultWithDates, ConsultAttachments,
     },
     AppState,
 };
@@ -296,14 +296,8 @@ pub async fn get_consults_handler(
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
-pub struct AttachmentMap {
-    mime_type_id: i32,
-    path: String,
-}
-
-#[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ViewData {
-    attachments: Vec<AttachmentMap>
+    attachments: Vec<ConsultAttachments>
 }
 
 #[get("/attachments/{slug}")]
@@ -312,16 +306,38 @@ async fn get_attachments(
     state: web::Data<AppState>,
     path: web::Path<String>,
 ) -> impl Responder {
-    let slug = path.into_inner();
+    let consult_slug = path.into_inner();
     println!("Get Attachments firing");
 
-    let mock_att_map = [
-        AttachmentMap{mime_type_id: 1, path: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png".to_string()}, 
-        AttachmentMap{mime_type_id: 6, path: "https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav".to_string()}
-    ].to_vec();
+    let query_result = sqlx::query_as!(
+        ConsultAttachments,
+        "WITH attachs AS (
+            SELECT consult_attachments AS ca FROM consults WHERE slug = $1
+        )
+        SELECT 
+            attachment_id, 
+            path,
+            short_desc,
+            mime_type_id 
+        FROM attachments
+        WHERE attachment_id = ANY ( SELECT UNNEST(ca) FROM attachs)",
+        consult_slug
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    dbg!(&query_result);
+
+    if query_result.is_err() {
+        let err = "Error occurred while fetching attachments for consult";
+        let body = hb.render("validation", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let attachments = query_result.unwrap();
 
     let view_data = ViewData {
-        attachments: mock_att_map,
+        attachments: attachments,
     };
 
     let body = hb.render("attachments-view", &view_data).unwrap();

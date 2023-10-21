@@ -283,6 +283,7 @@ CREATE TABLE IF NOT EXISTS attachments (
         -- channel attachment_channel NOT NULL,
         mime_type_id INTEGER NOT NULL,
         channel TEXT NOT NULL,
+        short_desc TEXT NOT NULL DEFAULT 'No Description',
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_user_id
@@ -518,11 +519,11 @@ VALUES
 (2, 2,  1,  '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
 
 -- audio/flac
-INSERT INTO attachments (path, mime_type_id, user_id, channel, created_at) 
+INSERT INTO attachments (path, mime_type_id, user_id, channel, short_desc, created_at) 
 VALUES 
-('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png',            1,  3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg',          2,  3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6,  3, 'Upload', '2023-09-11 19:10:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9,  3, 'Upload', '2023-09-14 19:16:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1,  4, 'Email',  '2023-09-16 16:00:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', '2023-09-18 19:16:25-06');
+('https://upload.wikimedia.org/wikipedia/commons/5/5d/Kuchnia_polska-p243b.png',            1,  3, 'Upload', 'Polska PNG',      '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/3/3f/Rail_tickets_of_Poland.jpg',          2,  3, 'Upload', 'Polska JPG',      '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6,  3, 'Upload', 'Polska WAV',      '2023-09-11 19:10:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9,  3, 'Upload', 'Polska WEBM',     '2023-09-14 19:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1,  4, 'Email',  'Polska PNG #2',   '2023-09-16 16:00:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', 'Apache PDF',      '2023-09-18 19:16:25-06');

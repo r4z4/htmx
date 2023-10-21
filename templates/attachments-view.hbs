@@ -2,9 +2,33 @@
 #>
  modal-layout }}
 <div>
-    <h2 id="attachment_header" class="text-center">Attachments</h2>
+  <h2 id="attachment_header" class="text-center">Attachments</h2>
+  <div id="attachment_errors"></div>
+  <form 
+    class="form-style"
+    hx-boost="true" 
+    hx-get="/attchment/{{entity.slug}}"
+    hx-target="#attachment-view"
+    hx-swap="innerHTML"
+  >
+    <ul>
+      <li>
+        <div>
+          <label for="location_id">Location</label>
+          <select class="field-style field-full align-none" id="location_id" name="location_id">
+            {{#each attachments}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              <option value="{{this.attachment_id}}">{{this.short_desc}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+    </ul>
+  </form>
+  <div>
     {{#each attachments}}
         <p>{{this.path}}</p>
     {{/each}}
+  </div>
 </div>
 {{/modal-layout}}

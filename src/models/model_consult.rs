@@ -43,6 +43,17 @@ pub struct ConsultList {
     pub notes: Option<String>,
 }
 
+#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
+pub struct ConsultAttachments {
+    // pub consult_id: i32,
+    pub attachment_id: i32,
+    pub short_desc: String,
+    // If using CONCAT or COALSCE likely need to make them Option<_>
+    pub mime_type_id: i32,
+    pub path: String,
+    // pub created_at: DateTime<Utc>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ConsultListResponse {
     pub consults: Vec<ConsultList>,
