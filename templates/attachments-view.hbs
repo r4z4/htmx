@@ -4,7 +4,7 @@
 <div>
   <h2 id="attachment_header" class="text-center">Attachments</h2>
   <div id="attachment_errors"></div>
-  <div>
+  <div id="attachments_div">
     {{#each attachments}}
       <details>
         <summary>{{this.short_desc}}</summary>
@@ -26,6 +26,7 @@
             </video>
           {{/if}}
       </details>
+      <img src="/images/download.svg" alt="download_attachment" />
     {{/each}}
   </div>
 </div>

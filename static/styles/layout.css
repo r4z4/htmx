@@ -86,6 +86,15 @@ button {
     padding-inline-end: 40px;
 }
 
+#default_links {
+    width: 80%;
+    margin: auto;
+}
+
+#default_links h4 {
+    text-align: center;
+}
+
 /***************
 ** Navigation **
 ***************/
@@ -737,9 +746,15 @@ section{
     }
 }
 
-/*************
-**** List ****
-*************/
+/*****************
+*** Attachment ***
+*****************/
+
+#attachments_div {
+    width: 90%;
+    margin: auto;
+    text-align: center;
+}
 
 #attachment_ul {
     cursor: pointer;
@@ -747,6 +762,21 @@ section{
     font-weight: bold;
     list-style-type: none;
 }
+
+#attachments_div img {
+    cursor: pointer;
+    display: inline;
+    width: 1em;
+    height: 1em;
+}
+
+#attachments_div summary {
+    width: auto;
+}
+
+/*************
+**** List ****
+*************/
 
 .list_api {
 

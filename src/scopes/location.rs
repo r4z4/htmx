@@ -407,6 +407,9 @@ async fn patch_location(
         return HttpResponse::BadRequest()
         .header("HX-Retarget", "#location_errors")
         .body(body);
+        // return HttpResponse::Ok()
+        // .header("HX-Retarget", "#location_errors")
+        // .body(body);
     }
 
     // For an actual Patch to only set altered fields
