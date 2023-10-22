@@ -1,8 +1,13 @@
 <div class="validation_div">
+  <h4>Please correct the following validation errors.</h4>
   {{#each errors}}
+  <div class="error_div">
     <p>{{this.key}}</p>
-    {{#if str_eq this.key "location_name"}}
-      <p>Match</p>
-    {{/if}}
+    <ul>
+      {{#each this.errs}}
+        <li>{{this.message}}</li>
+      {{/each}}
+    </ul>
+  </div>
   {{/each}}
 </div>

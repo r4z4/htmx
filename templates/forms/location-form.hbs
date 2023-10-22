@@ -21,6 +21,7 @@
   <div id="location_errors"></div>
   <form 
     class="form-style"
+    id="location_form"
     hx-boost="true"
     {{#if entity}}
       action={{concat_str_args "/location/form/" entity.slug}} 
@@ -46,9 +47,9 @@
       <li>
         <!-- If invalid, change aria-invalid attribute to "true" -->
         <input type="text" name="location_name" class="field-style field-full align-none" placeholder="Location Name" value="{{entity.location_name}}" required="true" aria-required="true" aria-invalid="false"/>
-        {{#if validation_errors.location_name}}
+        {{!-- {{#if validation_errors.location_name}}
           <strong>{{validation_errors.location_name}}</strong>
-        {{/if}}
+        {{/if}} --}}
       </li>
       <li>
         <input type="text" name="location_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.location_address_one}}" required="true" />

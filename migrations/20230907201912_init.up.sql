@@ -509,11 +509,13 @@ VALUES
 (7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
 (6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
 (1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),
+(6, 3,  7,  '2023-10-10 10:00:25', '2023-10-10 11:20:18', ARRAY[6], 'Ruby was the focus on this one.'),
+(3, 5,  4,  '2023-10-13 12:55:25', '2023-10-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.'),
 (6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
 (3, 5,  4,  '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one'),
 (6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
 (4, 2,  3,  '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.'),
-(6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[6], 'Added a PDF that explains it all. It should be in attachments.'),
+(6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[7], 'Added a PDF that explains it all. It should be in attachments.'),
 (3, 9,  19, '2023-09-19 11:10:25', '2023-09-19 12:20:11', ARRAY[5], 'Almost met her at Xerxes ave but went to location instead.'),
 (6, 10, 7,  '2023-09-20 14:00:25', '2023-09-20 14:10:11', NULL, 'Very quick meeting. Just went cover some stuff.'),
 (2, 2,  1,  '2023-09-11 16:00:25', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.');
@@ -526,4 +528,5 @@ VALUES
 ('https://upload.wikimedia.org/wikipedia/commons/f/f4/Larynx-HiFi-GAN_speech_sample.wav',   6,  3, 'Upload', 'Polska WAV',      '2023-09-11 19:10:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9,  3, 'Upload', 'Polska WEBM',     '2023-09-14 19:16:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1,  4, 'Email',  'Polska PNG #2',   '2023-09-16 16:00:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/d/d7/Programmation_Ruby-fr.pdf',           13, 4, 'Email',  'Ruby PDF',        '2023-10-16 16:00:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', 'Apache PDF',      '2023-09-18 19:16:25-06');
