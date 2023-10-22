@@ -42,13 +42,23 @@ handlebars_helper!(attachments_rte: |slug: String, entity_type_id: i32| {
 });
 
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
-    // println!("int_eq firing w/ {} & {}", int_1, int_2);
+    println!("int_eq firing w/ {} & {}", int_1, int_2);
     if int_1 == int_2 {
         true
     } else {
         false
     }
 });
+
+handlebars_helper!(int_in: |int: usize, vec: Vec<usize>| {
+    println!("int_in firing w/ {} & {:?}", int, vec);
+    if vec.iter().any(|v| v == &int) {
+        true
+    } else {
+        false
+    }
+});
+
 
 handlebars_helper!(lower_and_single: |plural: String| {
     let mut m_plural = plural;

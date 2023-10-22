@@ -4,30 +4,28 @@
 <div>
   <h2 id="attachment_header" class="text-center">Attachments</h2>
   <div id="attachment_errors"></div>
-  <form 
-    class="form-style"
-    hx-boost="true" 
-    hx-get="/attchment/{{entity.slug}}"
-    hx-target="#attachment-view"
-    hx-swap="innerHTML"
-  >
-    <ul>
-      <li>
-        <div>
-          <label for="location_id">Location</label>
-          <select class="field-style field-full align-none" id="location_id" name="location_id">
-            {{#each attachments}}
-              {{!-- Only check for the match if have an entity. Else get an error. --}}
-              <option value="{{this.attachment_id}}">{{this.short_desc}}</option>
-            {{/each}}
-          </select>
-        </div>
-      </li>
-    </ul>
-  </form>
   <div>
     {{#each attachments}}
-        <p>{{this.path}}</p>
+      <details>
+        <summary>{{this.short_desc}}</summary>
+          {{#if (int_in this.mime_type_id [1,2,3,4,5])}}
+            <img src={{this.path}} />
+          {{/if}}
+          {{#if (int_in this.mime_type_id [6,7,8])}}
+            <audio controls={true}>
+                <source src={{this.path}} type="audio/wav" />
+                {{!-- {"Your browser does not support the audio element."} --}}
+            </audio>
+          {{/if}}
+          {{#if (int_in this.mime_type_id [9,10,11])}}
+            <video width="320" height="240" controls={true} >
+                <source src={{this.path}} type="video/webm" />
+                {{!-- // Use with multiple types
+                // <source src="movie.ogg" type="video/ogg"> --}}
+                {{!-- {"Your browser does not support the video tag."} --}}
+            </video>
+          {{/if}}
+      </details>
     {{/each}}
   </div>
 </div>

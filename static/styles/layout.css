@@ -741,6 +741,13 @@ section{
 **** List ****
 *************/
 
+#attachment_ul {
+    cursor: pointer;
+    color: blue;
+    font-weight: bold;
+    list-style-type: none;
+}
+
 .list_api {
 
 }
