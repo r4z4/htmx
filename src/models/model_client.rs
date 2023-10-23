@@ -47,6 +47,7 @@ pub struct ClientPostRequest {
     pub client_city: String,
     pub client_state: String,
     pub client_zip: String,
+    pub client_dob: String,
     pub client_primary_phone: Option<String>,
 }
 
@@ -65,7 +66,7 @@ pub struct ClientFormRequest {
     pub client_state: String,
     pub client_zip: String,
     pub client_email: String,
-    pub client_primary_phone: Option<String>,
+    pub client_primary_phone: String,
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
@@ -74,6 +75,24 @@ pub struct ClientFormTemplate {
     pub specialty_options: Vec<SelectOption>,
     pub state_options: Vec<StringSelectOption>,
     pub account_options: Vec<SelectOption>,
+}
+
+#[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
+pub struct ClientWithDates {
+    pub client_company_name: Option<String>,
+    pub client_f_name: Option<String>,
+    pub client_l_name: Option<String>,
+    pub client_address_one: String,
+    pub client_address_two: Option<String>,
+    pub client_city: String,
+    pub client_state: String,
+    pub client_zip: String,
+    pub client_dob: Option<String>,
+    pub slug: String,
+    pub client_primary_phone: String,
+    pub client_email: String,
+    pub account_id: i32,
+    pub specialty_id: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
