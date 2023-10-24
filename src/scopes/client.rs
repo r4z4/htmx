@@ -6,6 +6,7 @@ use actix_web::{
     HttpResponse, Responder, Scope, patch,
 };
 
+use chrono::NaiveDate;
 use handlebars::Handlebars;
 use uuid::Uuid;
 use validator::Validate;
@@ -207,9 +208,10 @@ async fn create_client(
     dbg!(&body);
     // Need PG Extension for UUID via PG -> CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     if validate_client_input(&body) {
+        let dob_date = NaiveDate::parse_from_str(&body.client_dob, "%Y-%m-%d").unwrap();
         match sqlx::query_as::<_, ClientPostResponse>(
             "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING client_id",
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING client_id",
         )
         .bind(&body.client_f_name)
         .bind(&body.client_l_name)
@@ -219,12 +221,12 @@ async fn create_client(
         .bind(&body.client_city)
         .bind(&body.client_state)
         .bind(&body.client_zip)
+        .bind(dob_date)
         .bind(&body.account_id)
         .bind(&body.specialty_id)
         .bind(&body.client_email)
         .bind(&body.client_primary_phone)
-        .bind(&body.client_dob)
-        .bind(Uuid::new_v4().to_string())
+        //.bind(Uuid::new_v4().to_string())
         .fetch_one(&state.db)
         .await
         {

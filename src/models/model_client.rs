@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use struct_iterable::Iterable;
 use validator::Validate;
 
 use crate::config::{StringSelectOption, SelectOption};
@@ -33,7 +34,7 @@ pub struct ClientList {
     pub client_primary_phone: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow, Validate)]
+#[derive(Debug, Serialize, Deserialize, FromRow, Validate, Iterable)]
 pub struct ClientPostRequest {
     pub client_f_name: String,
     pub client_l_name: String,

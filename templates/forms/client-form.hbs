@@ -29,9 +29,55 @@
   >
     <ul>
       <li>
-          <input type="text" name="client_company_name" class="field-style field-full align-none" placeholder="Client Company Name" value="{{entity.client_company_name}}" />
-          <input type="text" name="client_f_name" class="field-style field-split align-left" placeholder="First Name" value="{{entity.client_f_name}}" />
-          <input type="text" name="client_l_name" class="field-style field-split align-right" placeholder="Last Name" value="{{entity.client_l_name}}" />
+          <input 
+            type="text" 
+            name="client_company_name" 
+            id="client_company_name"
+            class="field-style field-full align-none" 
+            placeholder="Client Company Name" 
+            value="{{entity.client_company_name}}" 
+            _="on keyup 
+              if my.value 
+              repeat for x in [#client_f_name, #client_l_name]
+                add @readonly to x
+              end
+              otherwise
+              repeat for x in [#client_f_name, #client_l_name]
+                remove @readonly from x
+              end" 
+            />
+          <input 
+            type="text" 
+            id="client_f_name" 
+            name="client_f_name" 
+            class="field-style field-split align-left" 
+            placeholder="First Name" 
+            value="{{entity.client_f_name}}" 
+            _="on keyup 
+              if my.value 
+                add @readonly to #client_company_name
+              otherwise
+                if #client_l_name.value
+                  add @readonly to #client_company_name
+                otherwise
+                  remove @readonly from #client_company_name"
+            />
+          <input 
+            type="text" 
+            id="client_l_name" 
+            name="client_l_name" 
+            class="field-style field-split align-right" 
+            placeholder="Last Name" 
+            value="{{entity.client_l_name}}" 
+            _="on keyup 
+              if my.value 
+                add @readonly to #client_company_name
+              otherwise
+                if #client_f_name.value
+                  add @readonly to #client_company_name
+                otherwise
+                  remove @readonly from #client_company_name"
+          />
       </li>
       <li>
         <input type="text" name="client_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.client_address_one}}" required />
