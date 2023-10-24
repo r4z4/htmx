@@ -208,10 +208,20 @@ async fn create_client(
     dbg!(&body);
     // Need PG Extension for UUID via PG -> CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     if validate_client_input(&body) {
-        let dob_date = NaiveDate::parse_from_str(&body.client_dob, "%Y-%m-%d").unwrap();
+        let dob_date = 
+            if body.client_dob.is_some() {
+                if body.client_dob.as_ref().unwrap().is_empty() {
+                    NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
+                } else {
+                    NaiveDate::parse_from_str(&body.client_dob.as_deref().unwrap(), "%Y-%m-%d").unwrap()
+                }
+            } else {
+                NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
+            };
+
         match sqlx::query_as::<_, ClientPostResponse>(
             "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING client_id",
+                    VALUES (NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, ''), $4, NULLIF($5, ''), $6, $7, $8, NULLIF($9, '1900-01-01'), $10, $11, $12, $13) RETURNING client_id",
         )
         .bind(&body.client_f_name)
         .bind(&body.client_l_name)

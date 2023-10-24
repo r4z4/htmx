@@ -30,7 +30,7 @@ pub struct UserModel {
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeQuery {
     pub user_id: i32,
-    pub user_type_id: i32,
+    pub user_type_id: i8,
     pub username: String,
     pub avatar_path: String,
     // pub first_name: Option<String>,
@@ -51,7 +51,7 @@ pub struct UserHomeQuery {
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeModel {
     pub user_id: i32,
-    pub user_type_id: i32,
+    pub user_type_id: i8,
     pub username: String,
     pub avatar_path: String,
     // pub first_name: Option<String>,
@@ -89,7 +89,7 @@ pub struct UserSettingsObj {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserSettingsPost {
-    pub theme_id: i32,
+    pub theme_id: i8,
     pub email: String,
     pub username: String,
 }

@@ -36,9 +36,9 @@ pub struct ClientList {
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Validate, Iterable)]
 pub struct ClientPostRequest {
-    pub client_f_name: String,
-    pub client_l_name: String,
-    pub client_company_name: String,
+    pub client_f_name: Option<String>,
+    pub client_l_name: Option<String>,
+    pub client_company_name: Option<String>,
     pub client_address_one: String,
     pub client_address_two: Option<String>,
     pub account_id: i32,
@@ -48,8 +48,8 @@ pub struct ClientPostRequest {
     pub client_city: String,
     pub client_state: String,
     pub client_zip: String,
-    pub client_dob: String,
-    pub client_primary_phone: Option<String>,
+    pub client_dob: Option<String>,
+    pub client_primary_phone: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
