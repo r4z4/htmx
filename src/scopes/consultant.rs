@@ -1,11 +1,18 @@
+use std::fs;
+
+use actix_multipart::{Multipart, form::{MultipartForm, tempfile::TempFile}};
 use actix_web::{
     get, post,
     web::{self, Data},
-    HttpResponse, Responder, Scope,
+    HttpResponse, Responder, Scope, HttpRequest, http::{Error, header::CONTENT_LENGTH},
 };
-
+use std::io::Write;
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+use futures_util::TryStreamExt;
+use image::{imageops::FilterType, DynamicImage};
+use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
+use uuid::Uuid;
 
 use crate::{
     config::{FilterOptions, SelectOption, ResponsiveTableData, specialty_options, territory_options, UserAlert, ValidationResponse},
@@ -19,6 +26,8 @@ pub fn consultant_scope() -> Scope {
         .service(consultant_form)
         .service(consultant_edit_form)
         .service(get_consultants_handler)
+        .service(create_consultant)
+        .service(upload)
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveConsultantData {
@@ -286,6 +295,107 @@ async fn create_consultant(
         // let body = hb.render("crud-api", &user_alert).unwrap();
         // return HttpResponse::Ok().body(body);
     }
+}
+
+// #[derive(Debug, MultipartForm)]
+// struct UploadForm {
+//     #[multipart(rename = "file")]
+//     // files: Vec<TempFile>,
+//     attachment: TempFile,
+// }
+
+// async fn save_files(
+//     MultipartForm(form): MultipartForm<UploadForm>,
+// ) -> Result<impl Responder, Error> {
+//     for f in form.files {
+//         let path = format!("./tmp/{}", f.file_name.unwrap());
+//         // log::info!("saving to {path}");
+//         println!("saving to {path}");
+//         f.file.persist(path).unwrap();
+//     }
+
+//     Ok(HttpResponse::Ok())
+// }
+
+#[post("/upload")]
+async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: HttpRequest) -> HttpResponse {
+    let max_file_size: usize = 10_000;
+    let max_file_count: usize = 3;
+    let legal_file_types: [Mime; 4] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG];
+
+    let content_length: usize = match req.headers().get(CONTENT_LENGTH) {
+        Some(header_value) => header_value.to_str().unwrap_or("0").parse().unwrap(),
+        None => 0,
+    };
+
+    if content_length == 0 || content_length > max_file_size {
+        let validation_response = ValidationResponse {
+            msg: "Content Length Error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::BadRequest()
+        .header("HX-Retarget", "#validation_response")
+        .body(body);
+    }
+
+    let mut current_count: usize = 0;
+    let mut filenames: Vec<String> = vec![];
+    loop {
+        if current_count >= max_file_count {
+            break;
+        }
+
+        if let Ok(Some(mut field)) = payload.try_next().await {
+            if field.name() != "upload" {
+                continue;
+            }
+            let filetype: Option<&Mime> = field.content_type();
+            if filetype.is_none() {
+                continue;
+            }
+            if !legal_file_types.contains(&filetype.unwrap()) {
+                continue;
+            }
+            let dir: &str = "./upload";
+
+            let destination: String = format!(
+                "{}{}-{}",
+                dir,
+                Uuid::new_v4(),
+                field.content_disposition().get_filename().unwrap(),
+            );
+            let mut saved_file = fs::File::create(&destination).unwrap();
+            while let Ok(Some(chunk)) = field.try_next().await {
+                let _ = saved_file.write_all(&chunk).unwrap();
+            }
+
+            filenames.push(format!("{}{}.gif", dir, Uuid::new_v4()));
+
+            web::block(move || async move {
+                let updated_img: DynamicImage = image::open(&destination).unwrap();
+                let _ = fs::remove_file(&destination).unwrap();
+                let filename = format!("{}{}.gif", dir, Uuid::new_v4());
+                updated_img
+                    .resize_exact(200, 200, FilterType::Nearest)
+                    .save(filename)
+                    .unwrap();
+            })
+            .await
+            .unwrap()
+            .await;
+        } else {
+            break;
+        }
+        current_count += 1;
+    }
+    // Message here is filename because we want that set to value via Hyperscript
+    let validation_response = ValidationResponse {
+        msg: filenames[0].to_string(),
+        class: "validation_success".to_owned(),
+    };
+    let body = hb.render("validation", &validation_response).unwrap();
+    return HttpResponse::Ok().body(body);
 }
 
 #[cfg(test)]

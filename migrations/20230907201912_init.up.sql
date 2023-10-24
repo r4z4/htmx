@@ -439,15 +439,15 @@ VALUES
 ('Junior',  'Jones',    NULL,                       '555-555-5555', '123 Wellstone Dr.',    'Lincoln',          'NE', '68512', '1989-01-08',    4, 1, 'client_1@gmail.com'),
 (NULL,      NULL,       'Stugotz Inc',              '555-555-5555', '100 West Ave',         'New York City',    'NY', '10001', NULL,            5, 1, 'client_1@gmail.com');
 
-INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path) 
+INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path, territory_id) 
 VALUES 
-('Terry',   'Bolea',    1, 8,  '/images/consultants/hulk_hogan.svg'),
-('Mike',    'Ryan',     3, 9,  '/images/consultants/m_w.svg'),
-('Mister',  'Zardos',   4, 10, '/images/consultants/m_w.svg'),
-('Greg',    'Cote',     2, 11, '/images/consultants/m_w.svg'),
-('Robert',  'Bower',    1, 12, '/images/consultants/m_w.svg'),
-('Vanessa', 'Smith',    3, 13, '/images/consultants/f_w.svg'),
-('Joe',     'Zagacki',  2, 14, '/images/consultants/m_w.svg');
+('Terry',   'Bolea',    1, 8,  '/images/consultants/hulk_hogan.svg',    DEFAULT),
+('Mike',    'Ryan',     3, 9,  '/images/consultants/m_w.svg',           2),
+('Mister',  'Zardos',   4, 10, '/images/consultants/m_w.svg',           3),
+('Greg',    'Cote',     2, 11, '/images/consultants/m_w.svg',           4),
+('Robert',  'Bower',    1, 12, '/images/consultants/m_w.svg',           5),
+('Vanessa', 'Smith',    3, 13, '/images/consultants/f_w.svg',           2),
+('Joe',     'Zagacki',  2, 14, '/images/consultants/m_w.svg',           3);
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 
