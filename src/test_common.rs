@@ -15,11 +15,12 @@ impl AsyncTestContext for Context {
     async fn setup() -> Context {
         Context {
             sut: ConsultantPostRequest {
+                user_id: 3,
                 consultant_f_name: "Greg".to_string(),
                 consultant_l_name: "Cote".to_string(),
                 specialty_id: 1,
                 territory_id: 1,
-                img_path: "".to_string(),
+                img_path: None,
                 // start_date: None,
                 // end_date: None,
                 // notes: None,

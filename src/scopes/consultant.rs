@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, ops::Deref};
 
 use actix_multipart::{Multipart, form::{MultipartForm, tempfile::TempFile}};
 use actix_web::{
@@ -151,23 +151,25 @@ async fn consultant_form(
 ) -> impl Responder {
     println!("consultant_form firing");
 
-    let account_result = sqlx::query_as!(
+    let user_result = sqlx::query_as!(
         SelectOption,
-        "SELECT account_id AS value, account_name AS key 
-        FROM accounts 
-        ORDER by account_name"
+        "SELECT user_id AS value, username AS key 
+        FROM users
+        WHERE user_type_id = 3
+        ORDER by user_id DESC"
     )
     .fetch_all(&state.db)
     .await;
 
-    if account_result.is_err() {
-        let err = "Error occurred while fetching account option KVs";
+    if user_result.is_err() {
+        let err = "Error occurred while fetching user option KVs";
         let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
     let template_data = ConsultantFormTemplate {
         entity: None,
+        user_options: Some(user_result.unwrap()),
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
@@ -211,6 +213,7 @@ async fn consultant_edit_form(
 
     let template_data = ConsultantFormTemplate {
         entity: Some(consultant),
+        user_options: None,
         territory_options: territory_options(),
         specialty_options: specialty_options(),
     };
@@ -247,26 +250,58 @@ async fn create_consultant(
     // }
 
     if validate_consultant_input(&body) {
+        // If no img_path, set the default
+        let image_path = 
+            if body.img_path.is_none() {
+                "/images/consultants/m_w.svg".to_string()
+            } else {
+                let p = body.img_path.clone().unwrap().trim().to_string();
+                dbg!(&p);
+                let path = &p[2..].to_string();
+                dbg!(&path);
+                path.to_owned()
+            };
+        
         match sqlx::query_as::<_, ConsultantPostResponse>(
-            "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path) 
-                    VALUES ($1, $2, $3, $4, $5) RETURNING consultant_id",
+            "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path, user_id) 
+                    VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id",
         )
         .bind(&body.consultant_f_name)
         .bind(&body.consultant_l_name)
         .bind(&body.specialty_id)
         .bind(&body.territory_id)
-        .bind(&body.img_path)
+        .bind(image_path)
+        .bind(&body.user_id)
         .fetch_one(&state.db)
         .await
         {
-            Ok(consultant) => {
-                dbg!(consultant.consultant_id);
-                let user_alert = UserAlert {
-                    msg: format!("Consultant added successfully: ID #{:?}", consultant.consultant_id),
-                    class: "alert_success".to_owned(),
-                };
-                let body = hb.render("crud-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+            Ok(consultant_response) => {
+                dbg!(&consultant_response.user_id);
+                match sqlx::query_as::<_, ConsultantPostResponse>(
+                    "UPDATE users SET user_type_id = 3, updated_at = now() WHERE user_id = $1 RETURNING user_id",
+                )
+                .bind(&consultant_response.user_id)
+                .fetch_one(&state.db)
+                .await
+                {
+                    Ok(update_response) => {
+                        let user_alert = UserAlert {
+                            msg: format!("Consultant added successfully: ID #{:?}", update_response.user_id),
+                            class: "alert_success".to_owned(),
+                        };
+                        let body = hb.render("crud-api", &user_alert).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                    Err(err) => {
+                        dbg!(&err);
+                        let user_alert = UserAlert {
+                            msg: format!("Error Updating User After Adding Them As Consultant: {:?}", err),
+                            class: "alert_error".to_owned(),
+                        };
+                        let body = hb.render("crud-api", &user_alert).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                }
             }
             Err(err) => {
                 dbg!(&err);
@@ -409,6 +444,7 @@ mod tests {
     fn create_form_does_not_render_image(ctx: &mut Context) {
         let template_data = ConsultantFormTemplate {
             entity: None,
+            user_options: None,
             territory_options: territory_options(),
             specialty_options: specialty_options(),
         };

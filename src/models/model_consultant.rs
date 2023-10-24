@@ -7,11 +7,12 @@ use validator::Validate;
 use crate::config::SelectOption;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConsultantPostRequest {
+    pub user_id: i32,
     pub consultant_f_name: String,
     pub consultant_l_name: String,
     pub specialty_id: i32,
     pub territory_id: i32,
-    pub img_path: String,
+    pub img_path: Option<String>,
     // pub start_date: Option<String>,
     // pub end_date: Option<String>,
     // pub notes: Option<String>,
@@ -19,7 +20,7 @@ pub struct ConsultantPostRequest {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct ConsultantPostResponse {
-    pub consultant_id: i32,
+    pub user_id: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,6 +54,7 @@ pub struct ResponseConsultant {
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantFormTemplate {
     pub entity: Option<ConsultantFormRequest>,
+    pub user_options: Option<Vec<SelectOption>>,
     pub specialty_options: Vec<SelectOption>,
     pub territory_options: Vec<SelectOption>,
 }
