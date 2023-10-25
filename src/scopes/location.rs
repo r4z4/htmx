@@ -321,7 +321,7 @@ async fn create_location(
     if validate_location_input(&body) {
         match sqlx::query_as::<_, LocationPostResponse>(
             "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, DEFAULT) RETURNING location_id",
+                    VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, NULLIF($7, ''), $8, DEFAULT) RETURNING location_id",
         )
         .bind(&body.location_name)
         .bind(&body.location_address_one)

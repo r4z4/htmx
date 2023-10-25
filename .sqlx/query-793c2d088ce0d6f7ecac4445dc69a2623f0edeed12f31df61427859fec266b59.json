@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT users.username, users.email, user_type_id, avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at\n        FROM users\n        INNER JOIN user_details ON user_details.user_id = users.user_id\n        WHERE users.slug = $1",
+  "query": "SELECT users.username, users.email, user_type_id, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at\n        FROM users\n        INNER JOIN user_details ON user_details.user_id = users.user_id\n        WHERE users.slug = $1",
   "describe": {
     "columns": [
       {
@@ -68,7 +68,7 @@
       false,
       false,
       false,
-      false,
+      null,
       false,
       true,
       false,
@@ -78,5 +78,5 @@
       true
     ]
   },
-  "hash": "44909bd45b71913ced2272578d46334f7fac6a94a21ea0e6fd13fc52ef1c68fa"
+  "hash": "793c2d088ce0d6f7ecac4445dc69a2623f0edeed12f31df61427859fec266b59"
 }

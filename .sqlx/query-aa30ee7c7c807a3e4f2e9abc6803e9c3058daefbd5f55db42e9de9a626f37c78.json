@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT consultant_f_name, consultant_l_name, slug, specialty_id, territory_id, img_path\n            FROM consultants \n            WHERE slug = $1",
+  "query": "SELECT consultant_f_name, consultant_l_name, slug, specialty_id, territory_id, COALESCE(img_path, '/images/consultants/default.svg') as img_path\n            FROM consultants \n            WHERE slug = $1",
   "describe": {
     "columns": [
       {
@@ -45,8 +45,8 @@
       false,
       false,
       false,
-      true
+      null
     ]
   },
-  "hash": "dc85ef95575daf87cc03226fa8c83ef495cd4e3412c5033ba75fa8b8c54afa77"
+  "hash": "aa30ee7c7c807a3e4f2e9abc6803e9c3058daefbd5f55db42e9de9a626f37c78"
 }

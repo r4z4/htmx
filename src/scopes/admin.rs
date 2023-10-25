@@ -137,7 +137,7 @@ async fn user_form(
 
     let user_result = sqlx::query_as!(
         AdminUserFormQuery,
-        "SELECT username, email, user_type_id, avatar_path, updated_at
+        "SELECT username, email, user_type_id, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, updated_at
         FROM users 
         WHERE slug = $1",
         user_slug
@@ -181,7 +181,7 @@ async fn subadmin_form(
 
     let user_result = sqlx::query_as!(
         AdminSubadminFormQuery,
-        "SELECT users.username, users.email, user_type_id, avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at
+        "SELECT users.username, users.email, user_type_id, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at
         FROM users
         INNER JOIN user_details ON user_details.user_id = users.user_id
         WHERE users.slug = $1",

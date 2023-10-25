@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS users (
         user_type_id INT NOT NULL DEFAULT 2,
         secret TEXT DEFAULT NULL,
         password TEXT NOT NULL,
-        avatar_path TEXT NOT NULL DEFAULT '/images/default_avatar.svg',
+        avatar_path TEXT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_account_id
@@ -444,12 +444,12 @@ VALUES
 INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, user_id, img_path, territory_id) 
 VALUES 
 ('Terry',   'Bolea',    1, 8,  '/images/consultants/hulk_hogan.svg',    DEFAULT),
-('Mike',    'Ryan',     3, 9,  '/images/consultants/m_w.svg',           2),
-('Mister',  'Zardos',   4, 10, '/images/consultants/m_w.svg',           3),
-('Greg',    'Cote',     2, 11, '/images/consultants/m_w.svg',           4),
-('Robert',  'Bower',    1, 12, '/images/consultants/m_w.svg',           5),
-('Vanessa', 'Smith',    3, 13, '/images/consultants/f_w.svg',           2),
-('Joe',     'Zagacki',  2, 14, '/images/consultants/m_w.svg',           3);
+('Mike',    'Ryan',     3, 9,  NULL,                                    2),
+('Mister',  'Zardos',   4, 10, NULL,                                    3),
+('Greg',    'Cote',     2, 11, NULL,                                    4),
+('Robert',  'Bower',    1, 12, NULL,                                    5),
+('Vanessa', 'Smith',    3, 13, NULL,                                    2),
+('Joe',     'Zagacki',  2, 14, NULL,                                    3);
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 

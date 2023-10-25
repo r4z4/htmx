@@ -175,7 +175,7 @@ async fn home(
     // let user_id = get_user_id_from_token();
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserHomeQuery>(
-            "SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, avatar_path, user_settings.updated_at AS settings_updated
+            "SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
                 -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
                 -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
             FROM users

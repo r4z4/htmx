@@ -191,7 +191,7 @@ async fn consultant_edit_form(
 
     let query_result = sqlx::query_as!(
         ConsultantFormRequest,
-        "SELECT consultant_f_name, consultant_l_name, slug, specialty_id, territory_id, img_path
+        "SELECT consultant_f_name, consultant_l_name, slug, specialty_id, territory_id, COALESCE(img_path, '/images/consultants/default.svg') as img_path
             FROM consultants 
             WHERE slug = $1",
             consultant_slug
@@ -250,21 +250,26 @@ async fn create_consultant(
     // }
 
     if validate_consultant_input(&body) {
-        // If no img_path, set the default
+        // Using the NULLIF pattern, so just default to "" & DB will insert it as NULL.
+        // If they uploaded we need to trim the input due to Hyperscript padding
         let image_path = 
-            if body.img_path.is_none() {
-                "/images/consultants/m_w.svg".to_string()
+            if body.img_path.is_some() {
+                if body.img_path.as_ref().unwrap().is_empty() {
+                    "".to_string()
+                } else {
+                    let p = body.img_path.clone().unwrap().trim().to_string();
+                    dbg!(&p);
+                    let path = &p[2..].to_string();
+                    dbg!(&path);
+                    path.to_owned()
+                }
             } else {
-                let p = body.img_path.clone().unwrap().trim().to_string();
-                dbg!(&p);
-                let path = &p[2..].to_string();
-                dbg!(&path);
-                path.to_owned()
+                "".to_string()
             };
         
         match sqlx::query_as::<_, ConsultantPostResponse>(
             "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path, user_id) 
-                    VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id",
+                    VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6) RETURNING user_id",
         )
         .bind(&body.consultant_f_name)
         .bind(&body.consultant_l_name)
@@ -354,7 +359,7 @@ async fn create_consultant(
 
 #[post("/upload")]
 async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: HttpRequest) -> HttpResponse {
-    let max_file_size: usize = 10_000;
+    let max_file_size: usize = 20_000;
     let max_file_count: usize = 3;
     let legal_file_types: [Mime; 4] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG];
 
@@ -386,11 +391,20 @@ async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: Http
                 continue;
             }
             let filetype: Option<&Mime> = field.content_type();
+            dbg!(filetype);
             if filetype.is_none() {
                 continue;
             }
             if !legal_file_types.contains(&filetype.unwrap()) {
-                continue;
+                // continue;
+                let validation_response = ValidationResponse {
+                    msg: "File Type Not Allowed".to_owned(),
+                    class: "validation_error".to_owned(),
+                };
+                let body = hb.render("validation", &validation_response).unwrap();
+                return HttpResponse::BadRequest()
+                .header("HX-Retarget", "#validation_response")
+                .body(body);
             }
             let dir: &str = "./upload";
 

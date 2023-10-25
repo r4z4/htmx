@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT username, email, user_type_id, avatar_path, updated_at\n        FROM users \n        WHERE slug = $1",
+  "query": "SELECT username, email, user_type_id, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, updated_at\n        FROM users \n        WHERE slug = $1",
   "describe": {
     "columns": [
       {
@@ -38,9 +38,9 @@
       false,
       false,
       false,
-      false,
+      null,
       true
     ]
   },
-  "hash": "481d5d69fabb66cbfc108be861d49059651a1f1d16307504b8778f928f6ec8f8"
+  "hash": "674c1f5c7d68f5af80be3b868ba55e877ae535341772b292a24c57f269d89f5d"
 }

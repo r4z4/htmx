@@ -12,7 +12,7 @@ pub struct AdminUserList {
     pub user_type_id: i32,
     pub email: String, 
     pub created_at: DateTime<Utc>, 
-    pub avatar_path: String
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -27,7 +27,7 @@ pub struct AdminSubadminFormTemplate {
     pub zip: String,
     pub primary_phone: String,
     pub updated_at_fmt: String,
-    pub avatar_path: String,
+    pub avatar_path: Option<String>,
     pub user_type_options: Vec<SelectOption>,
     pub state_options: Vec<StringSelectOption>
 }
@@ -38,7 +38,7 @@ pub struct AdminUserFormTemplate {
     pub username: String, 
     pub email: String, 
     pub updated_at_fmt: String,
-    pub avatar_path: String,
+    pub avatar_path: Option<String>,
     pub user_type_options: Vec<SelectOption>,
 }
 
@@ -54,7 +54,7 @@ pub struct AdminSubadminFormQuery {
     pub primary_phone: String,
     pub user_type_id: i32,
     pub updated_at: Option<DateTime<Utc>>, 
-    pub avatar_path: String
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -63,7 +63,7 @@ pub struct AdminUserFormQuery {
     pub email: String, 
     pub user_type_id: i32,
     pub updated_at: Option<DateTime<Utc>>, 
-    pub avatar_path: String
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -84,7 +84,7 @@ pub struct AdminUserPostRequest {
     pub user_type_id: i32, 
     pub username: String, 
     pub email: String,
-    pub avatar_path: String,
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow, Encode)]
