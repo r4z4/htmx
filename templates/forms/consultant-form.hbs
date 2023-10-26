@@ -24,11 +24,13 @@
     class="form-style"
     hx-boost="true"
     {{#if entity}}
-      action={{concat_str_args "/consultant/form/" entity.slug}} 
-      method="patch"
+      hx-patch={{concat_str_args "/consultant/form/" entity.slug}}
+      {{!-- action={{concat_str_args "/consultant/form/" entity.slug}} 
+      method="patch" --}}
     {{else}}
-      action="/consultant/form" 
-      method="post"
+      hx-post="/consultant/form"
+      {{!-- action="/consultant/form" 
+      method="post" --}}
     {{/if}}
     {{#if entity}}
       hx-target="#list_api"
