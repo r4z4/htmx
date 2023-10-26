@@ -21,8 +21,8 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{AppState, HeaderValueExt, config::ValidationResponse};
-use crate::config::{RE_USER_NAME, RE_EMAIL, RE_SPECIAL_CHAR};
+use crate::config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME};
+use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginRequest {
@@ -72,7 +72,6 @@ pub struct ResponseUser {
 //         Poll::Ready(Some(Ok(payload_bytes)))
 //     }
 // }
-
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginUser {
@@ -292,7 +291,9 @@ async fn register_form(
     hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     let message = "No cookie present at logout".to_owned();
-    let body = hb.render("forms/register-form", &format!("{:?}", message)).unwrap();
+    let body = hb
+        .render("forms/register-form", &format!("{:?}", message))
+        .unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -352,7 +353,7 @@ pub fn validate_email_fmt(email: String) -> bool {
     } else {
         false
     }
-} 
+}
 
 #[get("/validate/email")]
 async fn validate_email(
@@ -364,12 +365,10 @@ async fn validate_email(
     dbg!(req);
     let submitted_email = &param.email;
     if validate_email_fmt(submitted_email.to_owned()) {
-        match sqlx::query_as::<_, QueryBool>(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)",
-        )
-        .bind(submitted_email.to_string())
-        .fetch_one(&state.db)
-        .await
+        match sqlx::query_as::<_, QueryBool>("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
+            .bind(submitted_email.to_string())
+            .fetch_one(&state.db)
+            .await
         {
             Ok(result) => {
                 if result.exists {
@@ -379,8 +378,7 @@ async fn validate_email(
                         class: "validation_error".to_owned(),
                     };
                     let body = hb.render("validation", &validation_response).unwrap();
-                    return HttpResponse::Ok()
-                    .body(body)
+                    return HttpResponse::Ok().body(body);
                 } else {
                     let success_msg = "Email is available for use".to_owned();
                     let validation_response = ValidationResponse {
@@ -388,8 +386,7 @@ async fn validate_email(
                         class: "validation_success".to_owned(),
                     };
                     let body = hb.render("validation", &validation_response).unwrap();
-                    return HttpResponse::Ok()
-                    .body(body)
+                    return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
@@ -414,31 +411,31 @@ async fn validate_email(
         return HttpResponse::Ok().body(body);
     }
 }
-    // email_regex.is_match(email_address)
-    // match sqlx::query_as::<_, LogoutResult>(
-    //     "UPDATE user_sessions SET expires = NOW(), updated_at = NOW(), logout = TRUE WHERE session_id = $1 RETURNING expires",
-    // )
-    // .bind(cookie.to_string())
-    // .fetch_one(&state.db)
-    // .await
-    // {
-    //     Ok(expires) => {
-    //         dbg!(&expires);
-    //         let body = hb.render("index", &expires).unwrap();
-    //         return HttpResponse::Ok()
-    //         .header("HX-Redirect", "/")
-    //         .header("Set-Cookie", "")
-    //         .body(body);
-    //     }
-    //     Err(err) => {
-    //         dbg!(&err);
-    //         // let static_err = "Error occurred while logging in (DB).";
-    //         let body = hb.render("index", &format!("{:?}", err)).unwrap();
-    //         // Notify someone
-    //         return HttpResponse::Ok().body(body);
-    //         // HttpResponse::InternalServerError().json(format!("{:?}", err))
-    //     }
-    // }
+// email_regex.is_match(email_address)
+// match sqlx::query_as::<_, LogoutResult>(
+//     "UPDATE user_sessions SET expires = NOW(), updated_at = NOW(), logout = TRUE WHERE session_id = $1 RETURNING expires",
+// )
+// .bind(cookie.to_string())
+// .fetch_one(&state.db)
+// .await
+// {
+//     Ok(expires) => {
+//         dbg!(&expires);
+//         let body = hb.render("index", &expires).unwrap();
+//         return HttpResponse::Ok()
+//         .header("HX-Redirect", "/")
+//         .header("Set-Cookie", "")
+//         .body(body);
+//     }
+//     Err(err) => {
+//         dbg!(&err);
+//         // let static_err = "Error occurred while logging in (DB).";
+//         let body = hb.render("index", &format!("{:?}", err)).unwrap();
+//         // Notify someone
+//         return HttpResponse::Ok().body(body);
+//         // HttpResponse::InternalServerError().json(format!("{:?}", err))
+//     }
+// }
 
 // #[post("/login")]
 // async fn login_user(

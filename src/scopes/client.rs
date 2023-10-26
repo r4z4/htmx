@@ -1,17 +1,25 @@
 use std::borrow::Borrow;
 
 use actix_web::{
-    get, post,
+    get, patch, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope, patch,
+    HttpResponse, Responder, Scope,
 };
 
+use crate::{
+    config::{
+        self, FilterOptions, FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert,
+        ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
+    },
+    models::model_client::{
+        ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
+    },
+    AppState,
+};
 use chrono::NaiveDate;
 use handlebars::Handlebars;
 use uuid::Uuid;
 use validator::Validate;
-use crate::{config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, FormErrorResponse, ValidationErrorMap},
-    models::model_client::{ClientList, ClientFormTemplate, ClientPostRequest, ClientPostResponse, ClientFormRequest}, AppState};
 
 pub fn client_scope() -> Scope {
     web::scope("/client")
@@ -87,9 +95,7 @@ pub async fn get_clients_handler(
 
     dbg!(&clients_table_data);
 
-    let body = hb
-        .render("responsive-table", &clients_table_data)
-        .unwrap();
+    let body = hb.render("responsive-table", &clients_table_data).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -109,9 +115,7 @@ async fn client_form(
         state_options: config::states(),
     };
 
-    let body = hb
-        .render("forms/client-form", &template_data)
-        .unwrap();
+    let body = hb.render("forms/client-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -128,9 +132,9 @@ async fn account_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 
     if account_result.is_err() {
         let err = "Error occurred while fetching account option KVs";
-        let default_options = SelectOption { 
-            key: Some("No accounts Found".to_owned()), 
-            value: 0 
+        let default_options = SelectOption {
+            key: Some("No accounts Found".to_owned()),
+            value: 0,
         };
         // default_options
         dbg!("Incoming Panic");
@@ -181,7 +185,6 @@ async fn client_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
-
 fn validate_client_input(body: &ClientPostRequest) -> bool {
     // Woof
     dbg!(&body);
@@ -208,16 +211,15 @@ async fn create_client(
     dbg!(&body);
     // Need PG Extension for UUID via PG -> CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     if validate_client_input(&body) {
-        let dob_date = 
-            if body.client_dob.is_some() {
-                if body.client_dob.as_ref().unwrap().is_empty() {
-                    NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
-                } else {
-                    NaiveDate::parse_from_str(&body.client_dob.as_deref().unwrap(), "%Y-%m-%d").unwrap()
-                }
-            } else {
+        let dob_date = if body.client_dob.is_some() {
+            if body.client_dob.as_ref().unwrap().is_empty() {
                 NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
-            };
+            } else {
+                NaiveDate::parse_from_str(&body.client_dob.as_deref().unwrap(), "%Y-%m-%d").unwrap()
+            }
+        } else {
+            NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
+        };
 
         match sqlx::query_as::<_, ClientPostResponse>(
             "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
@@ -309,19 +311,30 @@ async fn patch_client(
     if is_valid.is_err() {
         println!("Got err");
         dbg!(is_valid.is_err());
-        let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
-            let (key, errs) = x;
-            ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()}
-        }).collect::<Vec<ValidationErrorMap>>();
+        let val_errs = is_valid
+            .err()
+            .unwrap()
+            .field_errors()
+            .iter()
+            .map(|x| {
+                let (key, errs) = x;
+                ValidationErrorMap {
+                    key: key.to_string(),
+                    errs: errs.to_vec(),
+                }
+            })
+            .collect::<Vec<ValidationErrorMap>>();
         dbg!(&val_errs);
         // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
         let validation_response = FormErrorResponse {
             errors: Some(val_errs),
         };
-        let body = hb.render("forms/form-validation", &validation_response).unwrap();
+        let body = hb
+            .render("forms/form-validation", &validation_response)
+            .unwrap();
         return HttpResponse::BadRequest()
-        .header("HX-Retarget", "#client_errors")
-        .body(body);
+            .header("HX-Retarget", "#client_errors")
+            .body(body);
     }
 
     if validate_patch(&body) {
@@ -391,10 +404,26 @@ async fn patch_client(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_common::{*, self}, hbs_helpers::{int_eq, str_eq, concat_str_args}, config::states, models::{model_client::ClientWithDates, model_consult::ConsultFormTemplate}};
+    use crate::{
+        config::states,
+        hbs_helpers::{concat_str_args, int_eq, str_eq},
+        models::{model_client::ClientWithDates, model_consult::ConsultFormTemplate},
+        test_common::{self, *},
+    };
     use chrono::NaiveDate;
     use test_context::{test_context, TestContext};
-    fn mock_opts() -> Vec<SelectOption> {vec![SelectOption {key: Some("One".to_owned()), value: 1}, SelectOption {key: Some("Two".to_owned()), value: 2}]}
+    fn mock_opts() -> Vec<SelectOption> {
+        vec![
+            SelectOption {
+                key: Some("One".to_owned()),
+                value: 1,
+            },
+            SelectOption {
+                key: Some("Two".to_owned()),
+                value: 2,
+            },
+        ]
+    }
 
     #[test_context(Context)]
     #[test]
@@ -410,21 +439,19 @@ mod tests {
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("str_eq", Box::new(str_eq));
-        let body = hb
-            .render("forms/client-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/client-form", &template_data).unwrap();
         // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("client_form_header")
+        let element = dom
+            .get_element_by_id("client_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         // Assert
         assert_eq!(element.inner_text(parser), "Add Client");
-
 
         // Assert
         // assert_eq!(1, 1);
@@ -433,7 +460,6 @@ mod tests {
     #[test_context(Context)]
     #[test]
     fn edit_form_renders_edit_header(ctx: &mut Context) {
-
         let mock_client_with_dates = ClientFormRequest {
             client_company_name: Some("Test Company".to_string()),
             client_f_name: None,
@@ -442,10 +468,10 @@ mod tests {
             client_address_two: None,
             client_city: "Omaha".to_string(),
             client_state: "NE".to_string(),
-            client_zip: "68124".to_string(), 
+            client_zip: "68124".to_string(),
             client_dob: Some(NaiveDate::parse_from_str("1980-01-01", "%Y-%m-%d").unwrap()),
             slug: "64779369-4100-47d5-b126-37e6c030dd1d".to_string(),
-            client_primary_phone: "555-555-5555".to_string(), 
+            client_primary_phone: "555-555-5555".to_string(),
             client_email: "Email@email.com".to_string(),
             account_id: 1,
             specialty_id: 2,
@@ -462,17 +488,16 @@ mod tests {
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("str_eq", Box::new(str_eq));
         hb.register_helper("concat_str_args", Box::new(concat_str_args));
-        let body = hb
-            .render("forms/client-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/client-form", &template_data).unwrap();
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("client_form_header")
+        let element = dom
+            .get_element_by_id("client_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         // Assert
         assert_eq!(element.inner_text(parser), "Edit Client");
         // assert_eq!(1, 1);

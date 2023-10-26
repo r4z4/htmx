@@ -4,12 +4,12 @@ use handlebars::handlebars_helper;
 use crate::{models::model_location::LocationList, Entity};
 handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));
 handlebars_helper!(str_eq: |s_1: String, s_2: String| {
-        if s_1 == s_2 {
-            true
-        } else {
-            false
-        }
-    });
+    if s_1 == s_2 {
+        true
+    } else {
+        false
+    }
+});
 
 handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
     match entity_type_id {
@@ -58,7 +58,6 @@ handlebars_helper!(int_in: |int: usize, vec: Vec<usize>| {
         false
     }
 });
-
 
 handlebars_helper!(lower_and_single: |plural: String| {
     let mut m_plural = plural;

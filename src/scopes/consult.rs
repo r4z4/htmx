@@ -4,14 +4,15 @@ use actix_web::{
     HttpResponse, Responder, Scope,
 };
 
-use chrono::{NaiveDate, DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{FilterOptions, SelectOption, ResponsiveTableData},
+    config::{FilterOptions, ResponsiveTableData, SelectOption},
     models::model_consult::{
-        ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost, ConsultWithDates, ConsultAttachments,
+        ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
+        ConsultWithDates,
     },
     AppState,
 };
@@ -38,9 +39,9 @@ async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 
     if location_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption { 
-            key: Some("No Locations Found".to_owned()), 
-            value: 0 
+        let default_options = SelectOption {
+            key: Some("No Locations Found".to_owned()),
+            value: 0,
         };
         // default_options
         dbg!("Incoming Panic");
@@ -61,9 +62,9 @@ async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 
     if consultant_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption { 
-            key: Some("No Consultant Found".to_owned()), 
-            value: 0 
+        let default_options = SelectOption {
+            key: Some("No Consultant Found".to_owned()),
+            value: 0,
         };
         // default_options
         dbg!("Incoming Panic");
@@ -74,7 +75,7 @@ async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 }
 
 async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
-let client_result = sqlx::query_as!(
+    let client_result = sqlx::query_as!(
         SelectOption,
         "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, client_id AS value 
         FROM clients ORDER BY key"
@@ -84,9 +85,9 @@ let client_result = sqlx::query_as!(
 
     if client_result.is_err() {
         let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption { 
-            key: Some("No Clientt Found".to_owned()), 
-            value: 0 
+        let default_options = SelectOption {
+            key: Some("No Clientt Found".to_owned()),
+            value: 0,
         };
         // default_options
         dbg!("Incoming Panic");
@@ -95,7 +96,6 @@ let client_result = sqlx::query_as!(
     let client_options = client_result.unwrap();
     client_options
 }
-
 
 #[post("/form")]
 async fn create_consult(
@@ -166,7 +166,11 @@ fn get_consult_end_time(dt: Option<DateTime<Utc>>) -> Option<String> {
         let end_date = end_dt_str.split(" ").collect::<Vec<&str>>();
         let end_date_str = end_date[1].to_string();
         let time_extract = end_date_str.split(":").collect::<Vec<&str>>();
-        let end_time = format!("{}:{}", time_extract[0].to_string(), time_extract[1].to_string());
+        let end_time = format!(
+            "{}:{}",
+            time_extract[0].to_string(),
+            time_extract[1].to_string()
+        );
         Some(end_time)
     } else {
         None
@@ -204,11 +208,18 @@ async fn consult_edit_form(
     }
 
     let consult = query_result.unwrap();
-    let start_dt_str = consult.consult_start.format("%Y-%m-%d %H:%M:%S.%f").to_string();
+    let start_dt_str = consult
+        .consult_start
+        .format("%Y-%m-%d %H:%M:%S.%f")
+        .to_string();
     let start_date = start_dt_str.split(" ").collect::<Vec<&str>>();
     let start_str = start_date[1].to_string();
     let time_extract = start_str.split(":").collect::<Vec<&str>>();
-    let start_time = format!("{}:{}", time_extract[0].to_string(), time_extract[1].to_string());
+    let start_time = format!(
+        "{}:{}",
+        time_extract[0].to_string(),
+        time_extract[1].to_string()
+    );
 
     let consult_with_dates = ConsultWithDates {
         notes: consult.notes,
@@ -233,7 +244,9 @@ async fn consult_edit_form(
         consultant_options: consultant_options,
     };
 
-    let body = hb.render("forms/consult-form", &consult_form_template).unwrap();
+    let body = hb
+        .render("forms/consult-form", &consult_form_template)
+        .unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -297,7 +310,7 @@ pub async fn get_consults_handler(
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ViewData {
-    attachments: Vec<ConsultAttachments>
+    attachments: Vec<ConsultAttachments>,
 }
 
 #[get("/attachments/{slug}")]
@@ -345,25 +358,58 @@ async fn get_attachments(
     return HttpResponse::Ok().body(body);
 }
 
-/**** 
+/****
 Tests
 ****/
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_common::{*, self}, hbs_helpers::{int_eq, concat_str_args}};
+    use crate::{
+        hbs_helpers::{concat_str_args, int_eq},
+        test_common::{self, *},
+    };
     use test_context::{test_context, TestContext};
 
     fn mock_locations() -> Vec<SelectOption> {
-        [SelectOption{key: Some("Loc 1".to_owned()), value: 1}, SelectOption{key: Some("Loc 2".to_owned()), value: 2}].to_vec()
+        [
+            SelectOption {
+                key: Some("Loc 1".to_owned()),
+                value: 1,
+            },
+            SelectOption {
+                key: Some("Loc 2".to_owned()),
+                value: 2,
+            },
+        ]
+        .to_vec()
     }
 
     fn mock_clients() -> Vec<SelectOption> {
-        [SelectOption{key: Some("Client 1".to_owned()), value: 1}, SelectOption{key: Some("Client 2".to_owned()), value: 2}].to_vec()
+        [
+            SelectOption {
+                key: Some("Client 1".to_owned()),
+                value: 1,
+            },
+            SelectOption {
+                key: Some("Client 2".to_owned()),
+                value: 2,
+            },
+        ]
+        .to_vec()
     }
 
     fn mock_consultants() -> Vec<SelectOption> {
-        [SelectOption{key: Some("Consultant 1".to_owned()), value: 1}, SelectOption{key: Some("Consultant 2".to_owned()), value: 2}].to_vec()
+        [
+            SelectOption {
+                key: Some("Consultant 1".to_owned()),
+                value: 1,
+            },
+            SelectOption {
+                key: Some("Consultant 2".to_owned()),
+                value: 2,
+            },
+        ]
+        .to_vec()
     }
 
     #[test_context(Context)]
@@ -379,17 +425,16 @@ mod tests {
         hb.register_templates_directory(".hbs", "./templates")
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
-        let body = hb
-            .render("forms/consult-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/consult-form", &template_data).unwrap();
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("consult_form_header")
+        let element = dom
+            .get_element_by_id("consult_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         // Assert
         assert_eq!(element.inner_text(parser), "Add Consult");
         // assert_eq!(1, 1);
@@ -420,17 +465,16 @@ mod tests {
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("concat_str_args", Box::new(concat_str_args));
-        let body = hb
-            .render("forms/consult-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/consult-form", &template_data).unwrap();
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("consult_form_header")
+        let element = dom
+            .get_element_by_id("consult_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         // Assert
         assert_eq!(element.inner_text(parser), "Edit Consult");
         // assert_eq!(1, 1);

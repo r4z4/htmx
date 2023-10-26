@@ -9,25 +9,29 @@ use actix_web::{
 use config::Post;
 use dotenv::dotenv;
 use handlebars::Handlebars;
-use hbs_helpers::{get_table_title, form_rte, loc_vec_len_ten, concat_args, lower_and_single, int_eq, str_eq, to_title_case, concat_str_args, get_search_rte, attachments_rte, int_in};
-use models::{model_location::LocationList, model_admin::AdminUserList, model_consultant::ResponseConsultant};
+use hbs_helpers::{
+    attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
+    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case,
+};
+use models::{
+    model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
-
-use crate::{scopes::auth::ResponseUser, config::mock_fixed_table_data};
+use crate::{config::mock_fixed_table_data, scopes::auth::ResponseUser};
 
 use scopes::{
-    auth::auth_scope, consult::consult_scope, consultant::consultant_scope,
-    location::location_scope, user::user_scope, admin::admin_scope, client::client_scope,
+    admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
+    consultant::consultant_scope, location::location_scope, user::user_scope,
 };
 mod config;
+mod hbs_helpers;
 mod models;
 mod scopes;
-mod hbs_helpers;
 #[cfg(test)]
 mod test_common;
 
@@ -141,7 +145,11 @@ pub struct HbError {
 }
 
 #[get("/crud")]
-async fn crud_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+async fn crud_api(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id
@@ -161,8 +169,7 @@ async fn crud_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                 } else {
                     let message = "Cannot find you";
                     let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok()
-                    .body(body);
+                    return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
@@ -181,7 +188,11 @@ async fn crud_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
 }
 
 #[get("/list")]
-async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+async fn list_api(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id
@@ -201,8 +212,7 @@ async fn list_api(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                 } else {
                     let message = "Cannot find you";
                     let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok()
-                    .body(body);
+                    return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
@@ -449,7 +459,6 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("attachments_rte", Box::new(attachments_rte));
     handlebars.register_helper("get_search_rte", Box::new(get_search_rte));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
-
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 

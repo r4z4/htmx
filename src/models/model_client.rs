@@ -4,8 +4,7 @@ use sqlx::FromRow;
 use struct_iterable::Iterable;
 use validator::Validate;
 
-use crate::config::{StringSelectOption, SelectOption};
-
+use crate::config::{SelectOption, StringSelectOption};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseClientList {

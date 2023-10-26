@@ -75,11 +75,10 @@ impl ConsultantPostRequest {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_common::{*, self};
+    use crate::test_common::{self, *};
     use test_context::{test_context, TestContext};
 
     #[test_context(Context)]

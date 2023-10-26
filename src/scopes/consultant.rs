@@ -1,22 +1,33 @@
 use std::{fs, ops::Deref};
 
-use actix_multipart::{Multipart, form::{MultipartForm, tempfile::TempFile}};
-use actix_web::{
-    get, post,
-    web::{self, Data},
-    HttpResponse, Responder, Scope, HttpRequest, http::{Error, header::CONTENT_LENGTH},
+use actix_multipart::{
+    form::{tempfile::TempFile, MultipartForm},
+    Multipart,
 };
-use std::io::Write;
-use handlebars::Handlebars;
-use serde::{Deserialize, Serialize};
+use actix_web::{
+    get,
+    http::{header::CONTENT_LENGTH, Error},
+    post,
+    web::{self, Data},
+    HttpRequest, HttpResponse, Responder, Scope,
+};
 use futures_util::TryStreamExt;
+use handlebars::Handlebars;
 use image::{imageops::FilterType, DynamicImage};
 use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
+use serde::{Deserialize, Serialize};
+use std::io::Write;
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, SelectOption, ResponsiveTableData, specialty_options, territory_options, UserAlert, ValidationResponse},
-    models::model_consultant::{ConsultantFormTemplate, ResponseConsultant, ConsultantFormRequest, ConsultantPostRequest, ConsultantPostResponse},
+    config::{
+        specialty_options, territory_options, FilterOptions, ResponsiveTableData, SelectOption,
+        UserAlert, ValidationResponse,
+    },
+    models::model_consultant::{
+        ConsultantFormRequest, ConsultantFormTemplate, ConsultantPostRequest,
+        ConsultantPostResponse, ResponseConsultant,
+    },
     AppState,
 };
 
@@ -174,9 +185,7 @@ async fn consultant_form(
         specialty_options: specialty_options(),
     };
 
-    let body = hb
-        .render("forms/consultant-form", &template_data)
-        .unwrap();
+    let body = hb.render("forms/consultant-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -252,21 +261,21 @@ async fn create_consultant(
     if validate_consultant_input(&body) {
         // Using the NULLIF pattern, so just default to "" & DB will insert it as NULL.
         // If they uploaded we need to trim the input due to Hyperscript padding
-        let image_path = 
-            if body.img_path.is_some() {
-                if body.img_path.as_ref().unwrap().is_empty() {
-                    "".to_string()
-                } else {
-                    let p = body.img_path.clone().unwrap().trim().to_string();
-                    dbg!(&p);
-                    let path = &p[2..].to_string();
-                    dbg!(&path);
-                    path.to_owned()
-                }
-            } else {
+        let image_path = if body.img_path.is_some() {
+            if body.img_path.as_ref().unwrap().is_empty() {
                 "".to_string()
-            };
-        
+            } else {
+                let p = body.img_path.clone().unwrap().trim().to_string();
+                p
+                // dbg!(&p);
+                // let path = &p[2..].to_string();
+                // dbg!(&path);
+                // path.to_owned()
+            }
+        } else {
+            "".to_string()
+        };
+
         match sqlx::query_as::<_, ConsultantPostResponse>(
             "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path, user_id) 
                     VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6) RETURNING user_id",
@@ -283,7 +292,7 @@ async fn create_consultant(
             Ok(consultant_response) => {
                 dbg!(&consultant_response.user_id);
                 match sqlx::query_as::<_, ConsultantPostResponse>(
-                    "UPDATE users SET user_type_id = 3, updated_at = now() WHERE user_id = $1 RETURNING user_id",
+                    "UPDATE users SET user_type_id = 2, updated_at = now() WHERE user_id = $1 RETURNING user_id",
                 )
                 .bind(&consultant_response.user_id)
                 .fetch_one(&state.db)
@@ -358,7 +367,11 @@ async fn create_consultant(
 // }
 
 #[post("/upload")]
-async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: HttpRequest) -> HttpResponse {
+async fn upload(
+    mut payload: Multipart,
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+) -> HttpResponse {
     let max_file_size: usize = 20_000;
     let max_file_count: usize = 3;
     let legal_file_types: [Mime; 4] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG];
@@ -375,8 +388,8 @@ async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: Http
         };
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::BadRequest()
-        .header("HX-Retarget", "#validation_response")
-        .body(body);
+            .header("HX-Retarget", "#validation_response")
+            .body(body);
     }
 
     let mut current_count: usize = 0;
@@ -403,28 +416,41 @@ async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: Http
                 };
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::BadRequest()
-                .header("HX-Retarget", "#validation_response")
-                .body(body);
+                    .header("HX-Retarget", "#validation_response")
+                    .body(body);
             }
-            let dir: &str = "./upload";
+            let dir: &str = "./static/images/consultants/";
+
+            let const_uuid = Uuid::new_v4();
 
             let destination: String = format!(
                 "{}{}-{}",
                 dir,
-                Uuid::new_v4(),
+                const_uuid,
                 field.content_disposition().get_filename().unwrap(),
             );
+            dbg!(&destination);
             let mut saved_file = fs::File::create(&destination).unwrap();
             while let Ok(Some(chunk)) = field.try_next().await {
                 let _ = saved_file.write_all(&chunk).unwrap();
             }
 
-            filenames.push(format!("{}{}.gif", dir, Uuid::new_v4()));
+            let filename = format!("{}{}.png", dir, const_uuid);
+
+            let mut to_save = filename.clone();
+            if let Some((_, desired)) = to_save.split_once("./static") {
+                to_save = desired.to_owned();
+            }
+            dbg!(&filename);
+            dbg!(&to_save);
+
+            filenames.push(to_save);
 
             web::block(move || async move {
                 let updated_img: DynamicImage = image::open(&destination).unwrap();
                 let _ = fs::remove_file(&destination).unwrap();
-                let filename = format!("{}{}.gif", dir, Uuid::new_v4());
+                let filename = format!("{}{}.png", dir, const_uuid);
+
                 updated_img
                     .resize_exact(200, 200, FilterType::Nearest)
                     .save(filename)
@@ -450,7 +476,10 @@ async fn upload(mut payload: Multipart, hb: web::Data<Handlebars<'_>>, req: Http
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_common::{*, self}, hbs_helpers::int_eq};
+    use crate::{
+        hbs_helpers::int_eq,
+        test_common::{self, *},
+    };
     use test_context::{test_context, TestContext};
 
     #[test_context(Context)]
@@ -466,18 +495,17 @@ mod tests {
         hb.register_templates_directory(".hbs", "./templates")
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
-        let body = hb
-            .render("forms/consultant-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/consultant-form", &template_data).unwrap();
         // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("consultant_form_header")
+        let element = dom
+            .get_element_by_id("consultant_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         let img = dom.query_selector("img[id=consultant_img]").unwrap().next();
         // Assert
         assert_eq!(element.inner_text(parser), "Add Consultant");

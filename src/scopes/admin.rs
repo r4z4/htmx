@@ -3,13 +3,27 @@ use std::{borrow::Borrow, vec};
 use actix_web::{
     get, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope, HttpRequest,
+    HttpRequest, HttpResponse, Responder, Scope,
 };
 
 use handlebars::Handlebars;
 
-use crate::{config::{FilterOptions, self, ResponsiveTableData, ACCEPTED_SECONDARIES, UserAlert, ValidationResponse}, 
-    models::{model_admin::{AdminUserList, AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserPostRequest}, model_admin::{AdminUserFormQuery, AdminUserPostResponse, AdminSubadminFormTemplate, AdminSubadminPostRequest}}, AppState, ValidatedUser, HeaderValueExt};
+use crate::{
+    config::{
+        self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
+        ACCEPTED_SECONDARIES,
+    },
+    models::{
+        model_admin::{
+            AdminSubadminFormQuery, AdminUserFormTemplate, AdminUserList, AdminUserPostRequest,
+        },
+        model_admin::{
+            AdminSubadminFormTemplate, AdminSubadminPostRequest, AdminUserFormQuery,
+            AdminUserPostResponse,
+        },
+    },
+    AppState, HeaderValueExt, ValidatedUser,
+};
 
 pub fn admin_scope() -> Scope {
     web::scope("/admin")
@@ -34,7 +48,11 @@ fn entity_type_from_user_type(user_type_id: i32) -> i32 {
 }
 
 #[get("/home")]
-async fn admin_home(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>) -> impl Responder {
+async fn admin_home(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id
@@ -54,8 +72,7 @@ async fn admin_home(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data
                 } else {
                     let message = "Cannot find you";
                     let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok()
-                    .body(body);
+                    return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
@@ -121,9 +138,7 @@ pub async fn get_users_handler(
 
     dbg!(&users_table_data);
 
-    let body = hb
-        .render("responsive-table", &users_table_data)
-        .unwrap();
+    let body = hb.render("responsive-table", &users_table_data).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -153,7 +168,14 @@ async fn user_form(
 
     let user = user_result.unwrap();
 
-    let updated_at = if user.updated_at.is_some() {user.updated_at.unwrap().format("%b %-d, %-I:%M").to_string()} else {"Never Updated".to_owned()};
+    let updated_at = if user.updated_at.is_some() {
+        user.updated_at
+            .unwrap()
+            .format("%b %-d, %-I:%M")
+            .to_string()
+    } else {
+        "Never Updated".to_owned()
+    };
 
     let template_data = AdminUserFormTemplate {
         user_type_options: config::user_type_options(),
@@ -164,9 +186,7 @@ async fn user_form(
         avatar_path: user.avatar_path,
     };
 
-    let body = hb
-        .render("admin/user-form", &template_data)
-        .unwrap();
+    let body = hb.render("admin/user-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -199,7 +219,14 @@ async fn subadmin_form(
 
     let user = user_result.unwrap();
 
-    let updated_at = if user.updated_at.is_some() {user.updated_at.unwrap().format("%b %-d, %-I:%M").to_string()} else {"Never Updated".to_owned()};
+    let updated_at = if user.updated_at.is_some() {
+        user.updated_at
+            .unwrap()
+            .format("%b %-d, %-I:%M")
+            .to_string()
+    } else {
+        "Never Updated".to_owned()
+    };
 
     let template_data = AdminSubadminFormTemplate {
         user_type_options: config::user_type_options(),
@@ -217,9 +244,7 @@ async fn subadmin_form(
         avatar_path: user.avatar_path,
     };
 
-    let body = hb
-        .render("admin/subadmin-form", &template_data)
-        .unwrap();
+    let body = hb.render("admin/subadmin-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -327,7 +352,6 @@ async fn edit_user(
         return HttpResponse::Ok().body(body);
     }
 }
-
 
 // They'll edit regular user, user_type_id -> subadmin. Then go to subadmin list, edit them there to add this data.
 #[post("/form/subadmin/{slug}")]

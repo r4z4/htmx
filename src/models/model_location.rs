@@ -7,7 +7,6 @@ use validator::{Validate, ValidationError};
 
 use crate::config::{SelectOption, StringSelectOption, ACCEPTED_PRIMARIES};
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseLocationList {
     pub locations: Vec<LocationList>,
@@ -50,13 +49,20 @@ fn validate_unique_location_name(location_name: &str) -> Result<(), ValidationEr
 }
 
 fn validate_primary_addr(location_address_one: &str) -> Result<(), ValidationError> {
-    let street_strings: Vec<&str> = location_address_one.split(" ").collect::<Vec<&str>>().to_owned();
+    let street_strings: Vec<&str> = location_address_one
+        .split(" ")
+        .collect::<Vec<&str>>()
+        .to_owned();
     let ss_len = street_strings.len();
     // Getting last two to account for 101 Hartford St. W etc..
-    if ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 1]) || ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 2]) {
+    if ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 1])
+        || ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 2])
+    {
         Ok(())
     } else {
-        Err(ValidationError::new("Primary Address does not contain a valid Identifier (St, Ave)"))
+        Err(ValidationError::new(
+            "Primary Address does not contain a valid Identifier (St, Ave)",
+        ))
     }
 }
 
@@ -64,13 +70,24 @@ fn validate_primary_addr(location_address_one: &str) -> Result<(), ValidationErr
 pub struct LocationPostRequest {
     // #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"), custom = "validate_unique_location_name")]
     #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"))]
-    #[validate(custom(function = "validate_unique_location_name", code = "loc_name", message = "Don't use that name, it's terrible!"))]
+    #[validate(custom(
+        function = "validate_unique_location_name",
+        code = "loc_name",
+        message = "Don't use that name, it's terrible!"
+    ))]
     pub location_name: String,
-    #[validate(length(min = 3, message = "Location Address must ..."), custom = "validate_primary_addr")]
+    #[validate(
+        length(min = 3, message = "Location Address must ..."),
+        custom = "validate_primary_addr"
+    )]
     #[validate(contains = " ")]
     pub location_address_one: String,
     pub location_address_two: Option<String>,
-    #[validate(length(min = 2, max = 28, message = "Location Address must be between 2 & 28 chars"))]
+    #[validate(length(
+        min = 2,
+        max = 28,
+        message = "Location Address must be between 2 & 28 chars"
+    ))]
     pub location_city: String,
     // #[validate(length(min = 3, message = "Must be in list of states"))]
     pub location_state: String,

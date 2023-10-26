@@ -1,25 +1,41 @@
+use lazy_static::lazy_static;
 use mini_markdown::render;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sqlx::FromRow;
 use std::fmt::Debug;
 use std::fs::File;
 use validator::{Validate, ValidationError};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 lazy_static! {
     pub static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
-    pub static ref RE_EMAIL: Regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
-    pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec!["Apt".to_owned(), "Apt.".to_owned(), "Ste".to_owned(), "Ste.".to_owned(), "Suite".to_owned(), "Apartment".to_owned(), "#".to_owned(), "No.".to_owned(), "No".to_owned()];
-    pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec!["St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.", "Dr", "Drive", "Ln", "Lane", "Ln."];
+    pub static ref RE_EMAIL: Regex = Regex::new(
+        r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})"
+    )
+    .unwrap();
+    pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec![
+        "Apt".to_owned(),
+        "Apt.".to_owned(),
+        "Ste".to_owned(),
+        "Ste.".to_owned(),
+        "Suite".to_owned(),
+        "Apartment".to_owned(),
+        "#".to_owned(),
+        "No.".to_owned(),
+        "No".to_owned()
+    ];
+    pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec![
+        "St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.",
+        "Dr", "Drive", "Ln", "Lane", "Ln."
+    ];
 }
 
 #[derive(Serialize, Debug)]
 pub struct ValidationErrorMap {
     pub key: String,
-    pub errs: Vec<ValidationError>
+    pub errs: Vec<ValidationError>,
 }
 
 #[derive(Serialize)]
@@ -108,52 +124,115 @@ pub struct ResponsiveTableData<T> {
 
 pub fn states() -> Vec<StringSelectOption> {
     vec![
-        StringSelectOption{key:Some("AL".to_string()),value:"AL".to_string()},
-        StringSelectOption{key:Some("AR".to_string()),value:"AK".to_string()},
-        StringSelectOption{key:Some("AK".to_string()),value:"AR".to_string()},
-        StringSelectOption{key:Some("AZ".to_string()),value:"AZ".to_string()},
+        StringSelectOption {
+            key: Some("AL".to_string()),
+            value: "AL".to_string(),
+        },
+        StringSelectOption {
+            key: Some("AR".to_string()),
+            value: "AK".to_string(),
+        },
+        StringSelectOption {
+            key: Some("AK".to_string()),
+            value: "AR".to_string(),
+        },
+        StringSelectOption {
+            key: Some("AZ".to_string()),
+            value: "AZ".to_string(),
+        },
     ]
 }
 
 pub fn location_contacts() -> Vec<SelectOption> {
     vec![
-        SelectOption{key:Some("Location Admin".to_string()),value: 1},
-        SelectOption{key:Some("Site Manager".to_string()),value: 2},
+        SelectOption {
+            key: Some("Location Admin".to_string()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("Site Manager".to_string()),
+            value: 2,
+        },
     ]
 }
 
 pub fn admin_user_options() -> Vec<SelectOption> {
     vec![
-        SelectOption{key:Some("User 1".to_string()),value: 1},
-        SelectOption{key:Some("User 2".to_string()),value: 2},
+        SelectOption {
+            key: Some("User 1".to_string()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("User 2".to_string()),
+            value: 2,
+        },
     ]
 }
 
 pub fn user_type_options() -> Vec<SelectOption> {
     vec![
-        SelectOption{key:Some("admin".to_string()),value: 1},
-        SelectOption{key:Some("subadmin".to_string()),value: 2},
-        SelectOption{key:Some("regular".to_string()),value: 3},
-        SelectOption{key:Some("guest".to_string()),value: 4},
+        SelectOption {
+            key: Some("admin".to_string()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("subadmin".to_string()),
+            value: 2,
+        },
+        SelectOption {
+            key: Some("regular".to_string()),
+            value: 3,
+        },
+        SelectOption {
+            key: Some("guest".to_string()),
+            value: 4,
+        },
     ]
 }
 
 pub fn territory_options() -> Vec<SelectOption> {
     vec![
-        SelectOption{key:Some("National".to_string()),value: 1},
-        SelectOption{key:Some("Northeast".to_string()),value: 2},
-        SelectOption{key:Some("West".to_string()),value: 3},
-        SelectOption{key:Some("Southeast".to_string()),value: 4},
-        SelectOption{key:Some("Midwest".to_string()),value: 5},
+        SelectOption {
+            key: Some("National".to_string()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("Northeast".to_string()),
+            value: 2,
+        },
+        SelectOption {
+            key: Some("West".to_string()),
+            value: 3,
+        },
+        SelectOption {
+            key: Some("Southeast".to_string()),
+            value: 4,
+        },
+        SelectOption {
+            key: Some("Midwest".to_string()),
+            value: 5,
+        },
     ]
 }
 
 pub fn specialty_options() -> Vec<SelectOption> {
     vec![
-        SelectOption{key:Some("Finance".to_string()),value: 1},
-        SelectOption{key:Some("Insurance".to_string()),value: 2},
-        SelectOption{key:Some("Technology".to_string()),value: 3},
-        SelectOption{key:Some("Government".to_string()),value: 4},
+        SelectOption {
+            key: Some("Finance".to_string()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("Insurance".to_string()),
+            value: 2,
+        },
+        SelectOption {
+            key: Some("Technology".to_string()),
+            value: 3,
+        },
+        SelectOption {
+            key: Some("Government".to_string()),
+            value: 4,
+        },
     ]
 }
 

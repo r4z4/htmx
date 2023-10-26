@@ -1,18 +1,25 @@
 use std::borrow::Borrow;
 
 use actix_web::{
-    get, post,
+    get, patch, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope, patch,
+    HttpResponse, Responder, Scope,
 };
 
+use crate::{
+    config::{
+        self, location_contacts, states, FilterOptions, FormErrorResponse, ResponsiveTableData,
+        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
+    },
+    models::model_location::{
+        LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
+        LocationPostRequest, LocationPostResponse,
+    },
+    AppState,
+};
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors, ValidationError};
-use crate::{
-    config::{FilterOptions, SelectOption, self, ResponsiveTableData, UserAlert, ACCEPTED_SECONDARIES, ValidationResponse, states, location_contacts, ValidationErrorMap, FormErrorResponse}, 
-    models::model_location::{LocationList, LocationFormTemplate, LocationPostRequest, LocationPostResponse, LocationFormRequest, LocationPatchRequest}, 
-    AppState};
+use validator::{Validate, ValidationError, ValidationErrors};
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
@@ -98,7 +105,7 @@ pub async fn get_locations_handler(
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    // let search_sql = 
+    // let search_sql =
     // if opts.search.is_some() {
     //     let search = opts.search.as_ref().unwrap();
     //     format!(
@@ -134,17 +141,17 @@ pub async fn get_locations_handler(
         )
         .fetch_all(&data.db)
         .await;
-    
+
         dbg!(&query_result);
-    
+
         if query_result.is_err() {
             let err = "Error occurred while fetching searched location records";
             let body = hb.render("validation", &err).unwrap();
             return HttpResponse::Ok().body(body);
         }
-    
+
         let locations = query_result.unwrap();
-    
+
         let locations_table_data = ResponsiveTableData {
             entity_type_id: 5,
             vec_len: locations.len(),
@@ -152,9 +159,9 @@ pub async fn get_locations_handler(
             page: opts.page.unwrap_or(1),
             entities: locations,
         };
-    
+
         dbg!(&locations_table_data);
-    
+
         let body = hb
             .render("responsive-table-inner", &locations_table_data)
             .unwrap();
@@ -245,9 +252,7 @@ async fn location_form(
         location_contact_options: config::location_contacts(),
     };
 
-    let body = hb
-        .render("forms/location-form", &template_data)
-        .unwrap();
+    let body = hb.render("forms/location-form", &template_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
@@ -291,7 +296,6 @@ async fn location_edit_form(
     let body = hb.render("forms/location-form", &template_data).unwrap();
     return HttpResponse::Ok().body(body);
 }
-
 
 fn validate_location_input(body: &LocationPostRequest) -> bool {
     // Woof
@@ -394,19 +398,30 @@ async fn patch_location(
     if is_valid.is_err() {
         println!("Got err");
         dbg!(is_valid.is_err());
-        let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
-            let (key, errs) = x;
-            ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()}
-        }).collect::<Vec<ValidationErrorMap>>();
+        let val_errs = is_valid
+            .err()
+            .unwrap()
+            .field_errors()
+            .iter()
+            .map(|x| {
+                let (key, errs) = x;
+                ValidationErrorMap {
+                    key: key.to_string(),
+                    errs: errs.to_vec(),
+                }
+            })
+            .collect::<Vec<ValidationErrorMap>>();
         dbg!(&val_errs);
         // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
         let validation_response = FormErrorResponse {
             errors: Some(val_errs),
         };
-        let body = hb.render("forms/form-validation", &validation_response).unwrap();
+        let body = hb
+            .render("forms/form-validation", &validation_response)
+            .unwrap();
         return HttpResponse::BadRequest()
-        .header("HX-Retarget", "#location_errors")
-        .body(body);
+            .header("HX-Retarget", "#location_errors")
+            .body(body);
         // return HttpResponse::Ok()
         // .header("HX-Retarget", "#location_errors")
         // .body(body);
@@ -495,7 +510,10 @@ async fn patch_location(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_common::{*, self}, hbs_helpers::{int_eq, str_eq}};
+    use crate::{
+        hbs_helpers::{int_eq, str_eq},
+        test_common::{self, *},
+    };
     use test_context::{test_context, TestContext};
 
     #[test_context(Context)]
@@ -511,21 +529,19 @@ mod tests {
             .unwrap();
         hb.register_helper("int_eq", Box::new(int_eq));
         hb.register_helper("str_eq", Box::new(str_eq));
-        let body = hb
-            .render("forms/location-form", &template_data)
-            .unwrap();
+        let body = hb.render("forms/location-form", &template_data).unwrap();
         // Finishing without error is itself a pass. But can reach into the giant HTML string hb template too.
         let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
         let parser = dom.parser();
 
-        let element = dom.get_element_by_id("location_form_header")
+        let element = dom
+            .get_element_by_id("location_form_header")
             .expect("Failed to find element")
             .get(parser)
             .unwrap();
-        
+
         // Assert
         assert_eq!(element.inner_text(parser), "Add Location");
-
 
         // Assert
         // assert_eq!(1, 1);
