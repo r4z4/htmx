@@ -9,10 +9,10 @@
 <div id="content" hx-get="/content/{{current}}" hx-trigger="load delay:100ms" hx-target="#content"></div> --}}
 {{
 #>
- main-layout title='Articles' }}
+ main-layout title='Articles' user=user.this}}
     <div>
         <ul>
-        {{#each posts}}
+        {{#each data.posts}}
             <li><a href="/{{this.slug}}" hx-get="/content/{{this.slug}}" hx-target="#content" hx-replace-url="/{{slug}}">{{this.title}}</a> ({{this.date}})</li>
         {{/each}}
         </ul>

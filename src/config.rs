@@ -1,3 +1,4 @@
+use actix_web::web::Data;
 use lazy_static::lazy_static;
 use mini_markdown::render;
 use regex::Regex;
@@ -7,6 +8,8 @@ use sqlx::FromRow;
 use std::fmt::Debug;
 use std::fs::File;
 use validator::{Validate, ValidationError};
+
+use crate::{AppState, HeaderValueExt, ValidatedUser};
 
 lazy_static! {
     pub static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -432,4 +435,27 @@ pub fn mock_fixed_table_data() -> FixedTableData {
     };
 
     return fixed_table_data;
+}
+
+pub async fn validate_and_get_user(
+    cookie: &actix_web::http::header::HeaderValue,
+    state: &Data<AppState>,
+) -> Result<Option<ValidatedUser>, crate::ValidationError> {
+    println!("Validating {}", format!("{:?}", cookie.clone()));
+    match sqlx::query_as::<_, ValidatedUser>(
+        "SELECT username, email, user_type_id
+        FROM users
+        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+        WHERE session_id = $1
+        AND expires > NOW()",
+    )
+    .bind(cookie.to_string())
+    .fetch_optional(&state.db)
+    .await
+    {
+        Ok(user_option) => Ok(user_option),
+        Err(err) => Err(crate::ValidationError {
+            error: format!("You must not be verfied: {}", err),
+        }),
+    }
 }

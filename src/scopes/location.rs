@@ -3,8 +3,9 @@ use std::borrow::Borrow;
 use actix_web::{
     get, patch, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope,
+    HttpRequest, HttpResponse, Responder, Scope,
 };
+use serde_json::json;
 
 use crate::{
     config::{
@@ -15,11 +16,12 @@ use crate::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState,
+    scopes::auth::ResponseUser,
+    AppState, HeaderValueExt, ValidatedUser, ValidationError,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationError, ValidationErrors};
+use validator::Validate;
 
 pub fn location_scope() -> Scope {
     web::scope("/location")
@@ -304,7 +306,8 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
         let first = apt_ste[0].to_owned();
         dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(first.borrow()) {
+        // No input comes in as blank Some("")
+        if ACCEPTED_SECONDARIES.contains(first.borrow()) || addr_two == "" {
             true
         } else {
             false
@@ -314,65 +317,138 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
     }
 }
 
+async fn validate_and_get_user(
+    cookie: &actix_web::http::header::HeaderValue,
+    state: &Data<AppState>,
+) -> Result<Option<ValidatedUser>, ValidationError> {
+    println!("Validating {}", format!("{:?}", cookie.clone()));
+    match sqlx::query_as::<_, ValidatedUser>(
+        "SELECT username, email, user_type_id
+        FROM users
+        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+        WHERE session_id = $1
+        AND expires > NOW()",
+    )
+    .bind(cookie.to_string())
+    .fetch_optional(&state.db)
+    .await
+    {
+        Ok(user_option) => Ok(user_option),
+        Err(err) => Err(ValidationError {
+            error: format!("You must not be verfied: {}", err),
+        }),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FullPageTemplateData {
+    user_alert: UserAlert,
+    user: ResponseUser,
+}
+
 #[post("/form")]
 async fn create_location(
     body: web::Form<LocationPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
 ) -> impl Responder {
     dbg!(&body);
+    let headers = req.headers();
+    // for (pos, e) in headers.iter().enumerate() {
+    //     println!("Element at position {}: {:?}", pos, e);
+    // }
+    if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
+        dbg!(cookie.clone());
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user_option) => {
+                if let Some(user) = user_option {
+                    let user = ResponseUser {
+                        username: user.username,
+                        email: user.email,
+                        user_type_id: user.user_type_id,
+                    };
+                    // let user_body = hb.render("homepage", &user).unwrap();
+                    if validate_location_input(&body) {
+                        match sqlx::query_as::<_, LocationPostResponse>(
+                            "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
+                                    VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, NULLIF($7, ''), $8, DEFAULT) RETURNING location_id",
+                        )
+                        .bind(&body.location_name)
+                        .bind(&body.location_address_one)
+                        .bind(&body.location_address_two)
+                        .bind(&body.location_city)
+                        .bind(&body.location_state)
+                        .bind(&body.location_zip)
+                        .bind(&body.location_phone)
+                        .bind(&body.location_contact_id)
+                        .fetch_one(&state.db)
+                        .await
+                        {
+                            Ok(loc) => {
+                                dbg!(loc.location_id);
+                                let user_alert = UserAlert {
+                                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                                    class: "alert_success".to_owned(),
+                                };
+                                let template_data = json!({
+                                    "user_alert": user_alert,
+                                    "user": user,
+                                });
+                                let template_body = hb.render("crud-api", &template_data).unwrap();
+                                return HttpResponse::Ok().body(template_body);
+                            }
+                            Err(err) => {
+                                dbg!(&err);
+                                let user_alert = UserAlert {
+                                    msg: format!("Error adding location: {:?}", err),
+                                    class: "alert_error".to_owned(),
+                                };
+                                let body = hb.render("crud-api", &user_alert).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
+                        }
+                    } else {
+                        println!("Val error");
+                        let validation_response = ValidationResponse {
+                            msg: "Validation error".to_owned(),
+                            class: "validation_error".to_owned(),
+                        };
+                        let body = hb.render("validation", &validation_response).unwrap();
+                        return HttpResponse::Ok().body(body);
 
-    if validate_location_input(&body) {
-        match sqlx::query_as::<_, LocationPostResponse>(
-            "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
-                    VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, NULLIF($7, ''), $8, DEFAULT) RETURNING location_id",
-        )
-        .bind(&body.location_name)
-        .bind(&body.location_address_one)
-        .bind(&body.location_address_two)
-        .bind(&body.location_city)
-        .bind(&body.location_state)
-        .bind(&body.location_zip)
-        .bind(&body.location_phone)
-        .bind(&body.location_contact_id)
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(loc) => {
-                dbg!(loc.location_id);
-                let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
-                    class: "alert_success".to_owned(),
-                };
-                let body = hb.render("crud-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+                        // // To test the alert more easily
+                        // let user_alert = UserAlert {
+                        //     msg: "Error adding location:".to_owned(),
+                        //     class: "alert_error".to_owned(),
+                        // };
+                        // let body = hb.render("crud-api", &user_alert).unwrap();
+                        // return HttpResponse::Ok().body(body);
+                    }
+                } else {
+                    let message =
+                        "Your session seems to have expired. Please login again.".to_owned();
+                    let body = hb.render("index", &message).unwrap();
+
+                    HttpResponse::Ok().body(body)
+                }
             }
-            Err(err) => {
-                dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error adding location: {:?}", err),
-                    class: "alert_error".to_owned(),
-                };
-                let body = hb.render("crud-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+            Err(_err) => {
+                // User's cookie is invalud or expired. Need to get a new one via logging in.
+                // They had a session. Could give them details about that. Get from DB.
+                let message = "Error in validate and get user.".to_owned();
+                let body = hb.render("index", &message).unwrap();
+
+                HttpResponse::Ok().body(body)
             }
         }
     } else {
-        println!("Val error");
-        let validation_response = ValidationResponse {
-            msg: "Validation error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+        let data = json!({
+            "header": "Login Form",
+        });
+        let body = hb.render("index", &data).unwrap();
 
-        // // To test the alert more easily
-        // let user_alert = UserAlert {
-        //     msg: "Error adding location:".to_owned(),
-        //     class: "alert_error".to_owned(),
-        // };
-        // let body = hb.render("crud-api", &user_alert).unwrap();
-        // return HttpResponse::Ok().body(body);
+        HttpResponse::Ok().body(body)
     }
 }
 

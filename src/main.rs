@@ -22,7 +22,10 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
-use crate::{config::mock_fixed_table_data, scopes::auth::ResponseUser};
+use crate::{
+    config::{mock_fixed_table_data, validate_and_get_user},
+    scopes::auth::ResponseUser,
+};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
@@ -90,7 +93,7 @@ async fn index(
     // }
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, state).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let user = ResponseUser {
@@ -98,7 +101,10 @@ async fn index(
                         email: user.email,
                         user_type_id: user.user_type_id,
                     };
-                    let body = hb.render("homepage", &user).unwrap();
+                    let template_data = json!({
+                        "user": user,
+                    });
+                    let body = hb.render("homepage", &template_data).unwrap();
                     return HttpResponse::Ok()
                         .header("HX-Redirect", "/homepage")
                         .body(body);
@@ -249,10 +255,13 @@ async fn homepage(
     dbg!(&headers);
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(&cookie);
-        match validate_and_get_user(cookie, state).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let body = hb.render("homepage", &user).unwrap();
+                    let template_data = json!({
+                        "user": user,
+                    });
+                    let body = hb.render("homepage", &template_data).unwrap();
                     dbg!(&body);
                     HttpResponse::Ok().body(body)
                 } else {
@@ -299,16 +308,67 @@ async fn detail(
     req: HttpRequest,
 ) -> impl Responder {
     println!("Articles");
-    // current(hb, config, state, req, path.into_inner())
-    let data = ArticleData {
-        title: config.title.clone(),
-        description: config.description.clone(),
-        posts: config.posts.clone(),
-    };
+    let headers = req.headers();
+    // for (pos, e) in headers.iter().enumerate() {
+    //     println!("Element at position {}: {:?}", pos, e);
+    // }
+    if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
+        dbg!(cookie.clone());
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user_option) => {
+                if let Some(user) = user_option {
+                    let user = ResponseUser {
+                        username: user.username,
+                        email: user.email,
+                        user_type_id: user.user_type_id,
+                    };
+                    let data = ArticleData {
+                        title: config.title.clone(),
+                        description: config.description.clone(),
+                        posts: config.posts.clone(),
+                    };
 
-    let body = hb.render("articles", &data).unwrap();
+                    let template_data = json! {{
+                        "user": user,
+                        "data": data,
+                    }};
 
-    HttpResponse::Ok().body(body)
+                    let body = hb.render("articles", &template_data).unwrap();
+
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let data = HbError {
+                        str: "Seems your session has expired. Please login again".to_owned(),
+                    };
+                    let body = hb.render("homepage", &data).unwrap();
+                    HttpResponse::Ok().body(body)
+                }
+            }
+            Err(err) => {
+                // User's cookie is invalud or expired. Need to get a new one via logging in.
+                // They had a session. Could give them details about that. Get from DB.
+                let data = HbError {
+                    str: format!(
+                        "Something quite unexpected has happened in your session: {}",
+                        err.error
+                    ),
+                };
+                let body = hb.render("homepage", &data).unwrap();
+                HttpResponse::Ok().body(body)
+            }
+        }
+    } else {
+        // current(hb, config, state, req, path.into_inner())
+        let data = ArticleData {
+            title: config.title.clone(),
+            description: config.description.clone(),
+            posts: config.posts.clone(),
+        };
+
+        let body = hb.render("articles", &data).unwrap();
+
+        HttpResponse::Ok().body(body)
+    }
 }
 
 #[get("/content/{slug}")]
@@ -354,29 +414,6 @@ pub trait HeaderValueExt {
 impl HeaderValueExt for HeaderValue {
     fn to_string(&self) -> String {
         self.to_str().unwrap_or_default().to_string()
-    }
-}
-
-async fn validate_and_get_user(
-    cookie: &actix_web::http::header::HeaderValue,
-    state: Data<AppState>,
-) -> Result<Option<ValidatedUser>, ValidationError> {
-    println!("Validating {}", format!("{:?}", cookie.clone()));
-    match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email, user_type_id
-        FROM users
-        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
-        WHERE session_id = $1
-        AND expires > NOW()",
-    )
-    .bind(cookie.to_string())
-    .fetch_optional(&state.db)
-    .await
-    {
-        Ok(user_option) => Ok(user_option),
-        Err(err) => Err(ValidationError {
-            error: format!("You must not be verfied: {}", err),
-        }),
     }
 }
 

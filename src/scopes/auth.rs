@@ -11,6 +11,7 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::FromRow;
 use std::{
     convert::Infallible,
@@ -49,7 +50,7 @@ pub struct UserNoPassword {
     user_id: i32,
     username: String,
 }
-#[derive(FromRow, Serialize, Deserialize)]
+#[derive(FromRow, Serialize, Debug, Clone, Deserialize)]
 pub struct ResponseUser {
     pub username: String,
     pub email: String,
@@ -237,7 +238,10 @@ async fn basic_auth(
                             email: user.email,
                             user_type_id: user.user_type_id,
                         };
-                        let body = hb.render("homepage", &user).unwrap();
+                        let template_data = json!({
+                            "user": user,
+                        });
+                        let body = hb.render("homepage", &template_data).unwrap();
 
                         return HttpResponse::Ok()
                             .header("HX-Redirect", "/homepage")
