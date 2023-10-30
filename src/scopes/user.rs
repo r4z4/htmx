@@ -1,5 +1,5 @@
 use crate::{
-    config::{self, SelectOption},
+    config::{self, SelectOption, ValidationResponse},
     models::model_user::{
         UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
@@ -38,6 +38,12 @@ pub fn theme_options() -> Vec<SelectOption> {
     .to_vec()
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SettingsFormTemplate {
+    entity: Option<UserSettingsObj>,
+    theme_options: Vec<SelectOption>,
+}
+
 #[get("/settings")]
 async fn settings(
     hb: web::Data<Handlebars<'_>>,
@@ -64,10 +70,14 @@ async fn settings(
                     let usr_c = usr.clone();
                     let updated_at_fmt = usr_c.settings_updated.format("%b %-d, %-I:%M").to_string();
                     let user_settings_obj = UserSettingsObj {
-                        theme_options: theme_options(),
                         updated_at_fmt: updated_at_fmt,
+                        username: usr.username,
                     };
-                    let body = hb.render("user/user-settings", &user_settings_obj).unwrap();
+                    let template_data = SettingsFormTemplate {
+                        entity: Some(user_settings_obj),
+                        theme_options: theme_options(),
+                    };
+                    let body = hb.render("user/user-settings", &template_data).unwrap();
                     return HttpResponse::Ok()
                     .body(body);
                 } else {
@@ -92,6 +102,10 @@ async fn settings(
     }
 }
 
+fn validate_user_settings_input(body: &UserSettingsPost) -> bool {
+    true
+}
+
 #[put("/settings")]
 async fn edit_settings(
     hb: web::Data<Handlebars<'_>>,
@@ -99,31 +113,62 @@ async fn edit_settings(
     req: HttpRequest,
     state: web::Data<AppState>,
 ) -> impl Responder {
-    match sqlx::query_as::<_, UserSettingsModel>(
-        "UPDATE user_settings SET theme_id = $1 WHERE user_id = $4 RETURNING *",
-    )
-    .bind(body.theme_id)
-    .bind(body.username.clone())
-    .bind(body.email.clone())
-    .fetch_one(&state.db)
-    .await
-    {
-        Ok(user_settings) => {
-            let user_c = user_settings.clone();
-            let updated_at_fmt = user_c.updated_at.format("%b %-d, %-I:%M").to_string();
-            let user_settings_obj = UserSettingsObj {
-                theme_options: theme_options(),
-                updated_at_fmt: updated_at_fmt,
-            };
-            let body = hb.render("user/user-settings", &user_settings_obj).unwrap();
-            return HttpResponse::Ok().body(body);
+    if validate_user_settings_input(&body) {
+        match sqlx::query_as::<_, UserHomeQuery>(
+            "UPDATE user_settings SET theme_id = $1 WHERE user_id = $2 RETURNING (
+                SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
+                FROM users
+                LEFT JOIN user_settings on user_settings.user_id = users.user_id
+                WHERE user_id = $2
+            )",
+        )
+        .bind(body.theme_id)
+        .bind(body.user_id.clone())
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(user) => {
+                let user_home_model = UserHomeModel {
+                    user_id: user.user_id,
+                    user_type_id: user.user_type_id,
+                    username: user.username,
+                    theme_options: theme_options(),
+                    avatar_path: user.avatar_path,
+                    settings_updated: user.settings_updated.format("%b %-d, %-I:%M").to_string(),
+                    created_at_fmt: user.created_at.format("%b %-d, %-I:%M").to_string(),
+                    updated_at_fmt: user.updated_at.format("%b %-d, %-I:%M").to_string(),
+                    email: user.email,
+                };
+                let template_data = json! {{
+                    // Using an hx-get & swap so user should already be in the main-layout?
+                    // "user": &validated_user,
+                    "data": &user_home_model,
+                }};
+                let body = hb.render("user-home", &template_data).unwrap();
+                return HttpResponse::Ok()
+                .body(body);
+            }
+            // If error on DB level, take user back to user-home w/ user alert, vs a form validation response on the form itself
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("user-home", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                .body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
         }
-        Err(err) => {
-            let body = hb.render("validation", &err.to_string()).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
+    } else {
+        let validation_response = ValidationResponse {
+            msg: "Validation error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &format!("{:?}", validation_response)).unwrap();
+        return HttpResponse::Ok()
+        .header("HX-Retarget", "#validation")
+        .body(body);
     }
 }
+
 
 // #[get("/profile")]
 // async fn profile(

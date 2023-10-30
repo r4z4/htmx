@@ -1,6 +1,17 @@
+<script>
+  document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    // Allow 422 and 400 responses to swap
+    // We treat these as form validation errors
+    if (evt.detail.xhr.status === 422 || evt.detail.xhr.status === 400) {
+      evt.detail.shouldSwap = true;
+      evt.detail.isError = false;
+    }
+  });
+</script>
+
 {{
 #>
- forms/form-layout }}
+ modal-layout }}
 <div>
   <h2 class="text-center">Settings for {{username}}</h2>
   <form 
@@ -10,6 +21,7 @@
     hx-target="#user_response"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
     hx-swap="innerHTML">
+    <div id="validation"></div>
     <ul>
       {{!-- <li>
         <div>
@@ -31,6 +43,18 @@
         </div>
       </li>
       <li>
+
+      {{!-- <li>
+        <div>
+          <label for="theme_select">Timezone</label>
+          <select class="field-style field-full align-none" id="theme_select" name="theme_select">
+            {{#each tz_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+      <li> --}}
 
       {{!-- <li>
         <div>
@@ -64,7 +88,19 @@
 
       <li>
         <div>
-          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)"/>
+          <label class="container">Newsletter
+            <input type="checkbox" name="newsletter" id="newsletter">
+            <span class="checkmark"></span>
+          </label>
+        </div>
+      </li>
+
+            <li>
+        <div>
+          <label class="container">Notifications
+            <input type="checkbox" name="notifcations" id="notifications">
+            <span class="checkmark"></span>
+          </label>
         </div>
       </li>
 
@@ -87,5 +123,4 @@
     </details>
   </form>
 </div>
-
-{{/forms/form-layout}}
+{{/modal-layout}}

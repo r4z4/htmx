@@ -3,6 +3,7 @@
  main-layout user=user}}
  <div class="user_home">
     <h1>Homepage for {{data.username}}</h1>
+    <div class="modal-container" id="edit_form_modal"></div>
     <div class="img_div">
         <img src={{data.avatar_path}} alt="user_avatar"/>
     </div>
@@ -13,12 +14,20 @@
         >
             Edit Settings
         </button> --}}
-        <button onclick="window.dialog.show();">Edit Settings</button>
+
+        {{!-- <button onclick="window.dialog.show();">Edit Settings</button>
 
         <dialog id="dialog">
             {{> user/user-settings}}
         <button onclick="window.dialog.close();">Cancel</button>
-        </dialog>
+        </dialog> --}}
+
+        <button
+            {{!-- hx-get={{form_rte this.slug @root.entity_type_id}} --}}
+            hx-get="/user/settings"
+            hx-target="#edit_form_modal"
+        > Settings
+        </button>
         {{!-- <button
             hx-get="/user/profile" 
             hx-target="#user_op_container" 

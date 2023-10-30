@@ -47,7 +47,7 @@ pub struct UserHomeQuery {
 
 // Do the date format in DB layer? Or in Rust code? Let's go Rust code. Query as DateTime, then pass into template (UserModel) as String
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, FromRow, Deserialize, Debug, Default, Clone)]
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeModel {
     pub user_id: i32,
@@ -68,6 +68,7 @@ pub struct UserHomeModel {
 pub struct UserSettingsModel {
     pub user_settings_id: i32,
     pub user_id: i32,
+    pub username: String,
     // user_settings table updated_at, not user table
     pub updated_at: DateTime<Utc>,
 }
@@ -82,16 +83,17 @@ pub struct UserSettingsQuery {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserSettingsObj {
-    pub theme_options: Vec<SelectOption>,
     // user_settings table updated_at, not user table
     pub updated_at_fmt: String,
+    pub username: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct UserSettingsPost {
     pub theme_id: i32,
-    pub email: String,
-    pub username: String,
+    pub user_id: i32,
+    pub notifications: bool,
+    pub newsletter: bool,
 }
 
 /// An admin is still a user

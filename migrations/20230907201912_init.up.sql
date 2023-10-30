@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS user_settings (
         user_settings_id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         theme_id INTEGER NOT NULL DEFAULT 1,
+        notifications BOOLEAN NOT NULL DEFAULT FALSE,
+        newsletter BOOLEAN NOT NULL DEFAULT FALSE,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
