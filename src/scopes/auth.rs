@@ -22,7 +22,7 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME}, ValidatedUser};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -50,14 +50,8 @@ pub struct UserNoPassword {
     user_id: i32,
     username: String,
 }
-#[derive(FromRow, Serialize, Debug, Clone, Deserialize)]
-pub struct ResponseUser {
-    pub username: String,
-    pub email: String,
-    pub user_type_id: i32,
-}
 
-// impl MessageBody for ResponseUser {
+// impl MessageBody for ValidatedUser {
 //     type Error = Infallible;
 
 //     fn size(&self) -> BodySize {
@@ -233,7 +227,7 @@ async fn basic_auth(
                 .await
                 {
                     Ok(session) => {
-                        let user = ResponseUser {
+                        let user = ValidatedUser {
                             username: user.username,
                             email: user.email,
                             user_type_id: user.user_type_id,

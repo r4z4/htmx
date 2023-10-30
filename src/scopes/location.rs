@@ -16,7 +16,6 @@ use crate::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    scopes::auth::ResponseUser,
     AppState, HeaderValueExt, ValidatedUser, ValidationError,
 };
 use handlebars::Handlebars;
@@ -343,7 +342,7 @@ async fn validate_and_get_user(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FullPageTemplateData {
     user_alert: UserAlert,
-    user: ResponseUser,
+    user: ValidatedUser,
 }
 
 #[post("/form")]
@@ -363,7 +362,7 @@ async fn create_location(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let user = ResponseUser {
+                    let user = ValidatedUser {
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,

@@ -42,16 +42,16 @@
                 <i class="fa fa-caret-down"></i>
             </button>
             <div class="dropdown-content">
-                    <button
-                        hx-get="/auth/logout" 
-                    >
-                        Logout
-                    </button>
-                <a class="text-white" href="/user/home">User Home</a>
+                <a 
+                    class="text-white" 
+                    href="/user/home"
+                >User Home</a>
                 <a class="active" href="#about">👤</a>
-                <a href="#">{{user.email}}</a>
-                <a href="#">{{user.username}}</a>
-                <a href="#">{{user.user_type_id}}</a>
+                <button
+                    hx-get="/auth/logout" 
+                >
+                    Logout
+                </button>
             </div>
         </div>
     </li> 

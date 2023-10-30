@@ -4,7 +4,7 @@ use crate::{
         UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
     },
-    AppState, HeaderValueExt,
+    AppState, HeaderValueExt, ValidatedUser,
 };
 use actix_web::{
     get, post, put,
@@ -13,6 +13,7 @@ use actix_web::{
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 pub fn user_scope() -> Scope {
     web::scope("/user")
@@ -190,6 +191,11 @@ async fn home(
         {
             Ok(user) => {
                 let unwrapped_user = user.unwrap();
+                let validated_user = ValidatedUser {
+                    username: unwrapped_user.username.clone(),
+                    email: unwrapped_user.email.clone(),
+                    user_type_id: unwrapped_user.user_type_id,
+                };
                 let user_home_model = UserHomeModel {
                     user_id: unwrapped_user.user_id,
                     user_type_id: unwrapped_user.user_type_id,
@@ -201,7 +207,11 @@ async fn home(
                     updated_at_fmt: unwrapped_user.updated_at.format("%b %-d, %-I:%M").to_string(),
                     email: unwrapped_user.email,
                 };
-                let body = hb.render("user-home", &user_home_model).unwrap();
+                let template_data = json! {{
+                    "user": &validated_user,
+                    "data": &user_home_model,
+                }};
+                let body = hb.render("user-home", &template_data).unwrap();
                 return HttpResponse::Ok()
                 .body(body);
             }
@@ -223,6 +233,13 @@ async fn home(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HbError {
     str: String,
+}
+
+// Why doesn't this work?
+impl From<String> for HbError {
+    fn from(item: String) -> Self {
+        HbError { str: item }
+    }
 }
 
 // Move this to Redis at some point

@@ -22,10 +22,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
-use crate::{
-    config::{mock_fixed_table_data, validate_and_get_user},
-    scopes::auth::ResponseUser,
-};
+use crate::config::{mock_fixed_table_data, validate_and_get_user};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
@@ -96,7 +93,7 @@ async fn index(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let user = ResponseUser {
+                    let user = ValidatedUser {
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
@@ -135,15 +132,61 @@ async fn index(
     }
 }
 
+
 #[get("/about-us")]
-async fn about_us(hb: web::Data<Handlebars<'_>>) -> impl Responder {
+async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>,) -> impl Responder {
+    let headers = req.headers();
     let data = json!({
         "name": "ExtRev",
         "title": "Best",
     });
-    let body = hb.render("about-us", &data).unwrap();
-
-    HttpResponse::Ok().body(body)
+    if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
+        dbg!(cookie.clone());
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user_option) => {
+                if let Some(user) = user_option {
+                    let user = ValidatedUser {
+                        username: user.username,
+                        email: user.email,
+                        user_type_id: user.user_type_id,
+                    };
+                    let template_data = json! {{
+                        "user": user,
+                        "data": &data,
+                    }};
+                    let body = hb.render("about-us", &template_data).unwrap();
+    
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let template_data = json! {{
+                        // "user": user,
+                        "data": &data,
+                    }};
+                    let body = hb.render("about-us", &template_data).unwrap();
+                    HttpResponse::Ok().body(body)
+                }
+            }
+            Err(err) => {
+                // User's cookie is invalud or expired. Need to get a new one via logging in.
+                // They had a session. Could give them details about that. Get from DB.
+                let data = HbError {
+                    str: format!(
+                        "Something quite unexpected has happened in your session: {}",
+                        err.error
+                    ),
+                };
+                let body = hb.render("homepage", &data).unwrap();
+                HttpResponse::Ok().body(body)
+            }
+        }
+    } else {
+        let template_data = json! {{
+            // "user": user,
+            "data": &data,
+        }};
+        let body = hb.render("about-us", &template_data).unwrap();
+        HttpResponse::Ok().body(body)
+    }
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HbError {
@@ -157,20 +200,14 @@ async fn crud_api(
     state: Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, ValidatedUser>(
-            "SELECT username, email, user_type_id
-            FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
-            WHERE session_id = $1
-            AND expires > NOW()",
-        )
-        .bind(cookie.to_string())
-        .fetch_optional(&state.db)
-        .await
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
-                    let body = hb.render("crud-api", &usr).unwrap();
+                    let template_data = json! {{
+                        "user": &usr,
+                        //"data": &data,
+                    }};
+                    let body = hb.render("crud-api", &template_data).unwrap();
                     HttpResponse::Ok().body(body)
                 } else {
                     let message = "Cannot find you";
@@ -200,20 +237,14 @@ async fn list_api(
     state: Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, ValidatedUser>(
-            "SELECT username, email, user_type_id
-            FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
-            WHERE session_id = $1
-            AND expires > NOW()",
-        )
-        .bind(cookie.to_string())
-        .fetch_optional(&state.db)
-        .await
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
-                    let body = hb.render("list-api", &usr).unwrap();
+                    let template_data = json! {{
+                        "user": &usr,
+                        //"data": &data,
+                    }};
+                    let body = hb.render("list-api", &template_data).unwrap();
                     HttpResponse::Ok().body(body)
                 } else {
                     let message = "Cannot find you";
@@ -312,35 +343,34 @@ async fn detail(
     // for (pos, e) in headers.iter().enumerate() {
     //     println!("Element at position {}: {:?}", pos, e);
     // }
+    let data = ArticleData {
+        title: config.title.clone(),
+        description: config.description.clone(),
+        posts: config.posts.clone(),
+    };
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let user = ResponseUser {
+                    let user = ValidatedUser {
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
                     };
-                    let data = ArticleData {
-                        title: config.title.clone(),
-                        description: config.description.clone(),
-                        posts: config.posts.clone(),
-                    };
-
                     let template_data = json! {{
                         "user": user,
-                        "data": data,
+                        "data": &data,
                     }};
-
                     let body = hb.render("articles", &template_data).unwrap();
 
                     HttpResponse::Ok().body(body)
                 } else {
-                    let data = HbError {
-                        str: "Seems your session has expired. Please login again".to_owned(),
-                    };
-                    let body = hb.render("homepage", &data).unwrap();
+                    let template_data = json! {{
+                        // "user": user,
+                        "data": &data,
+                    }};
+                    let body = hb.render("articles", &template_data).unwrap();
                     HttpResponse::Ok().body(body)
                 }
             }
@@ -358,15 +388,11 @@ async fn detail(
             }
         }
     } else {
-        // current(hb, config, state, req, path.into_inner())
-        let data = ArticleData {
-            title: config.title.clone(),
-            description: config.description.clone(),
-            posts: config.posts.clone(),
-        };
-
-        let body = hb.render("articles", &data).unwrap();
-
+        let template_data = json! {{
+            // "user": user,
+            "data": &data,
+        }};
+        let body = hb.render("articles", &template_data).unwrap();
         HttpResponse::Ok().body(body)
     }
 }
@@ -400,7 +426,7 @@ async fn content(
 pub struct ValidationError {
     error: String,
 }
-#[derive(Debug, FromRow, Validate, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize)]
 pub struct ValidatedUser {
     username: String,
     user_type_id: i32,

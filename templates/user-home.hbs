@@ -1,10 +1,10 @@
 {{
 #>
- main-layout }}
+ main-layout user=user}}
  <div class="user_home">
-    <h1>Homepage for {{username}}</h1>
+    <h1>Homepage for {{data.username}}</h1>
     <div class="img_div">
-        <img src={{avatar_path}} alt="user_avatar"/>
+        <img src={{data.avatar_path}} alt="user_avatar"/>
     </div>
     <div class="btn_div">
         {{!-- <button
@@ -35,10 +35,10 @@
 
     <div class="op_container" id="user_op_container">
         <div class="info_section">
-            <p>Username: {{username}}</p>
-            <p>Email: {{email}}</p>
-            <p>User Since: {{created_at_fmt}}</p>
-            <p>Last Updated: {{updated_at_fmt}}</p>
+            <p>Username: {{data.username}}</p>
+            <p>Email: {{data.email}}</p>
+            <p>User Since: {{data.created_at_fmt}}</p>
+            <p>Last Updated: {{data.updated_at_fmt}}</p>
         </div>
     </div>
 </div>

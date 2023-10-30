@@ -81,6 +81,7 @@ button {
 
 #default_index ul {
     text-decoration: none;
+    padding-inline-start: 0px;
 }
 /****************
 *** Home Page ***
