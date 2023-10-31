@@ -328,7 +328,7 @@ button {
     width: 95%;
     margin: 3em auto;
     border-radius: 5px;
-    height:95vh;
+    min-height:95vh;
     border: 1px solid black;
 }
 
@@ -888,7 +888,7 @@ section{
     text-align: center;
     margin: auto;
 }
-.container {
+.form_link_container {
     border-radius: 10px;
     padding: 16px 0;
     height: 0.5em;

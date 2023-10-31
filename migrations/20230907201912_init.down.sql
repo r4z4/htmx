@@ -5,6 +5,8 @@ DROP TABLE IF EXISTS consults;
 -- Tables depends on these
 DROP TABLE IF EXISTS clients;
 DROP TABLE IF EXISTS consultants;
+
+DROP TABLE IF EXISTS reset_password_requests;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS attachments;
 DROP TABLE IF EXISTS locations;

@@ -112,6 +112,16 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 	            REFERENCES users(user_id)
     );
 
+CREATE TABLE IF NOT EXISTS reset_password_requests (
+        request_id SERIAL PRIMARY KEY,
+        user_id INTEGER NULL,
+        req_ip TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT fk_user_id
+            FOREIGN KEY(user_id) 
+	            REFERENCES users(user_id)
+    );
+
 CREATE TABLE IF NOT EXISTS specialties (
         specialty_id SERIAL PRIMARY KEY,
         specialty_name TEXT NOT NULL
@@ -506,10 +516,22 @@ VALUES
 
 INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes) 
 VALUES 
-(1, 4,  2,  '2023-09-11 19:10:25', '2023-09-11 19:30:25', ARRAY[2], NULL),
+(1, 4,  2,  '2023-03-11 19:10:25', '2023-03-11 19:30:25', ARRAY[2], NULL),
 (2, 1,  1,  '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks'),
 (1, 2,  1,  '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks'),
 (2, 2,  2,  '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL),
+(1, 4,  2,  '2023-04-11 19:10:25', '2023-04-11 19:30:25', ARRAY[2], NULL),
+(2, 1,  1,  '2022-04-19 12:10:25', '2022-04-19 13:20:11', ARRAY[5], 'Repetition is the key'),
+(1, 2,  1,  '2022-04-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO'),
+(2, 2,  2,  '2022-04-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL),
+(7, 3,  9,  '2023-05-10 08:00:25', '2023-05-10 08:50:11', NULL, 'Headed back out to the location to see the folks'),
+(2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', NULL, NULL),
+(1, 3,  2,  '2022-05-19 15:10:25', '2022-05-19 15:20:11', NULL, NULL),
+(6, 2,  7,  '2023-06-11 11:00:25', '2023-06-11 11:20:18', ARRAY[6], 'Twenty minute review of things.'),
+(3, 5,  4,  '2023-06-13 12:55:25', '2023-06-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.'),
+(4, 4,  7,  '2023-06-20 12:00:25', '2023-06-20 13:50:11', NULL, 'TODO'),
+(3, 5,  4,  '2023-06-23 12:10:25', '2023-06-23 13:20:11', ARRAY[5], 'Just racking them up right now'),
+(3, 3,  2,  '2023-06-22 12:00:25', '2023-06-22 13:50:11', NULL, 'Just a routine meeting for now.'),
 (7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
 (6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
 (1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),

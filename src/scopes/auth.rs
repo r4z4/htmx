@@ -4,6 +4,7 @@ use actix_web::{
     web::{self, Bytes, Data, Json},
     FromRequest, HttpRequest, HttpResponse, Responder, Scope,
 };
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use argonautica::{Hasher, Verifier};
 use chrono::{DateTime, Duration, Utc};
 use handlebars::Handlebars;
@@ -17,12 +18,12 @@ use std::{
     convert::Infallible,
     pin::Pin,
     sync::Arc,
-    task::{Context, Poll},
+    task::{Context, Poll}, ops::Deref,
 };
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME}, ValidatedUser};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME, send_email}, ValidatedUser};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -90,6 +91,10 @@ pub fn auth_scope() -> Scope {
         .service(basic_auth)
         .service(validate_email)
         .service(register_form)
+        .service(forgot_password_form)
+        .service(forgot_password)
+        .service(reset_password_form)
+        .service(reset_password)
         .service(logout)
 }
 
@@ -407,6 +412,165 @@ async fn validate_email(
         };
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
+    }
+}
+
+#[derive(Deserialize, FromRow, Validate)]
+pub struct ResetPasswordBody {
+    username: String,
+    password: String,
+    re_password: String,
+}
+
+#[get("/forgot-password")]
+async fn forgot_password_form(
+    state: Data<AppState>,
+    req: HttpRequest,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    let message = "No cookie present at logout".to_owned();
+    let body = hb
+        .render("forms/forgot-password-form", &format!("{:?}", message))
+        .unwrap();
+    return HttpResponse::Ok().body(body);
+}
+
+#[derive(Deserialize, FromRow, Validate)]
+pub struct ForgotPasswordBody {
+    email: String,
+}
+
+#[derive(Deserialize, FromRow, Validate)]
+pub struct ForgotPasswordResponse {
+    created_at: DateTime<Utc>,
+}
+
+#[post("/forgot-password")]
+async fn forgot_password(
+    state: Data<AppState>,
+    req: HttpRequest,
+    body: web::Form<ForgotPasswordBody>,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    println!("in forgot pass");
+    let socket = req.peer_addr().unwrap_or_else(|| {
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 9999)
+    });
+    let ip_addr = socket.ip();
+    let is_valid = body.validate();
+    if is_valid.is_err() {
+        println!("validation_err");
+        return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+    }
+    let _ = dbg!(is_valid);
+
+    match sqlx::query_as::<_, ForgotPasswordResponse>(
+        "INSERT INTO reset_password_requests (request_id, user_id, req_ip, created_at)
+        VALUES (DEFAULT, (SELECT user_id FROM users WHERE email = $1), $2, now())
+        RETURNING created_at",
+    )
+    .bind(body.email.deref())
+    .bind(ip_addr.to_string())
+    .fetch_one(&state.db)
+    .await
+    {
+        Ok(resp) => {
+            let created_at_fmt = resp.created_at.format("%b %-d, %-I:%M").to_string();
+            match send_email(&body.email, &format!("A password reset was requested on {}", created_at_fmt)).await {
+                Ok(_) => {
+                    let validation_response = ValidationResponse {
+                        msg: "Reset Password link has been sent.".to_owned(),
+                        class: "validation_success".to_owned(),
+                    };
+                    let body = hb
+                        .render("validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+                Err(e) => {
+                    let validation_response = ValidationResponse {
+                        msg: "Unable to send Reset Password link. Please ensure you have entered a valid email address.".to_owned(),
+                        class: "validation_error".to_owned(),
+                    };
+                    let body = hb
+                        .render("validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
+        },
+        Err(err) => {
+            let validation_response = ValidationResponse {
+                msg: "Error at the DB layer.".to_owned(),
+                class: "validation_error".to_owned(),
+            };
+            let body = hb
+                .render("validation", &validation_response)
+                .unwrap();
+            return HttpResponse::Ok().body(body);
+        }
+    }
+}
+
+#[get("/reset-password")]
+async fn reset_password_form(
+    state: Data<AppState>,
+    req: HttpRequest,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    let message = "No cookie present at logout".to_owned();
+    let body = hb
+        .render("forms/reset-password-form", &format!("{:?}", message))
+        .unwrap();
+    return HttpResponse::Ok().body(body);
+}
+
+#[post("/reset-password")]
+async fn reset_password(
+    state: Data<AppState>,
+    param: web::Query<EmailParam>,
+    req: HttpRequest,
+    body: Json<ResetPasswordBody>,
+    hb: web::Data<Handlebars<'_>>,
+) -> impl Responder {
+    let is_valid = body.validate();
+    if is_valid.is_err() {
+        return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+    }
+    let _ = dbg!(is_valid);
+    let user: ResetPasswordBody = body.into_inner();
+    let hash_secret = std::env::var("HASH_SECRET").unwrap_or("Ugh".to_owned());
+    let mut hasher = Hasher::default();
+    let hash = hasher
+        .with_password(user.password)
+        .with_secret_key(hash_secret)
+        .hash()
+        .unwrap();
+
+    match sqlx::query_as::<_, UserNoPassword>(
+        "UPDATE users SET password = $1, updated_at = now()
+        WHERE username = $3
+        RETURNING user_id, username",
+    )
+    .bind(hash)
+    .bind(user.username)
+    .fetch_one(&state.db)
+    .await
+    {
+        Ok(user) => {
+            let message = "Your Password has been reset. You may now login using these credentials.".to_owned();
+            let body = hb
+                .render("forms/reset-password-form", &format!("{:?}", message))
+                .unwrap();
+            return HttpResponse::Ok().body(body);
+        },
+        Err(err) => {
+            let message = "Unable to Reset Password. Please contact site administrator.".to_owned();
+            let body = hb
+                .render("forms/reset-password-form", &format!("{:?}", message))
+                .unwrap();
+            return HttpResponse::Ok().body(body);
+        }
     }
 }
 // email_regex.is_match(email_address)

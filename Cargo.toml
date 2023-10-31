@@ -30,6 +30,7 @@ struct_iterable = "0.1.1"
 image = "0.24.7"
 mime = "0.3.17"
 futures-util = "0.3.28"
+lettre = "0.11.1"
 
 [dev-dependencies]
 test-context = "0.1.4"

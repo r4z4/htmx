@@ -52,7 +52,7 @@
                     <button type="submit">Login</button>
                 </li>
                 <li>
-                    <div class="container" style="background-color: #eee">
+                    <div class="form_link_container" style="background-color: #eee">
                         <span class="reg">
                             <a 
                                 href="/"
@@ -64,7 +64,10 @@
                         </span>
                         <span class="psw">
                             <a 
-                                href="#"
+                                href="/"
+                                hx-get="auth/forgot-password"
+                                hx-target="#login_form"
+                                hx-swap="outerHTML"
                             > Forgot password?
                             </a>
                         </span>

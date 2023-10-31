@@ -1,5 +1,6 @@
-use actix_web::web::Data;
+use actix_web::{web::Data, HttpResponse};
 use lazy_static::lazy_static;
+use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
 use mini_markdown::render;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -458,4 +459,47 @@ pub async fn validate_and_get_user(
             error: format!("You must not be verfied: {}", err),
         }),
     }
+}
+
+pub async fn send_email(
+    to_email: &str,
+    msg: &str,
+) -> Result<(), String> {
+    let email = Message::builder()
+        .from("NoBody <nobody@domain.tld>".parse().unwrap())
+        .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
+        .to(to_email.parse().unwrap())
+        .subject("Happy new year")
+        .header(ContentType::TEXT_PLAIN)
+        .body(msg.to_owned())
+        .unwrap();
+
+        // dbg!(&email);
+
+        // let smtp_user = env::var("SMTP_USER").unwrap_or("NoUsername".to_string());
+        // let smtp_pass = env::var("SMTP_PASS").unwrap_or("NoPass".to_string());
+
+        // let creds = Credentials::new(smtp_user, smtp_pass);
+        // // Open a remote connection to gmail
+        // let mailer = SmtpTransport::relay("smtp.gmail.com")
+        //     .unwrap()
+        //     .credentials(creds)
+        //     .build();
+
+        let mut sender = StubTransport::new_ok();
+        let result = sender.send(&email);
+        assert!(result.is_ok());
+        assert_eq!(
+        sender.messages(),
+        vec![(
+            email.envelope().clone(),
+            String::from_utf8(email.formatted()).unwrap()
+        )],
+        );
+
+        // Send the email
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err("Error Sending Email".to_owned()),
+        }
 }

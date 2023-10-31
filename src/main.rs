@@ -127,11 +127,74 @@ async fn index(
             "header": "Login Form",
         });
         let body = hb.render("index", &data).unwrap();
-
-        HttpResponse::Ok().body(body)
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
+use lettre::message::header::ContentType;
+use lettre::transport::smtp::authentication::Credentials;
+use lettre::{Message, SmtpTransport, Transport};
+use lettre::transport::stub::StubTransport;
+#[get("/send-email")]
+async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>,) -> impl Responder {
+    let email = Message::builder()
+        .from("NoBody <nobody@domain.tld>".parse().unwrap())
+        .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
+        .to("r4z4 <r4z4aa@gmail.com>".parse().unwrap())
+        .subject("Happy new year")
+        .header(ContentType::TEXT_PLAIN)
+        .body(String::from("Be happy!"))
+        .unwrap();
+
+    // dbg!(&email);
+
+    // let smtp_user = env::var("SMTP_USER").unwrap_or("NoUsername".to_string());
+    // let smtp_pass = env::var("SMTP_PASS").unwrap_or("NoPass".to_string());
+    
+    // let creds = Credentials::new(smtp_user, smtp_pass);
+    // // Open a remote connection to gmail
+    // let mailer = SmtpTransport::relay("smtp.gmail.com")
+    //     .unwrap()
+    //     .credentials(creds)
+    //     .build();
+
+    let mut sender = StubTransport::new_ok();
+    let result = sender.send(&email);
+    assert!(result.is_ok());
+    assert_eq!(
+        sender.messages(),
+        vec![(
+            email.envelope().clone(),
+            String::from_utf8(email.formatted()).unwrap()
+        )],
+    );
+    
+    // Send the email
+    match result {
+        Ok(_) => {
+            let msg = "Email sent successfully!";
+            dbg!(msg);
+            let template_data = json! {{
+                // "user": user,
+                "data": &msg,
+            }};
+            let body = hb.render("about-us", &template_data).unwrap();
+            HttpResponse::Ok().body(body)
+        },
+        Err(e) => {
+            let msg = format!("Could not send email: {e:?}");
+            dbg!(&msg);
+            let template_data = json! {{
+                // "user": user,
+                "data": &msg,
+            }};
+            let body = hb.render("about-us", &template_data).unwrap();
+            HttpResponse::Ok().body(body)
+        },
+    }
+}
 
 #[get("/about-us")]
 async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>,) -> impl Responder {
@@ -543,6 +606,7 @@ async fn main() -> std::io::Result<()> {
             .service(consultant_scope())
             .service(location_scope())
             .service(client_scope())
+            .service(send_email)
             .service(index)
             .service(about_us)
             .service(fixed_table)
