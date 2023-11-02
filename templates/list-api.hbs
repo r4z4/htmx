@@ -41,6 +41,7 @@
     </div>
 
     <div class="op_container" id="list_op_container">
+        <p hx-get={{get_list_view user.list_view}} hx-trigger="load" hx-swap="innerHTML" hx-target="#list_op_container">Default View</p>
     </div>
 </div>
 {{/main-layout}}

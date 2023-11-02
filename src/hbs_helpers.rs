@@ -56,6 +56,16 @@ handlebars_helper!(attachments_rte: |slug: String, entity_type_id: i32| {
     }
 });
 
+handlebars_helper!(get_list_view: |list_view: String| {
+    match list_view.as_str() {
+        "consult" => String::from("/consult/list"),
+        "consultant" => String::from("/consultant/list"),
+        "location" => String::from("/location/list"),
+        "client" => String::from("/client/list"),
+        _ => String::from("/consult/list")
+    }
+});
+
 handlebars_helper!(int_eq: |int_1: usize, int_2: usize| {
     println!("int_eq firing w/ {} & {}", int_1, int_2);
     if int_1 == int_2 {

@@ -476,9 +476,10 @@ pub async fn validate_and_get_user(
 ) -> Result<Option<ValidatedUser>, crate::ValidationError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email, user_type_id
+        "SELECT username, email, user_type_id, user_settings.list_view
         FROM users
-        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+        LEFT JOIN user_sessions ON user_sessions.user_id = users.user_id
+        LEFT JOIN user_settings ON user_settings.user_id = users.user_id
         WHERE session_id = $1
         AND expires > NOW()",
     )

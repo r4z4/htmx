@@ -44,6 +44,18 @@
       </li>
       <li>
 
+      <li>
+        <div>
+          <label for="theme_select">Preferred List View</label>
+          <select class="field-style field-full align-none" id="theme_select" name="theme_select">
+            {{#each list_view_options}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </li>
+      <li>
+
       {{!-- <li>
         <div>
           <label for="theme_select">Timezone</label>

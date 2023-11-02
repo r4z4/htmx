@@ -81,6 +81,7 @@ pub struct AuthUser {
     username: String,
     password: String,
     user_type_id: i32,
+    list_view: String,
     email: String,
 }
 
@@ -198,7 +199,10 @@ async fn basic_auth(
     let password = &body.password;
 
     match sqlx::query_as::<_, AuthUser>(
-        "SELECT user_id, username, password, email, user_type_id FROM users WHERE username = $1",
+        "SELECT users.user_id, username, password, email, user_type_id, user_settings.list_view
+        FROM users 
+        INNER JOIN user_settings ON user_settings.user_id = users.user_id
+        WHERE username = $1",
     )
     .bind(username.to_string())
     .fetch_one(&state.db)
@@ -236,6 +240,7 @@ async fn basic_auth(
                             username: user.username,
                             email: user.email,
                             user_type_id: user.user_type_id,
+                            list_view: user.list_view,
                         };
                         let template_data = json!({
                             "user": user,
@@ -248,9 +253,13 @@ async fn basic_auth(
                             .body(body);
                     }
                     Err(err) => {
-                        dbg!(err);
-                        let err = "Invalid Login Request".to_owned();
-                        let body = hb.render("validation", &err).unwrap();
+                        dbg!(&err);
+                        let error_msg = "Invalid Login Request".to_owned() + format!("{}", err).as_str();
+                        let validation_response = ValidationResponse {
+                            msg: error_msg,
+                            class: "validation_error".to_owned(),
+                        };
+                        let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                 }

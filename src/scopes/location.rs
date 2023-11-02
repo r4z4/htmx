@@ -366,6 +366,7 @@ async fn create_location(
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
+                        list_view: user.list_view,
                     };
                     // let user_body = hb.render("homepage", &user).unwrap();
                     if validate_location_input(&body) {

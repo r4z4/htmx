@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
         user_settings_id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         theme_id INTEGER NOT NULL DEFAULT 1,
+        list_view TEXT NOT NULL DEFAULT 'consult',
         notifications BOOLEAN NOT NULL DEFAULT FALSE,
         newsletter BOOLEAN NOT NULL DEFAULT FALSE,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

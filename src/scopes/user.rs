@@ -38,10 +38,33 @@ pub fn theme_options() -> Vec<SelectOption> {
     .to_vec()
 }
 
+pub fn list_view_options() -> Vec<SelectOption> {
+    [
+        SelectOption {
+            key: Some("consult".to_owned()),
+            value: 1,
+        },
+        SelectOption {
+            key: Some("consultant".to_owned()),
+            value: 2,
+        },
+        SelectOption {
+            key: Some("client".to_owned()),
+            value: 3,
+        },
+        SelectOption {
+            key: Some("location".to_owned()),
+            value: 4,
+        },
+    ]
+    .to_vec()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SettingsFormTemplate {
     entity: Option<UserSettingsObj>,
     theme_options: Vec<SelectOption>,
+    list_view_options: Vec<SelectOption>,
 }
 
 #[get("/settings")]
@@ -76,6 +99,7 @@ async fn settings(
                     let template_data = SettingsFormTemplate {
                         entity: Some(user_settings_obj),
                         theme_options: theme_options(),
+                        list_view_options: list_view_options(),
                     };
                     let body = hb.render("user/user-settings", &template_data).unwrap();
                     return HttpResponse::Ok()
@@ -133,6 +157,7 @@ async fn edit_settings(
                     user_type_id: user.user_type_id,
                     username: user.username,
                     theme_options: theme_options(),
+                    list_view_options: list_view_options(),
                     avatar_path: user.avatar_path,
                     settings_updated: user.settings_updated.format("%b %-d, %-I:%M").to_string(),
                     created_at_fmt: user.created_at.format("%b %-d, %-I:%M").to_string(),
@@ -221,7 +246,7 @@ async fn home(
     // let user_id = get_user_id_from_token();
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserHomeQuery>(
-            "SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
+            "SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated, user_settings.list_view
                 -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
                 -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
             FROM users
@@ -240,12 +265,14 @@ async fn home(
                     username: unwrapped_user.username.clone(),
                     email: unwrapped_user.email.clone(),
                     user_type_id: unwrapped_user.user_type_id,
+                    list_view: unwrapped_user.list_view,
                 };
                 let user_home_model = UserHomeModel {
                     user_id: unwrapped_user.user_id,
                     user_type_id: unwrapped_user.user_type_id,
                     username: unwrapped_user.username,
                     theme_options: theme_options(),
+                    list_view_options: list_view_options(),
                     avatar_path: unwrapped_user.avatar_path,
                     settings_updated: unwrapped_user.settings_updated.format("%b %-d, %-I:%M").to_string(),
                     created_at_fmt: unwrapped_user.created_at.format("%b %-d, %-I:%M").to_string(),

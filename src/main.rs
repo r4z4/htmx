@@ -11,7 +11,7 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
-    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte
+    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte, get_list_view
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -97,6 +97,7 @@ async fn index(
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
+                        list_view: user.list_view,
                     };
                     let template_data = json!({
                         "user": user,
@@ -212,6 +213,7 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
+                        list_view: user.list_view,
                     };
                     let template_data = json! {{
                         "user": user,
@@ -421,6 +423,7 @@ async fn detail(
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
+                        list_view: user.list_view,
                     };
                     let template_data = json! {{
                         "user": user,
@@ -495,6 +498,7 @@ pub struct ValidatedUser {
     username: String,
     user_type_id: i32,
     email: String,
+    list_view: String,
 }
 
 pub trait HeaderValueExt {
@@ -587,6 +591,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("attachments_rte", Box::new(attachments_rte));
     handlebars.register_helper("get_search_rte", Box::new(get_search_rte));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
+    handlebars.register_helper("get_list_view", Box::new(get_list_view));
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
