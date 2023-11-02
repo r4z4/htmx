@@ -1,9 +1,27 @@
-<body hx-boost="true">
-<div id="modal" _="on closeModal add .closing then wait for animationend then remove me">
+<script>
+document.getElementById("close_btn").addEventListener('click', (event) => {
+	location.reload();  
+});    
+</script>
+
+<body 
+	hx-boost="true"
+	_="on fetch:beforeRequest(headers)
+		set headers['Hx-Boosted'] to true
+		set headers['Hx-Request'] to true
+		"
+	>
+<div id="modal" 
+	hx-boost="true"
+	_="on closeModal add .closing then wait for animationend 
+		then remove me 
+		then fetch /crud as html
+		put it into #main_body"
+	>
 	<div class="modal-underlay" _="on click trigger closeModal"></div>
 	<div class="modal-content">
         {{> @partial-block }}
-		<button _="on click trigger closeModal">Close</button>
+		<button _="on click trigger closeModal" id="close_btn">Close</button>
 	</div>
 </div>
 </body>
