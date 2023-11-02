@@ -5,7 +5,7 @@ use mini_markdown::render;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
-use sqlx::FromRow;
+use sqlx::{FromRow, Postgres, Pool};
 use std::fmt::Debug;
 use std::fs::File;
 use validator::{Validate, ValidationError};
@@ -127,6 +127,36 @@ pub struct ResponsiveTableData<T> {
     pub lookup_url: String,
     pub entities: Vec<T>,
 }
+
+#[derive(Serialize, Validate, FromRow, Deserialize, Debug, Default, Clone)]
+pub struct State {
+    state_name: String
+}
+
+pub async fn get_state_options(pool: &Pool<Postgres>) -> Vec<StringSelectOption> {
+    match sqlx::query_as::<_, State>(
+        "SELECT state_name FROM states",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(state_list) => {
+            state_list.iter().map(|state| StringSelectOption {
+                key: Some(state.state_name.to_owned()),
+                value: state.state_name.to_owned(),
+            }).collect::<Vec<StringSelectOption>>()
+        },
+        Err(err) => {
+            dbg!(&err);
+            vec![
+                StringSelectOption {
+                    key: Some("Select One".to_string()),
+                    value: "Select One".to_string(),
+                }
+            ]
+        }
+    }
+} 
 
 pub fn states() -> Vec<StringSelectOption> {
     vec![

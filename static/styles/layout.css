@@ -988,6 +988,24 @@ tfoot td:first-child {
   box-shadow: inset 0px 1px black;
 }
 
+/****************
+*** Scrollbar ***
+****************/
+
+select::-webkit-scrollbar {
+    width: 12px;               
+}
+  
+select::-webkit-scrollbar-track {
+    background: rgb(200, 201, 204)
+}
+  
+select::-webkit-scrollbar-thumb {
+    background-color: #216288;    
+    border-radius: 20px;  
+    border: 3px solid rgb(238, 201, 132);  
+}
+
 
 /*********************
 ** Responsive Table **

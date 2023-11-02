@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS territories;
 DROP TABLE IF EXISTS specialties;
 DROP TABLE IF EXISTS mime_types;
 DROP TABLE IF EXISTS entities; 
+DROP TABLE IF EXISTS states; 
 
 DROP TABLE IF EXISTS consutlants;
 DROP TABLE IF EXISTS user_sessions;

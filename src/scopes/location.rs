@@ -249,7 +249,7 @@ async fn location_form(
 
     let template_data = LocationFormTemplate {
         entity: None,
-        state_options: config::states(),
+        state_options: config::get_state_options(&state.db).await,
         location_contact_options: config::location_contacts(),
     };
 
@@ -290,7 +290,7 @@ async fn location_edit_form(
 
     let template_data = LocationFormTemplate {
         entity: Some(location),
-        state_options: config::states(),
+        state_options: config::get_state_options(&state.db).await,
         location_contact_options: config::location_contacts(),
     };
 

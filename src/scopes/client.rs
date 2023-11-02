@@ -112,7 +112,7 @@ async fn client_form(
         entity: None,
         account_options: account_options,
         specialty_options: config::specialty_options(),
-        state_options: config::states(),
+        state_options: config::get_state_options(&state.db).await,
     };
 
     let body = hb.render("forms/client-form", &template_data).unwrap();
@@ -177,7 +177,7 @@ async fn client_edit_form(
     let template_data = ClientFormTemplate {
         entity: Some(client),
         specialty_options: config::specialty_options(),
-        state_options: config::states(),
+        state_options: config::get_state_options(&state.db).await,
         account_options: account_options,
     };
 

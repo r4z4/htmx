@@ -22,7 +22,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use std::env;
 use validator::Validate;
 
-use crate::config::{mock_fixed_table_data, validate_and_get_user};
+use crate::config::{mock_fixed_table_data, validate_and_get_user, ResponsiveTableData};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
@@ -60,11 +60,11 @@ pub struct IndexData {
     pub description: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
-pub struct ResponsiveTableData {
-    pub table_headers: Vec<String>,
-    pub table_rows: Vec<ResponsiveTableRow>,
-}
+// #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+// pub struct ResponsiveTableData {
+//     pub table_headers: Vec<String>,
+//     pub table_rows: Vec<ResponsiveTableRow>,
+// }
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct ResponsiveTableRow {
     pub tds: Vec<String>,
@@ -263,6 +263,7 @@ async fn crud_api(
     state: Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+
         match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {

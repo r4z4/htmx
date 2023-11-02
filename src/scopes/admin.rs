@@ -7,6 +7,8 @@ use actix_web::{
 };
 
 use handlebars::Handlebars;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     config::{
@@ -32,6 +34,7 @@ pub fn admin_scope() -> Scope {
         .service(subadmin_form)
         .service(edit_user)
         .service(admin_home)
+        .service(recent_activity)
         //.service(edit_subadmin)
         .service(get_users_handler)
 }
@@ -87,6 +90,67 @@ async fn admin_home(
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PgStat {
+    query: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableQuery {
+    query: String,
+    slug: String,
+}
+
+#[get("/recent-activity")]
+async fn recent_activity(
+    opts: web::Query<FilterOptions>,
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+) -> impl Responder {
+
+    let recent = sqlx::query_as!(
+        PgStat,
+        "SELECT query FROM pg_stat_activity WHERE state_change IS NOT NULL;
+        ",
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    if recent.is_err() {
+        let err = "Error occurred while fetching from pg_stat";
+        let body = hb.render("validation", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let recent_queries = recent.unwrap();
+
+    let table_queries = recent_queries.iter().map(|query| TableQuery {
+        query: query.query.clone().unwrap_or_else(|| "No Query".to_string()),
+        slug: Uuid::new_v4().to_string(),
+    }).collect::<Vec<TableQuery>>();
+
+    let recent_queries_table_data = ResponsiveTableData {
+        entity_type_id: 4,
+        vec_len: recent_queries.len(),
+        lookup_url: "/consultant/list?page=".to_string(),
+        page: opts.page.unwrap_or(1),
+        entities: table_queries,
+    };
+
+    // Only return whole Table if brand new
+    if opts.key.is_none() && opts.search.is_none() {
+        let body = hb
+            .render("responsive-table", &recent_queries_table_data)
+            .unwrap();
+        return HttpResponse::Ok().body(body);
+    } else {
+        let body = hb
+            .render("responsive-table-inner", &recent_queries_table_data)
+            .unwrap();
+        return HttpResponse::Ok().body(body);
     }
 }
 

@@ -23,8 +23,8 @@ DROP TYPE IF EXISTS mime_type;
 -- CREATE TYPE consultant_territory AS ENUM ('Midwest', 'East', 'West', 'North', 'South');
 
 -- CREATE TYPE state_abbr AS ENUM ('AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA',
-        -- 'MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN',
-        -- 'TX','UT','VT','VA','WA','WV','WI','WY','AS','GU','MP','PR','VI','DC');
+--         'MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN',
+--         'TX','UT','VT','VA','WA','WV','WI','WY','AS','GU','MP','PR','VI','DC');
 
 -- CREATE TYPE state_name AS ENUM ('Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia',
         -- 'Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts',
@@ -126,6 +126,16 @@ CREATE TABLE IF NOT EXISTS specialties (
         specialty_id SERIAL PRIMARY KEY,
         specialty_name TEXT NOT NULL
     );
+
+CREATE TABLE IF NOT EXISTS states (
+        state_id SERIAL PRIMARY KEY,
+        state_name CHAR(2) NOT NULL
+    );
+
+INSERT INTO states (state_name)
+    VALUES ('AL'),('AK'),('AZ'),('AR'),('CA'),('CO'),('CT'),('DE'),('FL'),('GA'),('HI'),('ID'),('IL'),('IN'),('IA'),('KS'),('KY'),('LA'),('ME'),('MD'),('MA'),
+        ('MI'),('MN'),('MS'),('MO'),('MT'),('NE'),('NV'),('NH'),('NJ'),('NM'),('NY'),('NC'),('ND'),('OH'),('OK'),('OR'),('PA'),('RI'),('SC'),('SD'),('TN'),
+        ('TX'),('UT'),('VT'),('VA'),('WA'),('WV'),('WI'),('WY'),('AS'),('GU'),('MP'),('PR'),('VI'),('DC');
 
 CREATE TABLE IF NOT EXISTS entities (
         entity_id SERIAL PRIMARY KEY,
