@@ -62,6 +62,8 @@ pub struct FilterOptions {
     pub limit: Option<usize>,
     #[validate(length(max = 36, message = "Cannot exceed 36 characters in a table search"))]
     pub search: Option<String>,
+    pub key: Option<String>,
+    pub dir: Option<String>,
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]

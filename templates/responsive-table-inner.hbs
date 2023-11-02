@@ -2,7 +2,22 @@
   <thead>
     <tr>
       {{#each entities.[0]}}
-        <th>{{to_title_case @key}}</th>
+        <th>{{to_title_case @key}}
+          <i 
+            id={{concat_str_args @key "_ASC"}}
+            hx-get={{sort_rte @key @root.entity_type_id "ASC"}} 
+            hx-target="#f1_table" 
+            hx-swap="outerHTML"
+            hx-indicator=".htmx-indicator"
+          >↑</i>
+          <i
+            id={{concat_str_args @key "_DESC"}}
+            hx-get={{sort_rte @key @root.entity_type_id "DESC"}} 
+            hx-target="#f1_table"
+            hx-swap="outerHTML"
+            hx-indicator=".htmx-indicator"
+          >↓</i>
+        </th>
       {{/each}}
         <th>Action(s)</th>
     </tr>

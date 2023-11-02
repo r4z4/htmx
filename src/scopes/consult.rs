@@ -7,6 +7,7 @@ use actix_web::{
 use chrono::{DateTime, NaiveDate, Utc};
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+use sqlx::{QueryBuilder, Execute, Postgres, Pool, postgres::PgRow, Error, FromRow, Row};
 
 use crate::{
     config::{FilterOptions, ResponsiveTableData, SelectOption},
@@ -250,6 +251,74 @@ async fn consult_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
+
+async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<ConsultList>, Error> {
+    let limit = opts.limit.unwrap_or(10);
+    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+    dbg!(&opts);
+    let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
+        "SELECT 
+        consults.slug, 
+        CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
+        location_name, 
+        COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
+        consult_start, 
+        consult_end, 
+        notes 
+    FROM consults
+    INNER JOIN clients ON consults.client_id = clients.client_id
+    INNER JOIN locations ON consults.location_id = locations.location_id
+    INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id"
+    );
+
+    if let Some(search) = &opts.search {
+        query.push(" WHERE notes LIKE ");
+        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+    }
+
+    if let Some(sort_key) = &opts.key {
+        query.push(" ORDER BY ");
+        query.push(String::from(sort_key.to_owned() + " " + &opts.dir.clone().unwrap()));
+    } else {
+        query.push(" ORDER BY consults.updated_at DESC, consults.created_at DESC");
+    }
+
+    query.push(" LIMIT ");
+    query.push_bind(limit as i32);
+    query.push(" OFFSET ");
+    query.push_bind(offset as i32);
+
+    let q_build = query.build();
+    let res = q_build.fetch_all(pool).await;
+
+    // This almost got me there. Error on .as_str() for consult_start column
+    // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
+
+    let consults = res.unwrap().iter().map(|row| ConsultList::from_row(row).unwrap()).collect::<Vec<ConsultList>>();
+
+    Ok(consults)
+
+    // let query_str = query.build().sql().into();
+    // dbg!(&query_str);
+    // query_str
+    // res
+}
+
+// Had to remove conflicting FromRow in the derive list
+impl<'r> FromRow<'r, PgRow> for ConsultList {
+    fn from_row(row: &'r PgRow) -> Result<Self, Error> {
+        let slug = row.try_get("slug")?;
+        let consultant_name = row.try_get("consultant_name")?;
+        let location_name = row.try_get("location_name")?;
+        let client_name = row.try_get("client_name")?;
+        let consult_start = row.try_get("consult_start")?;
+        let consult_end = row.try_get("consult_end")?;
+        let notes = row.try_get("notes")?;
+
+        Ok(ConsultList{ slug, consultant_name, location_name, client_name, consult_start, consult_end, notes })
+    }
+}
+
 #[get("/list")]
 pub async fn get_consults_handler(
     opts: web::Query<FilterOptions>,
@@ -260,27 +329,30 @@ pub async fn get_consults_handler(
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    let query_result = sqlx::query_as!(
-        ConsultList,
-        "SELECT 
-            consults.slug, 
-            CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
-            location_name, 
-            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
-            consult_start, 
-            consult_end, 
-            notes 
-        FROM consults
-        INNER JOIN clients ON consults.client_id = clients.client_id
-        INNER JOIN locations ON consults.location_id = locations.location_id
-        INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id
-        ORDER by consults.updated_at, consults.created_at 
-        LIMIT $1 OFFSET $2",
-        limit as i32,
-        offset as i32
-    )
-    .fetch_all(&data.db)
-    .await;
+    // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
+    let query_result = sort_query(&opts, &data.db).await;
+
+    // let query_result = sqlx::query_as!(
+    //     ConsultList,
+    //     "SELECT 
+    //         consults.slug, 
+    //         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
+    //         location_name, 
+    //         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
+    //         consult_start, 
+    //         consult_end, 
+    //         notes 
+    //     FROM consults
+    //     INNER JOIN clients ON consults.client_id = clients.client_id
+    //     INNER JOIN locations ON consults.location_id = locations.location_id
+    //     INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id
+    //     ORDER BY consults.updated_at DESC, consults.created_at DESC
+    //     LIMIT $1 OFFSET $2",
+    //     limit as i32,
+    //     offset as i32
+    // )
+    // .fetch_all(&data.db)
+    // .await;
 
     dbg!(&query_result);
 

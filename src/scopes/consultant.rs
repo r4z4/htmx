@@ -16,6 +16,7 @@ use handlebars::Handlebars;
 use image::{imageops::FilterType, DynamicImage};
 use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
 use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgRow, FromRow, Row, QueryBuilder, Postgres, Pool};
 use std::io::Write;
 use uuid::Uuid;
 
@@ -47,6 +48,72 @@ pub struct ResponsiveConsultantData {
     entities: Vec<ResponseConsultant>,
 }
 
+async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<ResponseConsultant>, Error> {
+    let limit = opts.limit.unwrap_or(10);
+    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+    dbg!(&opts);
+    let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
+        "SELECT 
+        consultant_id,
+        slug,
+        specialty_name,
+        territory_name,
+        consultant_f_name,
+        consultant_l_name
+    FROM consultants
+    INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
+    INNER JOIN territories ON territories.territory_id = consultants.territory_id"
+    );
+
+    if let Some(search) = &opts.search {
+        query.push(" WHERE consultant_l_name LIKE ");
+        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+        query.push(" OR consultant_f_name LIKE ");
+        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+    }
+
+    if let Some(sort_key) = &opts.key {
+        query.push(" ORDER BY ");
+        query.push(String::from(sort_key.to_owned() + " " + &opts.dir.clone().unwrap()));
+    } else {
+        query.push(" ORDER BY consultants.updated_at DESC, consultants.created_at DESC");
+    }
+
+    query.push(" LIMIT ");
+    query.push_bind(limit as i32);
+    query.push(" OFFSET ");
+    query.push_bind(offset as i32);
+
+    let q_build = query.build();
+    let res = q_build.fetch_all(pool).await;
+
+    // This almost got me there. Error on .as_str() for consult_start column
+    // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
+
+    let consultants = res.unwrap().iter().map(|row| ResponseConsultant::from_row(row).unwrap()).collect::<Vec<ResponseConsultant>>();
+
+    Ok(consultants)
+
+    // let query_str = query.build().sql().into();
+    // dbg!(&query_str);
+    // query_str
+    // res
+}
+
+// Had to remove conflicting FromRow in the derive list
+impl<'r> FromRow<'r, PgRow> for ResponseConsultant {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+        let slug = row.try_get("slug")?;
+        let consultant_id = row.try_get("consultant_id")?;
+        let specialty_name = row.try_get("specialty_name")?;
+        let territory_name = row.try_get("territory_name")?;
+        let consultant_f_name = row.try_get("consultant_f_name")?;
+        let consultant_l_name = row.try_get("consultant_l_name")?;
+        
+        Ok(ResponseConsultant{ slug, consultant_id, specialty_name, territory_name, consultant_f_name, consultant_l_name })
+    }
+}
+
 #[get("/list")]
 pub async fn get_consultants_handler(
     opts: web::Query<FilterOptions>,
@@ -57,101 +124,136 @@ pub async fn get_consultants_handler(
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    if let Some(like) = &opts.search {
-        let search_sql = format!("%{}%", like);
-        let query_result = sqlx::query_as!(
-            ResponseConsultant,
-            "SELECT 
-                consultant_id,
-                slug,
-                specialty_name,
-                territory_name,
-                consultant_f_name,
-                consultant_l_name
-            FROM consultants
-            INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-            INNER JOIN territories ON territories.territory_id = consultants.territory_id
-            WHERE consultant_f_name LIKE $3
-            OR consultant_l_name LIKE $3
-            ORDER by consultant_id 
-            LIMIT $1 OFFSET $2",
-            limit as i32,
-            offset as i32,
-            search_sql
-        )
-        .fetch_all(&data.db)
-        .await;
+    let query_result = sort_query(&opts, &data.db).await;
 
-        dbg!(&query_result);
+    dbg!(&query_result);
 
-        if query_result.is_err() {
-            let err = "Error occurred while fetching all consultant records";
-            // return HttpResponse::InternalServerError()
-            //     .json(json!({"status": "error","message": message}));
-            let body = hb.render("validation", &err).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
-
-        let consultants = query_result.unwrap();
-
-        let consultants_table_data = ResponsiveTableData {
-            entity_type_id: 4,
-            vec_len: consultants.len(),
-            lookup_url: "/consultant/list?page=".to_string(),
-            page: opts.page.unwrap_or(1),
-            entities: consultants,
-        };
-
-        let body = hb
-            .render("responsive-table-inner", &consultants_table_data)
-            .unwrap();
+    if query_result.is_err() {
+        let err = "Error occurred while fetching all consultant records";
+        // return HttpResponse::InternalServerError()
+        //     .json(json!({"status": "error","message": message}));
+        let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
-    } else {
-        let query_result = sqlx::query_as!(
-            ResponseConsultant,
-            "SELECT 
-                consultant_id,
-                slug,
-                specialty_name,
-                territory_name,
-                consultant_f_name,
-                consultant_l_name
-            FROM consultants
-            INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-            INNER JOIN territories ON territories.territory_id = consultants.territory_id
-            ORDER by consultant_id 
-            LIMIT $1 OFFSET $2",
-            limit as i32,
-            offset as i32
-        )
-        .fetch_all(&data.db)
-        .await;
+    }
 
-        dbg!(&query_result);
+    let consultants = query_result.unwrap();
 
-        if query_result.is_err() {
-            let err = "Error occurred while fetching all consultant records";
-            // return HttpResponse::InternalServerError()
-            //     .json(json!({"status": "error","message": message}));
-            let body = hb.render("validation", &err).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
+    let consultants_table_data = ResponsiveTableData {
+        entity_type_id: 4,
+        vec_len: consultants.len(),
+        lookup_url: "/consultant/list?page=".to_string(),
+        page: opts.page.unwrap_or(1),
+        entities: consultants,
+    };
 
-        let consultants = query_result.unwrap();
-
-        let consultants_table_data = ResponsiveTableData {
-            entity_type_id: 4,
-            vec_len: consultants.len(),
-            lookup_url: "/consultant/list?page=".to_string(),
-            page: opts.page.unwrap_or(1),
-            entities: consultants,
-        };
-
+    // Only return whole Table if brand new
+    if opts.key.is_none() && opts.search.is_none() {
         let body = hb
             .render("responsive-table", &consultants_table_data)
             .unwrap();
         return HttpResponse::Ok().body(body);
+    } else {
+        let body = hb
+            .render("responsive-table-inner", &consultants_table_data)
+            .unwrap();
+        return HttpResponse::Ok().body(body);
     }
+
+    // if let Some(like) = &opts.search {
+    //     let search_sql = format!("%{}%", like);
+    //     let query_result = sqlx::query_as!(
+    //         ResponseConsultant,
+    //         "SELECT 
+    //             consultant_id,
+    //             slug,
+    //             specialty_name,
+    //             territory_name,
+    //             consultant_f_name,
+    //             consultant_l_name
+    //         FROM consultants
+    //         INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
+    //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
+    //         WHERE consultant_f_name LIKE $3
+    //         OR consultant_l_name LIKE $3
+    //         ORDER by consultant_id 
+    //         LIMIT $1 OFFSET $2",
+    //         limit as i32,
+    //         offset as i32,
+    //         search_sql
+    //     )
+    //     .fetch_all(&data.db)
+    //     .await;
+
+    //     dbg!(&query_result);
+
+    //     if query_result.is_err() {
+    //         let err = "Error occurred while fetching all consultant records";
+    //         // return HttpResponse::InternalServerError()
+    //         //     .json(json!({"status": "error","message": message}));
+    //         let body = hb.render("validation", &err).unwrap();
+    //         return HttpResponse::Ok().body(body);
+    //     }
+
+    //     let consultants = query_result.unwrap();
+
+    //     let consultants_table_data = ResponsiveTableData {
+    //         entity_type_id: 4,
+    //         vec_len: consultants.len(),
+    //         lookup_url: "/consultant/list?page=".to_string(),
+    //         page: opts.page.unwrap_or(1),
+    //         entities: consultants,
+    //     };
+
+    //     let body = hb
+    //         .render("responsive-table-inner", &consultants_table_data)
+    //         .unwrap();
+    //     return HttpResponse::Ok().body(body);
+    // } else {
+    //     let query_result = sqlx::query_as!(
+    //         ResponseConsultant,
+    //         "SELECT 
+    //             consultant_id,
+    //             slug,
+    //             specialty_name,
+    //             territory_name,
+    //             consultant_f_name,
+    //             consultant_l_name
+    //         FROM consultants
+    //         INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
+    //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
+    //         ORDER by consultant_id 
+    //         LIMIT $1 OFFSET $2",
+    //         limit as i32,
+    //         offset as i32
+    //     )
+    //     .fetch_all(&data.db)
+    //     .await;
+
+    //     dbg!(&query_result);
+
+    //     if query_result.is_err() {
+    //         let err = "Error occurred while fetching all consultant records";
+    //         // return HttpResponse::InternalServerError()
+    //         //     .json(json!({"status": "error","message": message}));
+    //         let body = hb.render("validation", &err).unwrap();
+    //         return HttpResponse::Ok().body(body);
+    //     }
+
+    //     let consultants = query_result.unwrap();
+
+    //     let consultants_table_data = ResponsiveTableData {
+    //         entity_type_id: 4,
+    //         vec_len: consultants.len(),
+    //         lookup_url: "/consultant/list?page=".to_string(),
+    //         page: opts.page.unwrap_or(1),
+    //         entities: consultants,
+    //     };
+
+    //     let body = hb
+    //         .render("responsive-table", &consultants_table_data)
+    //         .unwrap();
+    //     return HttpResponse::Ok().body(body);
+    // }
 }
 
 #[get("/form")]

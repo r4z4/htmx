@@ -28,7 +28,7 @@ pub struct ConsultFormRequest {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
+#[derive(Debug, Validate, Serialize, Clone, Deserialize)]
 pub struct ConsultList {
     // pub consult_id: i32,
     pub slug: String,

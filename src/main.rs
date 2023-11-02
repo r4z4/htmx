@@ -11,7 +11,7 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
-    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case,
+    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -582,6 +582,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("concat_str_args", Box::new(concat_str_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
     handlebars.register_helper("form_rte", Box::new(form_rte));
+    handlebars.register_helper("sort_rte", Box::new(sort_rte));
     handlebars.register_helper("attachments_rte", Box::new(attachments_rte));
     handlebars.register_helper("get_search_rte", Box::new(get_search_rte));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));

@@ -26,11 +26,26 @@ handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
     }
 });
 
+handlebars_helper!(sort_rte: |key: String, entity_type_id: i32, dir: String| {
+    match entity_type_id {
+        1 => String::from("/admin/list?key=") + &key + "&dir=" + &dir,
+        // Relative to /admin for admin
+        2 => String::from("subadmin/list?key=") + &key + "&dir=" + &dir,
+        // Admin & Subadmin same form (for now)
+        3 => String::from("subadmin/list?key=") + &key + "&dir=" + &dir,
+        4 => String::from("consultant/list?key=") + &key + "&dir=" + &dir,
+        5 => String::from("location/list?key=") + &key + "&dir=" + &dir,
+        6 => String::from("consult/list?key=") + &key + "&dir=" + &dir,
+        7 => String::from("client/list?key=") + &key + "&dir=" + &dir,
+        _ => String::from("form/user/") + &key + "&dir=" + &dir
+    }
+});
+
 handlebars_helper!(attachments_rte: |slug: String, entity_type_id: i32| {
     match entity_type_id {
-        1 => String::from("/user/attachements/") + &slug,
+        1 => String::from("/user/attachments/") + &slug,
         // Relative to /admin for admin
-        2 => String::from("/user/attachements/") + &slug,
+        2 => String::from("/user/attachments/") + &slug,
         // Admin & Subadmin same form (for now)
         3 => String::from("/user/attachments/") + &slug,
         4 => String::from("consultant/attachments/") + &slug,
