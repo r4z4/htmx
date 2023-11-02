@@ -13,6 +13,7 @@ services:
       POSTGRES_PASSWORD: postgres
       PGDATA: /var/lib/postgresql/data/pgdata
     restart: "no"
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_filename=postgresql-%a.log", "-c", "log_rotation_age=1d", "-c", "log_truncate_on_rotation=on"]
     volumes:
       - pgdata:/var/lib/postgresql/data
 volumes:
