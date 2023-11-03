@@ -42,6 +42,15 @@ button {
     color: blue;
 }
 
+button:disabled {
+    cursor: not-allowed;
+}
+
+[disabled] {
+    opacity: .6;
+    cursor: default;
+  }
+
 /***********
 ** Errors **
 ***********/
@@ -331,6 +340,10 @@ button {
     border-radius: 5px;
     min-height:95vh;
     border: 1px solid black;
+}
+
+.op_container p {
+    text-align: center;
 }
 
 #crud_response {

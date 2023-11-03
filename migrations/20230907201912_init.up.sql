@@ -369,7 +369,8 @@ VALUES
 (4, 'consultant'),
 (5, 'location'),
 (6, 'consult'),
-(7, 'client');
+(7, 'client'),
+(8, 'query');
 
 INSERT INTO mime_types (mime_type_id, mime_type_name)
 VALUES

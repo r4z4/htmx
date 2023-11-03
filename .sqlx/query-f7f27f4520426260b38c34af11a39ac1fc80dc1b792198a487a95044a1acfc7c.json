@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT schemaname, relname, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "schemaname",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 1,
+        "name": "relname",
+        "type_info": "Name"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "heap_blks_read",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "heap_blks_hit",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "idx_blks_read",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "idx_blks_hit",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "toast_blks_read",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "toast_blks_hit",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "tidx_blks_read",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "tidx_blks_hit",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "f7f27f4520426260b38c34af11a39ac1fc80dc1b792198a487a95044a1acfc7c"
+}

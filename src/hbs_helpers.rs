@@ -128,7 +128,8 @@ handlebars_helper!(get_table_title: |entity_type_id: i32| {
         5 => String::from("Locations"),
         6 => String::from("Consults"),
         7 => String::from("Clients"),
-        _ => String::from("Unknown"),
+        8 => String::from("Query"),
+        _ => String::from("Unknown Entity"),
     }
 });
 

@@ -95,7 +95,17 @@ async fn admin_home(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PgStat {
-    query: Option<String>,
+    schemaname: Option<String>, 
+    relname: Option<String>, 
+    slug: Option<Uuid>,
+    heap_blks_read: Option<i64>, 
+    heap_blks_hit: Option<i64>, 
+    idx_blks_read: Option<i64>, 
+    idx_blks_hit: Option<i64>, 
+    toast_blks_read: Option<i64>, 
+    toast_blks_hit: Option<i64>, 
+    tidx_blks_read: Option<i64>, 
+    tidx_blks_hit: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -113,7 +123,7 @@ async fn recent_activity(
 
     let recent = sqlx::query_as!(
         PgStat,
-        "SELECT query FROM pg_stat_activity WHERE state_change IS NOT NULL;
+        "SELECT schemaname, relname, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
         ",
     )
     .fetch_all(&state.db)
@@ -127,17 +137,12 @@ async fn recent_activity(
 
     let recent_queries = recent.unwrap();
 
-    let table_queries = recent_queries.iter().map(|query| TableQuery {
-        query: query.query.clone().unwrap_or_else(|| "No Query".to_string()),
-        slug: Uuid::new_v4().to_string(),
-    }).collect::<Vec<TableQuery>>();
-
     let recent_queries_table_data = ResponsiveTableData {
-        entity_type_id: 4,
+        entity_type_id: 8,
         vec_len: recent_queries.len(),
         lookup_url: "/consultant/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
-        entities: table_queries,
+        entities: recent_queries,
     };
 
     // Only return whole Table if brand new

@@ -35,7 +35,7 @@
     </div>
 
     <div class="op_container" id="crud_op_container">
-        <p hx-get="/admin/recent-activity" hx-trigger="every 2s" hx-swap="innerHTML" hx-target="#crud_op_container">Recent Activity Table as Default</p>
+        <p id="recent_activity_p" hx-get="/admin/recent-activity" hx-trigger="every 2s" hx-swap="innerHTML" hx-target="#crud_op_container">Loading...</p>
     </div>
 </div>
 {{/main-layout}}
