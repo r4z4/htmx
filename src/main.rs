@@ -203,6 +203,8 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
     let data = json!({
         "name": "ExtRev",
         "title": "Best",
+        "contact": "Phone: (555) 555-5555. Email: McGillicuddy@Con.com",
+        "history": "McGillicuddy Consultancy was founded on the principal of Alouette, gentille alouette, Alouette, je te plumerai."
     });
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());

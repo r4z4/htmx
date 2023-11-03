@@ -30,10 +30,34 @@
             </video>
           {{/if}}
           {{#if (int_in this.mime_type_id [13])}}
-            <embed src={{this.path}} width="300px" height="800px" />
+            <embed src={{this.path}} width="20em" height="30em" />
+          {{/if}}
+          {{#if (int_in this.mime_type_id [14])}}
+            <input type="hidden" id="csv_path" value={{this.path}} />
+            <script>
+              let table = document.getElementById("csv_table");
+              let path = document.getElementById("csv_path").value;
+              let cutoff = 10;
+              fetch(path)
+              .then(response => response.text())
+              .then(data => {
+                let rows = data.split("\n");
+                // Use rows.length to display whole file (vs. cutoff)
+                for (let i = 0; i < cutoff; i++) {
+                  let cells = rows[i].split(",");
+                  let row = table.insertRow();
+                  for (let j = 0; j < cells.length; j++) {
+                    let cell = row.insertCell();
+                    cell.innerText = cells[j];
+                  }
+                }
+              })
+              .catch(error => console.log(error));
+              </script>
+              <table id="csv_table"></table>
           {{/if}}
       </details>
-      <img src="/images/download.svg" alt="download_attachment" />
+      <a href={{this.path}} download="true"><img src="/images/download.svg" alt="download_attachment" /></a>
     {{/each}}
   </div>
 </div>

@@ -543,10 +543,10 @@ VALUES
 (1, 2,  1,  '2022-04-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO'),
 (2, 2,  2,  '2022-04-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL),
 (7, 3,  9,  '2023-05-10 08:00:25', '2023-05-10 08:50:11', NULL, 'Headed back out to the location to see the folks'),
-(2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', NULL, NULL),
+(2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', ARRAY[10], 'CSV CSV CSV'),
 (1, 3,  2,  '2022-05-19 15:10:25', '2022-05-19 15:20:11', NULL, NULL),
 (5, 2,  1,  '2022-05-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO'),
-(5, 4,  12, '2022-05-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL),
+(5, 4,  12, '2022-05-22 12:10:25', '2022-04-22 12:50:51', ARRAY[10], 'CSV CSV CSV'),
 (4, 6,  9,  '2023-05-24 08:00:25', '2023-05-24 08:50:11', NULL, 'Headed back out to the location to see the folks'),
 (7, 7,  10, '2023-05-26 09:00:25', '2023-05-26 11:50:11', NULL, NULL),
 (2, 8,  2,  '2022-05-28 08:10:25', '2022-05-28 09:20:11', ARRAY[8], 'Contains Mpg Video'),
@@ -582,7 +582,8 @@ VALUES
 ('https://upload.wikimedia.org/wikipedia/commons/d/d7/Programmation_Ruby-fr.pdf',           13, 4, 'Email',  'Ruby PDF',        '2023-10-16 16:00:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', 'Apache PDF',      '2023-09-18 19:16:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/5/50/Greenscreen_Computer_Animation.mpg',  10, 2, 'Upload', 'Mpg Video',       '2023-10-11 14:16:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/0/01/Do_%281%29.mp3',                      7,  2, 'Upload', 'MP3 Audio(Mpeg)', '2023-10-12 13:15:55-06');
+('https://upload.wikimedia.org/wikipedia/commons/0/01/Do_%281%29.mp3',                      7,  2, 'Upload', 'MP3 Audio(Mpeg)', '2023-10-12 13:15:55-06'),
+('/media/cities.csv',                                                                       14, 2, 'Upload', 'CSV File #1',     '2023-11-12 13:15:55-06');
 
 
 -- Triggers

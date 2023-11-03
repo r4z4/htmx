@@ -5,8 +5,11 @@
             <div class="about_image">
                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0e/Hex_Gorilla-710627.svg">
             </div>
-
-            <div class = "content">
+            <input type="hidden" id="contact_input" value="Phone: (555) 555-5555. Email: McGillicuddy@Cons.com" />
+            <input type="hidden" id="history_input" value="McGillicuddy Consultancy was formed around the principals of Alouette, gentille alouette, Alouette, je te plumerai.
+                                                        The brothers came to this great country and began their radio career when they came around and started working for
+                                                        the Miami Herald." />
+            <div class="content">
                 <h2>About Us</h2>
                 <span><!-- line here --></span>
                 <p>At McGillicuddy Consultancy we strive to make your dreams a reality! Founded in 2022 by brothers Arbiter - colloquially known as Beef - and Alfons, 
@@ -17,7 +20,17 @@
                     <div class = "vertical-line"></div>
                     <li><a href = "#">service</a></li>
                     <div class = "vertical-line"></div>
-                    <li><a href = "#">contact</a></li>
+                    <li>
+                        <a 
+                            href="#"
+                            _="on click put #history_input.value into #about_us_display"
+                        >history</a></li>
+                    <div class = "vertical-line"></div>
+                    <li>
+                        <a 
+                            href="#"
+                            _="on click put #contact_input.value into #about_us_display"
+                        >contact</a></li>
                 </ul>
                 <ul class = "icons">
                     <li>
@@ -35,4 +48,5 @@
                 </ul>
             </div>
         </section>
+        <div class="content" id="about_us_display"></div>
 {{/main-layout}}
