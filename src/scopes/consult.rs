@@ -366,7 +366,7 @@ pub async fn get_consults_handler(
 
     let consults = query_result.unwrap();
 
-    let consultants_table_data = ResponsiveTableData {
+    let consults_table_data = ResponsiveTableData {
         entity_type_id: 6,
         vec_len: consults.len(),
         lookup_url: "/consult/list?page=".to_string(),
@@ -374,10 +374,18 @@ pub async fn get_consults_handler(
         entities: consults,
     };
 
-    let body = hb
-        .render("responsive-table", &consultants_table_data)
-        .unwrap();
-    return HttpResponse::Ok().body(body);
+    // Only return whole Table if brand new
+    if opts.key.is_none() && opts.search.is_none() {
+        let body = hb
+            .render("responsive-table", &consults_table_data)
+            .unwrap();
+        return HttpResponse::Ok().body(body);
+    } else {
+        let body = hb
+            .render("responsive-table-inner", &consults_table_data)
+            .unwrap();
+        return HttpResponse::Ok().body(body);
+    }
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]

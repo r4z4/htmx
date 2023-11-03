@@ -26,6 +26,8 @@ DROP TABLE IF EXISTS users;
 -- This needs to be last
 DROP TABLE IF EXISTS accounts;
 
+DROP TRIGGER IF EXISTS user_settings_insert_trigger ON users;
+
 
 DROP TYPE IF EXISTS consultant_specialty;
 DROP TYPE IF EXISTS consultant_territory;

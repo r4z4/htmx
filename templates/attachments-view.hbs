@@ -13,8 +13,12 @@
           {{/if}}
           {{#if (int_in this.mime_type_id [6,7,8])}}
             <audio controls={true}>
-                <source src={{this.path}} type="audio/wav" />
+                {{#if (int_in this.mime_type_id [7])}}
+                  <source src={{this.path}} type="audio/mpeg" />
+                {{else}}
+                  <source src={{this.path}} type="audio/wav" />
                 {{!-- {"Your browser does not support the audio element."} --}}
+                {{/if}}
             </audio>
           {{/if}}
           {{#if (int_in this.mime_type_id [9,10,11])}}
@@ -24,6 +28,9 @@
                 // <source src="movie.ogg" type="video/ogg"> --}}
                 {{!-- {"Your browser does not support the video tag."} --}}
             </video>
+          {{/if}}
+          {{#if (int_in this.mime_type_id [13])}}
+            <embed src={{this.path}} width="300px" height="800px" />
           {{/if}}
       </details>
       <img src="/images/download.svg" alt="download_attachment" />

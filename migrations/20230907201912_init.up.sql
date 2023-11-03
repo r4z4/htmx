@@ -432,16 +432,23 @@ VALUES
 (13, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333'),
 (14, '12 Subadmin Dr', NULL, 'Omaha', 'NE', '68124', '1980-01-05', '402-333-3333');
 
-INSERT INTO user_settings (user_id, theme_id) 
+INSERT INTO user_settings (user_id, theme_id, list_view) 
 VALUES 
-(1, 1),
-(2, 1),
-(3, 1),
-(4, 1),
-(5, 1),
-(6, 1),
-(7, 1),
-(8, 1);
+(1, 1, DEFAULT),
+(2, 1, DEFAULT),
+(3, 1, DEFAULT),
+(4, 1, DEFAULT),
+(5, 1, DEFAULT),
+(6, 1, DEFAULT),
+(7, 1, DEFAULT),
+(8, 1, 'consultant'),
+(9, 1, 'consultant'),
+(10, 1, 'consultant'),
+(11, 1, 'consultant'),
+(12, 1, 'consultant'),
+(13, 1, 'consultant'),
+(14, 1, 'consultant'),
+(15, 1, DEFAULT);
 
 INSERT INTO user_sessions (user_id, session_id, expires, created_at) 
 VALUES 
@@ -538,6 +545,13 @@ VALUES
 (7, 3,  9,  '2023-05-10 08:00:25', '2023-05-10 08:50:11', NULL, 'Headed back out to the location to see the folks'),
 (2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', NULL, NULL),
 (1, 3,  2,  '2022-05-19 15:10:25', '2022-05-19 15:20:11', NULL, NULL),
+(5, 2,  1,  '2022-05-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO'),
+(5, 4,  12, '2022-05-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL),
+(4, 6,  9,  '2023-05-24 08:00:25', '2023-05-24 08:50:11', NULL, 'Headed back out to the location to see the folks'),
+(7, 7,  10, '2023-05-26 09:00:25', '2023-05-26 11:50:11', NULL, NULL),
+(2, 8,  2,  '2022-05-28 08:10:25', '2022-05-28 09:20:11', ARRAY[8], 'Contains Mpg Video'),
+(7, 7,  10, '2023-05-27 14:30:25', '2023-05-27 15:50:11', ARRAY[9], 'Contains MP3'),
+(2, 8,  2,  '2022-05-28 15:40:25', '2022-05-28 15:50:11', NULL, 'Just a quick pop but we are billing :}'),
 (6, 2,  7,  '2023-06-11 11:00:25', '2023-06-11 11:20:18', ARRAY[6], 'Twenty minute review of things.'),
 (3, 5,  4,  '2023-06-13 12:55:25', '2023-06-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.'),
 (4, 4,  7,  '2023-06-20 12:00:25', '2023-06-20 13:50:11', NULL, 'TODO'),
@@ -545,7 +559,7 @@ VALUES
 (3, 3,  2,  '2023-06-22 12:00:25', '2023-06-22 13:50:11', NULL, 'Just a routine meeting for now.'),
 (7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat'),
 (6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!'),
-(1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', NULL, NULL),
+(1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', ARRAY[6], 'Ruby PDF'),
 (6, 3,  7,  '2023-10-10 10:00:25', '2023-10-10 11:20:18', ARRAY[6], 'Ruby was the focus on this one.'),
 (3, 5,  4,  '2023-10-13 12:55:25', '2023-10-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.'),
 (6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long'),
@@ -566,4 +580,26 @@ VALUES
 ('https://upload.wikimedia.org/wikipedia/commons/6/6e/Mindannyian-vagyunk.webm',            9,  3, 'Upload', 'Polska WEBM',     '2023-09-14 19:16:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/f/f5/Kuchnia_polska-p35b.png',             1,  4, 'Email',  'Polska PNG #2',   '2023-09-16 16:00:25-06'),
 ('https://upload.wikimedia.org/wikipedia/commons/d/d7/Programmation_Ruby-fr.pdf',           13, 4, 'Email',  'Ruby PDF',        '2023-10-16 16:00:25-06'),
-('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', 'Apache PDF',      '2023-09-18 19:16:25-06');
+('https://upload.wikimedia.org/wikipedia/commons/b/b4/Apache.pdf',                          13, 3, 'Upload', 'Apache PDF',      '2023-09-18 19:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/5/50/Greenscreen_Computer_Animation.mpg',  10, 2, 'Upload', 'Mpg Video',       '2023-10-11 14:16:25-06'),
+('https://upload.wikimedia.org/wikipedia/commons/0/01/Do_%281%29.mp3',                      7,  2, 'Upload', 'MP3 Audio(Mpeg)', '2023-10-12 13:15:55-06');
+
+
+-- Triggers
+
+CREATE OR REPLACE FUNCTION user_settings_insert_trigger_fnc()
+  RETURNS trigger AS
+$$
+BEGIN
+    INSERT INTO "user_settings" ( "user_settings_id", "user_id")
+         VALUES(DEFAULT, NEW."user_id");
+RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER user_settings_insert_trigger
+  AFTER INSERT
+  ON "users"
+  FOR EACH ROW
+  EXECUTE PROCEDURE user_settings_insert_trigger_fnc();
