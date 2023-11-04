@@ -1,14 +1,18 @@
 {{
 #>
  main-layout title='About Us' }}
+        <div class="modal-container" id="send_modal"></div>
         <section>
-            <div class="about_image">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/0/0e/Hex_Gorilla-710627.svg">
+            <div id="about_left" class="about_image">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0e/Hex_Gorilla-710627.svg">
             </div>
-            <input type="hidden" id="contact_input" value="Phone: (555) 555-5555. Email: McGillicuddy@Cons.com" />
-            <input type="hidden" id="history_input" value="McGillicuddy Consultancy was formed around the principals of Alouette, gentille alouette, Alouette, je te plumerai.
-                                                        The brothers came to this great country and began their radio career when they came around and started working for
-                                                        the Miami Herald." />
+            <input type="hidden" id="service_input" value="<div class='about_service'><h5>We have many different services. Here are some highlights.</h5><br />
+                                                            <h3>Technology</h3><p>We do technology with the best of them.</p><br />
+                                                            <h3>Government</h3><p>Government Too. We have worked with several major government all across the country. Perhaps the most notable of which is .... </p><br />
+                                                            <h3>Insurance</h3><p>Our consultants have a combined 100 years of experience in the insurance industry. Home & Auto, Life & Health, Reinsurance .... </p><br /></div>" />
+            <input type="hidden" id="history_input" value="<div class='about_service'><p>McGillicuddy Consultancy was formed around the principals of Alouette, gentille alouette, Alouette, je te plumerai.
+                                                            The brothers came to this great country and began their radio career when they came around and started working for
+                                                            the Miami Herald.</p></div>" />
             <div class="content">
                 <h2>About Us</h2>
                 <span><!-- line here --></span>
@@ -16,20 +20,25 @@
                     we always put clients first and pride ourselves on our many success stories. Please contact us to see if we can add you to the list of success stories!
                 </p>
                 <ul class = "fancy_links">
-                    <li><a href = "#">work</a></li>
-                    <div class = "vertical-line"></div>
-                    <li><a href = "#">service</a></li>
-                    <div class = "vertical-line"></div>
+                    <li><a href="#">work</a></li>
+                    <div class="vertical-line"></div>
                     <li>
                         <a 
                             href="#"
-                            _="on click put #history_input.value into #about_us_display"
+                            _="on click put #service_input.value into #about_left"
+                        >service</a></li>
+                    <div class="vertical-line"></div>
+                    <li>
+                        <a 
+                            href="#"
+                            _="on click put #history_input.value into #about_left"
                         >history</a></li>
                     <div class = "vertical-line"></div>
                     <li>
                         <a 
                             href="#"
-                            _="on click put #contact_input.value into #about_us_display"
+                            hx-get="/contact-us"
+                            hx-target="#send_modal"
                         >contact</a></li>
                 </ul>
                 <ul class = "icons">
@@ -48,5 +57,4 @@
                 </ul>
             </div>
         </section>
-        <div class="content" id="about_us_display"></div>
 {{/main-layout}}

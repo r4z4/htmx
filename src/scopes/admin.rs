@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, vec};
+use std::{borrow::Borrow, vec, ops::Deref};
 
 use actix_web::{
     get, post,
@@ -6,14 +6,16 @@ use actix_web::{
     HttpRequest, HttpResponse, Responder, Scope,
 };
 
+use chrono::{DateTime, Utc};
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES,
+        ACCEPTED_SECONDARIES, FixedTableData,
     },
     models::{
         model_admin::{
@@ -35,6 +37,7 @@ pub fn admin_scope() -> Scope {
         .service(edit_user)
         .service(admin_home)
         .service(recent_activity)
+        .service(get_contact_submissions)
         //.service(edit_subadmin)
         .service(get_users_handler)
 }
@@ -58,9 +61,10 @@ async fn admin_home(
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, ValidatedUser>(
-            "SELECT username, email, user_type_id
+            "SELECT username, email, user_type_id, user_settings.list_view
             FROM users
             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
+            LEFT JOIN user_settings on user_settings.user_id = users.user_id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -157,6 +161,79 @@ async fn recent_activity(
             .unwrap();
         return HttpResponse::Ok().body(body);
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ContactSubmission {
+    name: String, 
+    email: String, 
+    phone: String, 
+    ip_addr: String, 
+    message: String, 
+    created_at: DateTime<Utc>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
+pub struct TableRow {
+    pub th: String,
+    pub tds: ContactSubmission,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
+pub struct FixedTableData2 {
+    pub table_headers: Vec<String>,
+    pub table_rows: Vec<TableRow>,
+}
+
+#[get("/list/contact-us")]
+pub async fn get_contact_submissions(
+    opts: web::Query<FilterOptions>,
+    hb: web::Data<Handlebars<'_>>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let limit = opts.limit.unwrap_or(10);
+    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+
+    let query_result = sqlx::query_as!(
+        ContactSubmission,
+        "SELECT name, email, phone, ip_addr, message, created_at
+        FROM contact_submissions
+        ORDER by created_at
+        LIMIT $1 OFFSET $2",
+        limit as i32,
+        offset as i32
+    )
+    .fetch_all(&data.db)
+    .await;
+
+    dbg!(&query_result);
+
+    if query_result.is_err() {
+        let err = "Error occurred while fetching all contact submission records";
+        // return HttpResponse::InternalServerError()
+        //     .json(json!({"status": "error","message": message}));
+        let body = hb.render("validation", &err).unwrap();
+        return HttpResponse::Ok().body(body);
+    }
+
+    let messages = query_result.unwrap();
+
+    let table_headers = vec!["name".to_owned(), "email".to_owned(), "phone".to_owned(), "ip_addr".to_owned(), "message".to_owned(), "created_at".to_owned()];
+
+    let table_rows = messages.iter().map(|msg| TableRow {
+        th: (*msg.email).to_string(),
+        tds: msg.clone(),
+    }).collect::<Vec<TableRow>>();
+
+    let fixed_table_data = FixedTableData2 {
+        table_headers: table_headers,
+        table_rows: table_rows,
+    };
+
+    dbg!(&fixed_table_data);
+
+    let body = hb.render("fixed-table", &fixed_table_data).unwrap();
+    return HttpResponse::Ok().body(body);
 }
 
 #[get("/list/{user_type_id}")]

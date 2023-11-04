@@ -16,7 +16,7 @@ use crate::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, HeaderValueExt, ValidatedUser, ValidationError,
+    AppState, HeaderValueExt, ValidatedUser, ValidationError, ValError,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -319,7 +319,7 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
 async fn validate_and_get_user(
     cookie: &actix_web::http::header::HeaderValue,
     state: &Data<AppState>,
-) -> Result<Option<ValidatedUser>, ValidationError> {
+) -> Result<Option<ValidatedUser>, ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email, user_type_id
@@ -333,7 +333,7 @@ async fn validate_and_get_user(
     .await
     {
         Ok(user_option) => Ok(user_option),
-        Err(err) => Err(ValidationError {
+        Err(err) => Err(ValError {
             error: format!("You must not be verfied: {}", err),
         }),
     }

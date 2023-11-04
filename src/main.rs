@@ -1,3 +1,5 @@
+use std::env;
+
 use actix_files::Files;
 use actix_web::{
     get,
@@ -6,23 +8,22 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::Post;
+use config::{Post, VULGAR_LIST};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
     int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte, get_list_view
 };
+use validator::{Validate, ValidationError};
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
-use std::env;
-use validator::Validate;
 
-use crate::config::{mock_fixed_table_data, validate_and_get_user, ResponsiveTableData};
+use crate::config::{mock_fixed_table_data, validate_and_get_user, ValidationResponse, get_ip};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
@@ -492,7 +493,7 @@ async fn content(
 }
 
 #[derive(Debug, Validate, Serialize, Deserialize)]
-pub struct ValidationError {
+pub struct ValError {
     error: String,
 }
 #[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize)]
@@ -543,6 +544,115 @@ async fn create_todo(
         Err(err) => {
             let body = hb.render("validation", &err).unwrap();
             return HttpResponse::Ok().body(body);
+        }
+    }
+}
+
+#[get("/contact-us")]
+async fn contact_us(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
+) -> impl Responder {
+    let data = json!({
+        "type": "article",
+    });
+
+    let body = hb
+        .render("forms/contact-us", &data)
+        .unwrap();
+    return HttpResponse::Ok().body(body);
+}
+
+fn validate_contact_message(message: &str) -> Result<(), ValidationError> {
+    let words: Vec<&str> = message
+        .split(" ")
+        .collect::<Vec<&str>>()
+        .to_owned();
+    let word_count = words.len();
+    // Getting last two to account for 101 Hartford St. W etc..
+    let dirty = words.iter().any(|word| VULGAR_LIST.contains(word));
+    if dirty {
+        Err(ValidationError::new(
+            "Message cannot contain vulgar language. Take that ballyhoo elsewhere :/",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+#[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize)]
+pub struct ContactUsRequest {
+    #[validate(length(min = 3, message = "Name must be greater than 3 chars"))]
+    name: String,
+    #[validate(length(min = 3, message = "Invalid Phone Number"))]
+    phone: String,
+    #[validate(length(min = 3, message = "Invalid Email"))]
+    email: String,
+    #[validate(
+        length(min = 10, max = 255, message = "Invalid Message. Please see the message criteria."),
+        custom = "validate_contact_message"
+    )]
+    message: String,
+}
+
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
+pub struct ContactReturn {
+    contact_submission_id: i32,
+}
+
+#[post("/contact-us")]
+async fn contact_us_submission(
+    hb: web::Data<Handlebars<'_>>,
+    body: web::Form<ContactUsRequest>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
+) -> impl Responder {  
+    let is_valid = body.validate();
+    let ip_addr = get_ip(req);
+    let ip_addr_str = ip_addr.to_string();
+    if is_valid.is_err() {
+        // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+        let error_msg = "Validation Error".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
+        let validation_response = ValidationResponse {
+            msg: error_msg,
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::Ok().body(body);
+    } else {
+        match sqlx::query_as::<_, ContactReturn>(
+            "INSERT INTO contact_submissions (contact_submission_id, name, email, phone, message, ip_addr)
+            VALUES (DEFAULT, $1, $2, $3, $4, $5)
+            RETURNING contact_submission_id",
+        )
+        .bind(&body.name)
+        .bind(&body.email)
+        .bind(&body.phone)
+        .bind(&body.message)
+        .bind(&ip_addr_str)
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(_) => {
+                let success_msg = "Message has been sent. Thank you :)".to_owned();
+                let validation_response = ValidationResponse {
+                    msg: success_msg,
+                    class: "validation_success".to_owned(),
+                };
+                let body = hb.render("validation", &validation_response).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+            Err(err) => {
+                dbg!(&err);
+                let error_msg = "Error Adding Record".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
+                let validation_response = ValidationResponse {
+                    msg: error_msg,
+                    class: "validation_error".to_owned(),
+                };
+                let body = hb.render("validation", &validation_response).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
         }
     }
 }
@@ -616,6 +726,8 @@ async fn main() -> std::io::Result<()> {
             .service(location_scope())
             .service(client_scope())
             .service(send_email)
+            .service(contact_us)
+            .service(contact_us_submission)
             .service(index)
             .service(about_us)
             .service(fixed_table)

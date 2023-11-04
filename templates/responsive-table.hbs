@@ -106,7 +106,9 @@
                     {{!-- onclick="window.dialog.show();" --}}
                     hx-get={{form_rte this.slug @root.entity_type_id}}
                     hx-target="#edit_form_modal"
-                    disabled={{int_eq @root.entity_type_id 8}} {{!-- Disable for Query Entities --}}
+                    {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
+                      disabled="true"
+                    {{/if}}
                     {{!-- hx-target="body" 
                     hx-swap="beforeend" --}}
                   >Edit
@@ -116,7 +118,9 @@
                     {{!-- onclick="window.dialog.show();" --}}
                     hx-get={{attachments_rte this.slug @root.entity_type_id}}
                     hx-target="#edit_form_modal"
-                    disabled={{int_eq @root.entity_type_id 8}} {{!-- Disable for Query Entities --}}
+                    {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
+                      disabled="true"
+                    {{/if}}
                     {{!-- hx-target="body" 
                     hx-swap="beforeend" --}}
                   >🔍

@@ -280,6 +280,18 @@ CREATE TABLE IF NOT EXISTS engagements (
 	            REFERENCES users(user_id)
     );
 
+CREATE TABLE IF NOT EXISTS contact_submissions (
+        contact_submission_id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        message TEXT NOT NULL,
+        ip_addr TEXT NOT NULL,
+        -- Need to impl Encode for IpAddr to use INET
+        -- ip_addr INET NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
 CREATE TABLE IF NOT EXISTS messages (
         message_id SERIAL PRIMARY KEY,
         content TEXT NOT NULL,
@@ -398,6 +410,10 @@ VALUES
 ('default_user',            'user_secret'),
 ('default_client',          'client_secret'),
 ('default_company_client',  'company_client_secret');
+
+INSERT INTO contact_submissions (name, email, phone, message, ip_addr) 
+VALUES 
+('Terry Bolea', 'hulk@hogan.com', '444-444-4444', 'Hey there brother! Wanna wrestle?', '127.0.0.1');
 
 INSERT INTO users (username, user_type_id, account_id, email, password) 
 VALUES 

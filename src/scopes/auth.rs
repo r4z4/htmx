@@ -4,26 +4,20 @@ use actix_web::{
     web::{self, Bytes, Data, Json},
     FromRequest, HttpRequest, HttpResponse, Responder, Scope,
 };
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use argonautica::{Hasher, Verifier};
 use chrono::{DateTime, Duration, Utc};
 use handlebars::Handlebars;
-use jsonwebtoken::{encode, EncodingKey, Header};
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::FromRow;
 use std::{
-    convert::Infallible,
-    pin::Pin,
     sync::Arc,
     task::{Context, Poll}, ops::Deref,
 };
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME, send_email}, ValidatedUser};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME, send_email, get_ip}, ValidatedUser};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -462,10 +456,7 @@ async fn forgot_password(
     hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
     println!("in forgot pass");
-    let socket = req.peer_addr().unwrap_or_else(|| {
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 9999)
-    });
-    let ip_addr = socket.ip();
+    let ip_addr = get_ip(req);
     let is_valid = body.validate();
     if is_valid.is_err() {
         println!("validation_err");

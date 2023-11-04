@@ -1,4 +1,4 @@
-use actix_web::{web::Data, HttpResponse};
+use actix_web::{web::Data, HttpResponse, HttpRequest};
 use lazy_static::lazy_static;
 use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
 use mini_markdown::render;
@@ -6,7 +6,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sqlx::{FromRow, Postgres, Pool};
-use std::fmt::Debug;
+use std::net::{Ipv4Addr, SocketAddr};
+use std::{fmt::Debug, net::IpAddr};
 use std::fs::File;
 use validator::{Validate, ValidationError};
 
@@ -33,6 +34,9 @@ lazy_static! {
     pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec![
         "St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.",
         "Dr", "Drive", "Ln", "Lane", "Ln."
+    ];
+    pub static ref VULGAR_LIST: Vec<&'static str> = vec![
+        "shit", "fuck", "ass", "retard", "gay", "faggot", "jew"
     ];
 }
 
@@ -470,10 +474,18 @@ pub fn mock_fixed_table_data() -> FixedTableData {
     return fixed_table_data;
 }
 
+pub fn get_ip(req: HttpRequest) -> IpAddr {
+    let socket = req.peer_addr().unwrap_or_else(|| {
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 9999)
+    });
+    let ip_addr = socket.ip();
+    ip_addr
+}
+
 pub async fn validate_and_get_user(
     cookie: &actix_web::http::header::HeaderValue,
     state: &Data<AppState>,
-) -> Result<Option<ValidatedUser>, crate::ValidationError> {
+) -> Result<Option<ValidatedUser>, crate::ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email, user_type_id, user_settings.list_view
@@ -488,7 +500,7 @@ pub async fn validate_and_get_user(
     .await
     {
         Ok(user_option) => Ok(user_option),
-        Err(err) => Err(crate::ValidationError {
+        Err(err) => Err(crate::ValError {
             error: format!("You must not be verfied: {}", err),
         }),
     }

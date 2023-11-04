@@ -72,17 +72,18 @@ posts:
       ## An Example
 
       A search endpoint should return a 200 response with an empty result set if no results are found:
-      ``
-      GET /api/users?id={id}
-      200 OK
-      []
-      ``
+
+
+          GET /api/users?id={id}
+          200 OK
+          []
 
       A lookup endpoint should return a 404 response if no results are found:
-      ``
-      GET /api/users/{id}
-      404 Not Found
-      ``
+
+
+          GET /api/users/{id}
+          404 Not Found
+      
 
       ## Conclusion
 

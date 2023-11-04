@@ -20,6 +20,7 @@ pub fn user_scope() -> Scope {
         // .route("/users", web::get().to(get_users_handler))
         .service(home)
         .service(settings)
+        .service(compose)
         //.service(profile)
         .service(edit_settings)
 }
@@ -124,6 +125,22 @@ async fn settings(
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
+}
+
+#[get("/compose")]
+async fn compose(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
+) -> impl Responder {  
+    let data = json!({
+        "type": "article",
+    });
+
+    let body = hb
+        .render("compose", &data)
+        .unwrap();
+    return HttpResponse::Ok().body(body);
 }
 
 fn validate_user_settings_input(body: &UserSettingsPost) -> bool {
