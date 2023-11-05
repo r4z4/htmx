@@ -24,7 +24,22 @@
                 <span class="error"></span>
             </li>
             <li>
-                <input class="field-style field-full align-none" type="password" placeholder="Password" name="password" required>
+                <input class="field-style field-full align-none" type="password" placeholder="Password" id="password_input" name="password" required>
+            </li>
+            <div id="password_match"></div>
+            <li>
+                <input 
+                    class="field-style field-full align-none" 
+                    type="password" 
+                    placeholder="Re-Enter Password" 
+                    name="re_password" 
+                    _="on keyup 
+                        if my value == #password_input.value
+                            put '✅' into #password_match
+                        otherwise
+                            put '❌' into #password_match
+                        end" 
+                    required>
             </li>
             <li>
                 <button type="submit">Register</button>

@@ -14,7 +14,7 @@ use validator::{Validate, ValidationError};
 use crate::{AppState, HeaderValueExt, ValidatedUser};
 
 lazy_static! {
-    pub static ref RE_USER_NAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
+    pub static ref RE_USERNAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
     pub static ref RE_EMAIL: Regex = Regex::new(
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})"
@@ -135,6 +135,17 @@ pub struct ResponsiveTableData<T> {
 #[derive(Serialize, Validate, FromRow, Deserialize, Debug, Default, Clone)]
 pub struct State {
     state_name: String
+}
+
+pub fn is_dirty(msg: &str) -> bool {
+    let words: Vec<&str> = msg
+    .split(" ")
+    .collect::<Vec<&str>>()
+    .to_owned();
+    let word_count = words.len();
+    // Getting last two to account for 101 Hartford St. W etc..
+    let dirty = words.iter().any(|word| VULGAR_LIST.contains(word));
+    dirty
 }
 
 pub async fn get_state_options(pool: &Pool<Postgres>) -> Vec<StringSelectOption> {

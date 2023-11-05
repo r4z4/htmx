@@ -17,7 +17,7 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USER_NAME, send_email, get_ip}, ValidatedUser};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip}, ValidatedUser};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -115,7 +115,7 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
 #[derive(Debug, Validate, Serialize, Deserialize)]
 pub struct CreateUserBody {
     #[validate(regex(
-        path = "RE_USER_NAME",
+        path = "RE_USERNAME",
         message = "Username must contain number & alphabets only & must be 6 characters long"
     ))]
     username: String,
@@ -422,6 +422,7 @@ async fn validate_email(
 pub struct ResetPasswordBody {
     username: String,
     password: String,
+    #[validate(must_match = "password")]
     re_password: String,
 }
 

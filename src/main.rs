@@ -8,7 +8,7 @@ use actix_web::{
     web::{self, post, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::{Post, VULGAR_LIST};
+use config::{Post, VULGAR_LIST, is_dirty};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
@@ -565,16 +565,9 @@ async fn contact_us(
 }
 
 fn validate_contact_message(message: &str) -> Result<(), ValidationError> {
-    let words: Vec<&str> = message
-        .split(" ")
-        .collect::<Vec<&str>>()
-        .to_owned();
-    let word_count = words.len();
-    // Getting last two to account for 101 Hartford St. W etc..
-    let dirty = words.iter().any(|word| VULGAR_LIST.contains(word));
-    if dirty {
+    if is_dirty(message) {
         Err(ValidationError::new(
-            "Message cannot contain vulgar language. Take that ballyhoo elsewhere :/",
+            "Message cannot contain vulgar language. Take that **** elsewhere :/",
         ))
     } else {
         Ok(())
@@ -585,7 +578,7 @@ fn validate_contact_message(message: &str) -> Result<(), ValidationError> {
 pub struct ContactUsRequest {
     #[validate(length(min = 3, message = "Name must be greater than 3 chars"))]
     name: String,
-    #[validate(length(min = 3, message = "Invalid Phone Number"))]
+    #[validate(length(equal = 10, message = "Invalid Phone Number"))]
     phone: String,
     #[validate(length(min = 3, message = "Invalid Email"))]
     email: String,
@@ -619,7 +612,9 @@ async fn contact_us_submission(
             class: "validation_error".to_owned(),
         };
         let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+        return HttpResponse::BadRequest()
+            .header("HX-Retarget", "#validation_response")
+            .body(body);
     } else {
         match sqlx::query_as::<_, ContactReturn>(
             "INSERT INTO contact_submissions (contact_submission_id, name, email, phone, message, ip_addr)
@@ -651,7 +646,9 @@ async fn contact_us_submission(
                     class: "validation_error".to_owned(),
                 };
                 let body = hb.render("validation", &validation_response).unwrap();
-                return HttpResponse::Ok().body(body);
+                return HttpResponse::InternalServerError()
+                    .header("HX-Retarget", "#validation_response")
+                    .body(body);
             }
         }
     }
