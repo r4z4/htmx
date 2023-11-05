@@ -7,17 +7,51 @@
       evt.detail.isError = false;
     }
   });
+  var phoneInput = document.getElementById('phone_input');
+  var contactForm = document.forms.contact;
+  phoneInput.addEventListener('input', function (e) {
+    var x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+    e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+  });
+  contactForm.addEventListener('submit', function(e) {
+    phoneInput.value = phoneInput.value.replace(/\D/g, '');
+  });
+  htmx.defineExtension('reset-on-success', {
+    onEvent: function(name, event) {
+        console.log(`ext firing and name= ${name} and event= ${event}`)
+        if (name !== 'htmx:beforeSwap') return;
+        if (event.detail.isError) return;
+
+        const triggeringElt = event.detail.requestConfig.elt;
+        if (!triggeringElt.closest('[hx-reset-on-success]') && !triggeringElt.closest('[data-hx-reset-on-success]'))
+            return;
+
+        switch (triggeringElt.tagName) {
+            case 'INPUT':
+            case 'TEXTAREA':
+                triggeringElt.value = triggeringElt.defaultValue;
+                break;
+            case 'SELECT':
+                //too much work
+                break;
+            case 'FORM':
+                triggeringElt.reset();
+                break;
+        }
+    }
+});
 </script>
 
 {{
 #>
  modal-layout }}
- <div class="compose_container">
+ <div class="compose_container" hx-ext="reset-on-success">
   <div id="validation_response"></div>
   <form 
     id="contact" 
     hx-post="/contact-us"
-    hx-target="#validation_response">
+    hx-target="#validation_response"
+    hx-reset-on-success>
     <h3>Contact Us</h3>
     <fieldset>
       <input name="name" placeholder="Your name" type="text" tabindex="1" required autofocus>
@@ -26,13 +60,14 @@
       <input name="email"  placeholder="Your Email Address" type="email" tabindex="2" required>
     </fieldset>
     <fieldset>
-      <input name="phone" placeholder="Your Phone Number" type="tel" tabindex="3" required>
+      <input name="phone" id="phone_input" placeholder="(555) 555-5555" type="tel" tabindex="3" required>
     </fieldset>
     <fieldset>
       <textarea name="message" placeholder="Type your Message Here...." tabindex="4" required></textarea>
     </fieldset>
     <fieldset>
       <button name="submit" type="submit" id="contact-submit" data-submit="...Sending">Submit</button>
+      <button id="reset_form" type="reset">Clear Form</button>
     </fieldset>
   </form>
 </div>

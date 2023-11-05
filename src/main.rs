@@ -635,7 +635,7 @@ async fn contact_us_submission(
         .await
         {
             Ok(_) => {
-                let success_msg = "Message has been sent. Thank you :)".to_owned();
+                let success_msg = "Message successfully sent. Thank you :)".to_owned();
                 let validation_response = ValidationResponse {
                     msg: success_msg,
                     class: "validation_success".to_owned(),
