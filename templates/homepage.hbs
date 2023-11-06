@@ -3,9 +3,9 @@
  main-layout title='Homepage' user=user}}
  <div class="homepage">
     <h1>Welcome to External Review or Whatever</h1>
-    {{#if str}}
+    {{#if err}}
         <div id="error_div">
-            <p>{{str}}</p>
+            <p id="error_text">{{err}}</p>
             <p><a href="/">Login</a></p>
         </div>
     {{else}}

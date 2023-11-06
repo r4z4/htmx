@@ -763,6 +763,11 @@ async fn main() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        hbs_helpers::int_eq,
+        test_common::{self, *},
+    };
+    use test_context::{test_context, TestContext};
 
     #[test]
     fn contact_us_clean_message_validated() {
@@ -777,5 +782,30 @@ mod tests {
         let dirty = validate_contact_message(msg);
         // assert_eq!(dirty, ValidationError {});
         assert_ne!(dirty, Ok(()));
+    }
+
+    #[test_context(Context)]
+    #[test]
+    fn homepage_displays_the_error(ctx: &mut Context) {
+        let err_msg = "Test error message".to_string();
+        let template_data = HomepageTemplate {
+            err: Some(err_msg.clone()),
+            user: None,
+        };
+        let mut hb = Handlebars::new();
+        hb.register_templates_directory(".hbs", "./templates")
+            .unwrap();
+        let body = hb.render("homepage", &template_data).unwrap();
+        let dom = tl::parse(&body, tl::ParserOptions::default()).unwrap();
+        let parser = dom.parser();
+
+        let element = dom
+            .get_element_by_id("error_text")
+            .expect("Failed to find element")
+            .get(parser)
+            .unwrap();
+
+        assert_eq!(element.inner_text(parser), err_msg);
+
     }
 }

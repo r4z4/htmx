@@ -145,9 +145,39 @@ button:disabled {
     color:white;
 }
 
+#news_container {
+    margin: auto;
+    width: 80%;
+}
+
+#news_container h4 {
+    text-align: center;
+}
+
 /*************
 ** Articles **
 *************/
+
+#reset_div {
+    text-align: right;
+}
+
+.clear_form_btn {
+    display: inline-block;
+    outline: 0;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 4px;
+    font-size: 13px;
+    height: 30px;
+    background-color: #0000000d;
+    color: #0e0e10;
+    padding: 0 10px;
+    :hover {
+        background-color: #0000001a;
+    }
+}
 
 .article_display {
     width: 90%;
@@ -213,14 +243,21 @@ fieldset {
 }
 
 #contact button[type="submit"] {
-	cursor:pointer;
-	width:100%;
-	border:none;
-	background:#0CF;
-	color:#FFF;
-	margin:0 0 5px;
-	padding:10px;
-	font-size:15px;
+    display: inline-block;
+    outline: 0;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 4px;
+    font-size: 13px;
+    height: 30px;
+    background-color: #9147ff;
+    color: white;
+    padding: 0 20px;
+    :hover {
+        background-color: #772ce8;
+    }
+
 }
 
 #contact button[type="submit"]:hover {
@@ -710,6 +747,10 @@ p,ul,ol {
 	float:right;
 }
 
+#password_match {
+    text-align: center;
+}
+
 /* Customize the label (the container) */
 .container {
     display: block;
@@ -1081,8 +1122,7 @@ section{
 }
 .form_link_container {
     border-radius: 10px;
-    padding: 16px 0;
-    height: 0.5em;
+    padding: 8px 0;
 }
 .form-style span.psw {
     float: right;
@@ -1091,7 +1131,6 @@ section{
     vertical-align: middle;
 }
 .form-style span.reg {
-    float: left;
     padding-left: 15px;
     line-height: 0.5em; 
     vertical-align: middle;

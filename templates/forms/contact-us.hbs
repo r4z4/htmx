@@ -60,6 +60,9 @@
     _="on htmx:afterRequest if #validation_response.innerHTML contains 'successfully' reset() me"
     {{!-- hx-reset-on-success --}}
   >
+    <div id="reset_div">
+      <button id="reset_form" class="clear_form_btn" type="reset">Clear Form</button>
+    </div>
     <h3>Contact Us</h3>
     <fieldset>
       <input name="name" placeholder="Your name" type="text" tabindex="1" required autofocus>
@@ -75,7 +78,6 @@
     </fieldset>
     <fieldset>
       <button name="submit" type="submit" id="contact-submit" data-submit="...Sending">Submit</button>
-      <button id="reset_form" type="reset">Clear Form</button>
     </fieldset>
   </form>
 </div>
