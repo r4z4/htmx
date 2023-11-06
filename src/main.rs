@@ -76,6 +76,11 @@ pub struct ResponsiveTableRow {
 //     pub table_data: String,
 //     pub value: String,
 // }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct HomepageTemplate {
+    err: Option<String>,
+    user: Option<ValidatedUser>,
+}
 
 #[get("/")]
 async fn index(
@@ -100,9 +105,10 @@ async fn index(
                         user_type_id: user.user_type_id,
                         list_view: user.list_view,
                     };
-                    let template_data = json!({
-                        "user": user,
-                    });
+                    let template_data = HomepageTemplate {
+                        err: None,
+                        user: Some(user),
+                    };
                     let body = hb.render("homepage", &template_data).unwrap();
                     return HttpResponse::Ok()
                         .header("HX-Redirect", "/homepage")
@@ -237,13 +243,20 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
             Err(err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
-                let data = HbError {
-                    str: format!(
+                let template_data = HomepageTemplate {
+                    err: Some(format!(
                         "Something quite unexpected has happened in your session: {}",
                         err.error
-                    ),
+                    )),
+                    user: None,
                 };
-                let body = hb.render("homepage", &data).unwrap();
+                // let data = HbError {
+                //     str: format!(
+                //         "Something quite unexpected has happened in your session: {}",
+                //         err.error
+                //     ),
+                // };
+                let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
             }
         }
@@ -255,10 +268,6 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
         let body = hb.render("about-us", &template_data).unwrap();
         HttpResponse::Ok().body(body)
     }
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct HbError {
-    str: String,
 }
 
 #[get("/crud")]
@@ -358,38 +367,42 @@ async fn homepage(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let template_data = json!({
-                        "user": user,
-                    });
+                    let template_data = HomepageTemplate {
+                        err: None,
+                        user: Some(user),
+                    };
                     let body = hb.render("homepage", &template_data).unwrap();
                     dbg!(&body);
                     HttpResponse::Ok().body(body)
                 } else {
-                    let data = HbError {
-                        str: "Seems your session has expired. Please login again".to_owned(),
+                    let template_data = HomepageTemplate {
+                        err: Some("Seems your session has expired. Please login again".to_owned()),
+                        user: None,
                     };
-                    let body = hb.render("homepage", &data).unwrap();
+                    let body = hb.render("homepage", &template_data).unwrap();
                     HttpResponse::Ok().body(body)
                 }
             }
             Err(err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
-                let data = HbError {
-                    str: format!(
+                let template_data = HomepageTemplate {
+                    err: Some(format!(
                         "Something quite unexpected has happened in your session: {}",
                         err.error
-                    ),
+                    )),
+                    user: None,
                 };
-                let body = hb.render("homepage", &data).unwrap();
+                let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
             }
         }
     } else {
-        let data = HbError {
-            str: "Cookie is missing.".to_owned(),
+        let template_data = HomepageTemplate {
+            err: Some("Cookie is missing".to_owned()),
+            user: None,
         };
-        let body = hb.render("homepage", &data).unwrap();
+        let body = hb.render("homepage", &template_data).unwrap();
         HttpResponse::Ok().body(body)
     }
 }
@@ -447,13 +460,14 @@ async fn detail(
             Err(err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
-                let data = HbError {
-                    str: format!(
+                let template_data = HomepageTemplate {
+                    err: Some(format!(
                         "Something quite unexpected has happened in your session: {}",
                         err.error
-                    ),
+                    )),
+                    user: None,
                 };
-                let body = hb.render("homepage", &data).unwrap();
+                let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
             }
         }

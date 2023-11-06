@@ -326,18 +326,6 @@ async fn home(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct HbError {
-    str: String,
-}
-
-// Why doesn't this work?
-impl From<String> for HbError {
-    fn from(item: String) -> Self {
-        HbError { str: item }
-    }
-}
-
 // Move this to Redis at some point
 // async fn get_id_from_cookie(cookie: &actix_web::http::header::HeaderValue, state: Data<AppState>,) -> Result<Option<ValidatedUser>, ValidationError>{
 //     println!("Getting Id From Cookie {}", format!("{:?}", cookie.clone()));

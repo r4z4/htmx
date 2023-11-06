@@ -17,7 +17,7 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip}, ValidatedUser};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip}, ValidatedUser, HomepageTemplate};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -236,9 +236,10 @@ async fn basic_auth(
                             user_type_id: user.user_type_id,
                             list_view: user.list_view,
                         };
-                        let template_data = json!({
-                            "user": user,
-                        });
+                        let template_data = HomepageTemplate {
+                            err: None,
+                            user: Some(user),
+                        };
                         let body = hb.render("homepage", &template_data).unwrap();
 
                         return HttpResponse::Ok()

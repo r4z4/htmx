@@ -10,12 +10,15 @@
         </div>
     {{else}}
     <div class="fancy_links">
-        <p>Glad you could join us, <span _="on mouseover toggle .blue on me">{{{username}}}</span>. Here are some helpful links:</p>
+        <p>Glad you could join us, <span _="on mouseover toggle .blue on me">{{user.username}}</span>. Here are some helpful links:</p>
         <ul>
             <li><a href="/crud">Create Records</a></li>
             <li><a href="/list">Read &amp; Edit</a></li>
         </ul>
     </div>
     {{/if}}
+    <div id="news_container">
+        <h4>Recent News / Feed</h4>
+    </div>
 </div>
 {{/main-layout}}

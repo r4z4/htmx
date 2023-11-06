@@ -76,6 +76,16 @@ pub struct SelectOption {
     pub key: Option<String>,
 }
 
+impl From<(i32, Option<String>)> for SelectOption {
+    fn from(pair: (i32, Option<String>)) -> Self {
+        let (value, key) = pair;
+        SelectOption { 
+            key: key,
+            value: value,
+        }
+    }
+}
+
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
 pub struct StringSelectOption {
     pub value: String,
@@ -227,94 +237,43 @@ pub fn states() -> Vec<StringSelectOption> {
 
 pub fn location_contacts() -> Vec<SelectOption> {
     vec![
-        SelectOption {
-            key: Some("Location Admin".to_string()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("Site Manager".to_string()),
-            value: 2,
-        },
+        SelectOption::from((1, Some("Location Admin".to_string()))),
+        SelectOption::from((2, Some("Site Manager".to_string()))),
     ]
 }
 
 pub fn admin_user_options() -> Vec<SelectOption> {
     vec![
-        SelectOption {
-            key: Some("User 1".to_string()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("User 2".to_string()),
-            value: 2,
-        },
+        SelectOption::from((1, Some("User 1".to_string()))),
+        SelectOption::from((2, Some("User 2".to_string()))),
     ]
 }
 
 pub fn user_type_options() -> Vec<SelectOption> {
     vec![
-        SelectOption {
-            key: Some("admin".to_string()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("subadmin".to_string()),
-            value: 2,
-        },
-        SelectOption {
-            key: Some("regular".to_string()),
-            value: 3,
-        },
-        SelectOption {
-            key: Some("guest".to_string()),
-            value: 4,
-        },
+        SelectOption::from((1, Some("admin".to_string()))),
+        SelectOption::from((2, Some("subadmin".to_string()))),
+        SelectOption::from((3, Some("regular".to_string()))),
+        SelectOption::from((4, Some("guest".to_string()))),
     ]
 }
 
 pub fn territory_options() -> Vec<SelectOption> {
     vec![
-        SelectOption {
-            key: Some("National".to_string()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("Northeast".to_string()),
-            value: 2,
-        },
-        SelectOption {
-            key: Some("West".to_string()),
-            value: 3,
-        },
-        SelectOption {
-            key: Some("Southeast".to_string()),
-            value: 4,
-        },
-        SelectOption {
-            key: Some("Midwest".to_string()),
-            value: 5,
-        },
+        SelectOption::from((1, Some("National".to_string()))),
+        SelectOption::from((2, Some("Northeast".to_string()))),
+        SelectOption::from((3, Some("West".to_string()))),
+        SelectOption::from((4, Some("Southeast".to_string()))),
+        SelectOption::from((5, Some("Midwest".to_string()))),
     ]
 }
 
 pub fn specialty_options() -> Vec<SelectOption> {
     vec![
-        SelectOption {
-            key: Some("Finance".to_string()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("Insurance".to_string()),
-            value: 2,
-        },
-        SelectOption {
-            key: Some("Technology".to_string()),
-            value: 3,
-        },
-        SelectOption {
-            key: Some("Government".to_string()),
-            value: 4,
-        },
+        SelectOption::from((1, Some("Finance".to_string()))),
+        SelectOption::from((2, Some("Insurance".to_string()))),
+        SelectOption::from((3, Some("Technology".to_string()))),
+        SelectOption::from((4, Some("Government".to_string()))),
     ]
 }
 
