@@ -759,3 +759,23 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn contact_us_clean_message_validated() {
+        let msg = "Hey there big guy how are you today?";
+        let clean = validate_contact_message(msg);
+        assert_eq!(clean, Ok(()));
+    }
+
+    #[test]
+    fn contact_us_dirty_message_validated() {
+        let msg = "Hey there big guy shit how are you today?";
+        let dirty = validate_contact_message(msg);
+        // assert_eq!(dirty, ValidationError {});
+        assert_ne!(dirty, Ok(()));
+    }
+}

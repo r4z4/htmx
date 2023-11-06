@@ -507,17 +507,31 @@ pub async fn validate_and_get_user(
     }
 }
 
+pub struct SendEmailInput {
+    to_email: String,
+    msg: String,
+}
+
+impl From<(&str, &str)> for SendEmailInput {
+    fn from(pair: (&str, &str)) -> Self {
+        let (to_email, msg) = pair;
+        SendEmailInput { 
+            to_email: to_email.to_string(),
+            msg: msg.to_string(),
+        }
+    }
+}
+
 pub async fn send_email(
-    to_email: &str,
-    msg: &str,
+    email_input: SendEmailInput
 ) -> Result<(), String> {
     let email = Message::builder()
         .from("NoBody <nobody@domain.tld>".parse().unwrap())
         .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
-        .to(to_email.parse().unwrap())
+        .to(email_input.to_email.parse().unwrap())
         .subject("Happy new year")
         .header(ContentType::TEXT_PLAIN)
-        .body(msg.to_owned())
+        .body(email_input.msg.to_owned())
         .unwrap();
 
         // dbg!(&email);
@@ -549,3 +563,20 @@ pub async fn send_email(
             Err(e) => Err("Error Sending Email".to_owned()),
         }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::test;
+
+    #[test]
+    async fn send_email_builds_correctly() {
+        let to_email = "JimboTest@Test.com";
+        let msg = "This is a test email so do not respond.";
+        let email_input = SendEmailInput::from((to_email, msg));
+        let result = send_email(email_input).await;
+        assert!(result.is_ok());
+    }
+
+}
+

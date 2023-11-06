@@ -17,7 +17,7 @@ use std::{
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip}, ValidatedUser, HomepageTemplate};
+use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip, SendEmailInput}, ValidatedUser, HomepageTemplate};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -478,7 +478,8 @@ async fn forgot_password(
     {
         Ok(resp) => {
             let created_at_fmt = resp.created_at.format("%b %-d, %-I:%M").to_string();
-            match send_email(&body.email, &format!("A password reset was requested on {}", created_at_fmt)).await {
+            let email_input = SendEmailInput::from((body.email.as_str(), format!("A password reset was requested on {}", created_at_fmt).as_str()));
+            match send_email(email_input).await {
                 Ok(_) => {
                     let validation_response = ValidationResponse {
                         msg: "Reset Password link has been sent.".to_owned(),
