@@ -59,6 +59,10 @@
         <input type="text" name="location_city" class="field-style field-city" placeholder="City" value="{{entity.location_city}}" required="true" />
         {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
         <select class="field-style field-state" id="location_state" name="location_state" value="{{entity.location_state}}" required>
+            {{!-- Only display default option if new form (or no value, but state is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>-</option>
+            {{/unless}}
             {{#each state_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
@@ -77,6 +81,10 @@
       <li>
         <input type="tel" name="location_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" value="{{entity.location_phone}}" />
         <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" value="{{entity.location_contact_id}}">
+            {{!-- Only display default option if new form (or no value, but location_contact has a default value) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each location_contact_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}

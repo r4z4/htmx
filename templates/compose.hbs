@@ -11,6 +11,7 @@
       <div>
         <label for="category_id">Category</label>
         <select class="field-style field-full align-none" id="category_id" name="category_id">
+          <option value="" selected disabled hidden>Select One</option>
           {{#each category_options}}
             <option value="{{this.value}}">{{this.key}}</option>
           {{/each}}

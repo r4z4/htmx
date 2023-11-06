@@ -63,6 +63,10 @@
       </li>
       <li>
         <select class="field-style field-split align-left" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" >
+            {{!-- Only display default option if new form (or no value, but specialty is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each specialty_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
@@ -77,6 +81,10 @@
             {{/each}}
         </select>
         <select class="field-style field-split align-right" id="territory_id" name="territory_id" value="{{entity.territory_id}}" >
+            {{!-- Only display default option if new form (or no value, but specialty is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each territory_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}

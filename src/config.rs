@@ -1,4 +1,4 @@
-use actix_web::{web::Data, HttpResponse, HttpRequest};
+use actix_web::{web::Data, HttpRequest};
 use lazy_static::lazy_static;
 use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
 use mini_markdown::render;
@@ -202,7 +202,7 @@ pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
             ]
         }
     }
-} 
+}
 
 pub fn states() -> Vec<StringSelectOption> {
     vec![

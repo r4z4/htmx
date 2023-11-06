@@ -31,6 +31,10 @@
         <div>
           <label for="location_id">Location</label>
           <select class="field-style field-full align-none" id="location_id" name="location_id">
+            {{!-- Only display default option if new form (or no value, but location is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each location_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
@@ -50,6 +54,10 @@
         <div>
           <label for="client_id">Client</label>
           <select class="field-style field-full align-none" id="client_id" name="client_id">
+            {{!-- Only display default option if new form (or no value, but client is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each client_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
@@ -69,6 +77,10 @@
         <div>
           <label for="consultant_id">Consultant</label>
           <select class="field-style field-full align-none" id="consultant_id" name="consultant_id">
+            {{!-- Only display default option if new form (or no value, but consultant is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
             {{#each consultant_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
               {{#if @root.entity}}
@@ -100,12 +112,6 @@
         </div>
         <div>
           <input type="time" class="field-style field-split align-right" id="consult_end_time" name="consult_end_time" placeholder="End Time" value="{{entity.consult_end_time}}" />
-        </div>
-      </li>
-
-      <li>
-        <div>
-          <p>{{entity.client_id}}</p>
         </div>
       </li>
 
