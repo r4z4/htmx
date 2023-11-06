@@ -209,7 +209,7 @@ fieldset {
 #contact textarea {
 	height:100px;
 	max-width:100%;
-  resize:none;
+    resize:none;
 }
 
 #contact button[type="submit"] {
@@ -247,6 +247,52 @@ fieldset {
 }
 :-ms-input-placeholder {
  color:#888;
+}
+
+/************
+** Compose **
+************/
+
+#compose input[type="text"], #compose input[type="email"], #compose input[type="select"], #compose textarea, #compose button[type="submit"] { font:400 12px/16px "Open Sans", Helvetica, Arial, sans-serif; }
+
+#compose {
+	background:#F9F9F9;
+	padding:25px;
+	margin:50px 0;
+}
+
+#compose h3 {
+	color: rgb(195, 152, 244);
+	display: block;
+	font-size: 30px;
+	font-weight: 400;
+}
+
+#compose h4 {
+	margin:5px 0 15px;
+	display:block;
+	font-size:13px;
+}
+
+#compose input[type="text"], #compose input[type="email"], #compose input[type="select"]:hover, #contact textarea {
+	width:100%;
+	border:1px solid #CCC;
+	background:#FFF;
+	margin:0 0 5px;
+	padding:10px;
+}
+
+#compose input[type="text"]:hover, #compose input[type="email"]:hover, #compose input[type="select"]:hover, #compose textarea:hover {
+	-webkit-transition:border-color 0.3s ease-in-out;
+	-moz-transition:border-color 0.3s ease-in-out;
+	transition:border-color 0.3s ease-in-out;
+	border:1px solid #AAA;
+}
+
+#compose textarea {
+	height:100px;
+	max-width:100%;
+    resize:none;
 }
 
 /***************

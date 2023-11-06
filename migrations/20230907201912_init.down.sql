@@ -1,5 +1,7 @@
 -- Add down migration script here
 DROP TABLE IF EXISTS consultant_ties;
+
+DROP TABLE IF EXISTS article_categories;
 DROP TABLE IF EXISTS engagements;
 DROP TABLE IF EXISTS consults;
 -- Tables depends on these
@@ -16,6 +18,7 @@ DROP TABLE IF EXISTS specialties;
 DROP TABLE IF EXISTS mime_types;
 DROP TABLE IF EXISTS entities; 
 DROP TABLE IF EXISTS contact_submissions;
+DROP TABLE IF EXISTS article_submissions;
 DROP TABLE IF EXISTS states; 
 
 DROP TABLE IF EXISTS consutlants;

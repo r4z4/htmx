@@ -173,6 +173,37 @@ pub async fn get_state_options(pool: &Pool<Postgres>) -> Vec<StringSelectOption>
     }
 } 
 
+#[derive(Serialize, Validate, FromRow, Deserialize, Debug, Default, Clone)]
+pub struct Category {
+    category_id: i32,
+    category_name: String,
+}
+
+pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
+    match sqlx::query_as::<_, Category>(
+        "SELECT category_id, category_name FROM article_categories",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(state_list) => {
+            state_list.iter().map(|category| SelectOption {
+                key: Some(category.category_name.to_owned()),
+                value: category.category_id,
+            }).collect::<Vec<SelectOption>>()
+        },
+        Err(err) => {
+            dbg!(&err);
+            vec![
+                SelectOption {
+                    key: Some("Select One".to_string()),
+                    value: 0,
+                }
+            ]
+        }
+    }
+} 
+
 pub fn states() -> Vec<StringSelectOption> {
     vec![
         StringSelectOption {

@@ -1,5 +1,5 @@
 <div class="compose_container">  
-  <form id="contact" action="" method="post">
+  <form id="compose" action="" method="POST">
     <h3>Compose an Article</h3>
     <fieldset>
       <input placeholder="Article Title" type="text" tabindex="1" required autofocus>
@@ -8,10 +8,17 @@
       <input placeholder="Subtitle" type="text" tabindex="1" required autofocus>
     </fieldset>
     <fieldset>
-      <input placeholder="Category" type="text" tabindex="1" required autofocus>
+      <div>
+        <label for="category_id">Category</label>
+        <select class="field-style field-full align-none" id="category_id" name="category_id">
+          {{#each category_options}}
+            <option value="{{this.value}}">{{this.key}}</option>
+          {{/each}}
+        </select>
+      </div>
     </fieldset>
     <fieldset>
-      <textarea placeholder="Article content here ..." tabindex="5" required></textarea>
+      <textarea cols="30" placeholder="Article content here ..." tabindex="5" required></textarea>
     </fieldset>
     <fieldset>
       <button name="submit" type="submit" id="contact-submit" data-submit="...Sending">Submit</button>

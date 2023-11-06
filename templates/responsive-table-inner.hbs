@@ -38,6 +38,18 @@
               hx-swap="beforeend" --}}
             >Edit
             </button>
+              <button 
+                class="action_btn" 
+                {{!-- onclick="window.dialog.show();" --}}
+                hx-get={{attachments_rte this.slug @root.entity_type_id}}
+                hx-target="#edit_form_modal"
+                {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
+                  disabled="true"
+                {{/if}}
+                {{!-- hx-target="body" 
+                hx-swap="beforeend" --}}
+                >🔍
+              </button>
           </td>
       </tr>
     {{/each}}

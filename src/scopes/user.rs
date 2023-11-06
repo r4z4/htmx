@@ -1,5 +1,5 @@
 use crate::{
-    config::{self, SelectOption, ValidationResponse},
+    config::{self, SelectOption, ValidationResponse, category_options},
     models::model_user::{
         UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
@@ -127,18 +127,25 @@ async fn settings(
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ComposeTemplate {
+    category_options: Vec<SelectOption>,
+    typ: String,
+}
+
 #[get("/compose")]
 async fn compose(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
 ) -> impl Responder {  
-    let data = json!({
-        "type": "article",
-    });
+    let template_data = ComposeTemplate {
+        typ: "article".to_owned(),
+        category_options: category_options(&state.db).await,
+    };
 
     let body = hb
-        .render("compose", &data)
+        .render("compose", &template_data)
         .unwrap();
     return HttpResponse::Ok().body(body);
 }

@@ -153,6 +153,11 @@ CREATE TABLE IF NOT EXISTS user_types (
         user_type_name TEXT NOT NULL UNIQUE
     );
 
+CREATE TABLE IF NOT EXISTS article_categories (
+        category_id SERIAL PRIMARY KEY,
+        category_name TEXT NOT NULL UNIQUE
+    );
+
 
 CREATE TABLE IF NOT EXISTS territories (
         territory_id SERIAL PRIMARY KEY,
@@ -292,6 +297,19 @@ CREATE TABLE IF NOT EXISTS contact_submissions (
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+CREATE TABLE IF NOT EXISTS article_submissions (
+        article_submission_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        subtitle TEXT NULL,
+        category_id INTEGER NOT NULL,
+        article_text TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT fk_user
+            FOREIGN KEY(user_id) 
+	            REFERENCES users(user_id)
+    );
+
 CREATE TABLE IF NOT EXISTS messages (
         message_id SERIAL PRIMARY KEY,
         content TEXT NOT NULL,
@@ -383,6 +401,13 @@ VALUES
 (6, 'consult'),
 (7, 'client'),
 (8, 'query');
+
+INSERT INTO article_categories (category_id, category_name)
+VALUES
+(1, 'general'),
+(2, 'team-building'),
+(3, 'strategy'),
+(4, 'company-alert');
 
 INSERT INTO mime_types (mime_type_id, mime_type_name)
 VALUES
