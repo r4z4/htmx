@@ -19,7 +19,7 @@
 {{
 #>
  modal-layout }}
-<div>
+<div class="form-style">
   {{#if entity}}
     <h2 id="consultant_form_header" class="text-center">Edit Consultant</h2>
     <img id="consultant_img" src={{entity.img_path}} /> 
@@ -28,7 +28,6 @@
   {{/if}}
    <div id="consultant_errors"></div>
   <form 
-    class="form-style"
     hx-boost="true"
     {{#if entity}}
       hx-patch={{concat_str_args "/consultant/form/" entity.slug}}
@@ -108,10 +107,11 @@
       </li>
       <li>
         <div>
-          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-left" type="submit">Submit</button>
           <button class="field-style field-split align-right" type="reset">Clear Form</button>
         </div>
-    </li>
+      </li>
+    </ul>
   </form>
   <form hx-encoding='multipart/form-data' hx-post='/consultant/upload' hx-swap="innerHTML" hx-target="#validation_response"
       _='on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100'>
@@ -124,6 +124,7 @@
         Upload
     </button>
     <progress id='progress' value='0' max='100'></progress>
+    {{!-- val_p in in the validation template --}}
     <div id="validation_response" _="on mutation if my innerHTML != 'Error'
                                     set #img_path.value to #val_p.innerHTML"></div>
   </form>

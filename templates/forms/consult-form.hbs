@@ -1,7 +1,24 @@
+<script>
+  document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    // Allow 422 and 400 responses to swap
+    // We treat these as form validation errors
+    if (evt.detail.xhr.status === 422 || evt.detail.xhr.status === 400) {
+      evt.detail.shouldSwap = true;
+      evt.detail.isError = false;
+    }
+  });
+ document.getElementById('file_upload').addEventListener('change', function(e) {
+    if (e.target.files[0]) {
+      document.getElementById('upload_btn').disabled = false
+    } else {
+      document.getElementById('upload_btn').disabled = true
+    }
+  });
+</script>
 {{
 #>
  modal-layout }}
-<div>
+<div class="form-style">
   {{#if entity}}
     <h2 id="consult_form_header" class="text-center">Edit Consult</h2>
   {{else}}
@@ -9,7 +26,6 @@
   {{/if}}
   <div id="consult_errors"></div>
   <form 
-    class="form-style"
     hx-boost="true"
     {{#if entity}}
       action={{concat_str_args "/consult/form/" entity.slug}} 
@@ -116,24 +132,42 @@
       </li>
 
       <li>
+        <input type="text" id="attachment_path" name="attachment_path" class="field-style field-full align-none" placeholder="Attachment Path" value="{{entity.img_path}}" readonly />
+      </li>
+
+      <li>
         <div>
           <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" value="{{entity.notes}}" />
         </div>
       </li>
 
-      <li>
+      {{!-- <li>
         <div>
           <input type="file" class="field-style field-full align-none" id="file_input" name="attachment"/>
         </div>
-      </li>
+      </li> --}}
 
       <li>
         <div>
-          <button class="field-style field-split align-left" type="submit">Send Response</button>
+          <button class="field-style field-split align-left" type="submit">Submit</button>
           <button class="field-style field-split align-right" type="reset">Clear Form</button>
         </div>
       </li>
     </ul>
+  </form>
+    <form hx-encoding='multipart/form-data' hx-post='/consult/upload' hx-swap="innerHTML" hx-target="#validation_response"
+      _='on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100'>
+    <input 
+      type='file' 
+      id="file_upload" 
+      name='upload'
+    >
+    <button id="upload_btn" disabled="true">
+        Upload
+    </button>
+    <progress id='progress' value='0' max='100'></progress>
+    <div id="validation_response" _="on mutation if my innerHTML != 'Error'
+                                    set #attachment_path.value to #val_p.innerHTML"></div>
   </form>
 </div>
 

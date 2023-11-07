@@ -1,16 +1,22 @@
+use std::{fs::{self, File}, io::{Write, Read}, path::Path, ffi::OsStr};
+
+use actix_multipart::Multipart;
 use actix_web::{
     get, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope,
+    HttpResponse, Responder, Scope, HttpRequest, http::header::CONTENT_LENGTH,
 };
-
+use futures_util::TryStreamExt;
+use image::{imageops::FilterType, DynamicImage};
 use chrono::{DateTime, NaiveDate, Utc};
 use handlebars::Handlebars;
+use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, APPLICATION_JSON, APPLICATION_PDF, CSV, TEXT_CSV};
 use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, Execute, Postgres, Pool, postgres::PgRow, Error, FromRow, Row};
+use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, ValidationResponse},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -26,6 +32,7 @@ pub fn consult_scope() -> Scope {
         .service(create_consult)
         .service(get_consults_handler)
         .service(get_attachments)
+        .service(upload)
 }
 
 async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
@@ -435,6 +442,129 @@ async fn get_attachments(
 
     let body = hb.render("attachments-view", &view_data).unwrap();
     dbg!(&body);
+    return HttpResponse::Ok().body(body);
+}
+
+fn read_file_buffer(filepath: &str, new_filepath: &str) -> Result<(), Box<dyn std::error::Error>> {
+    const BUFFER_LEN: usize = 512;
+    let mut buffer = [0u8; BUFFER_LEN];
+    let mut file = File::open(filepath)?;
+    let mut new_file = fs::File::create(&new_filepath).unwrap();
+    loop {
+        let read_count = file.read(&mut buffer)?;
+        new_file.write_all(&buffer[..read_count]);
+
+        if read_count != BUFFER_LEN {
+            break;
+        }
+    }
+    Ok(())
+}
+
+#[post("/upload")]
+async fn upload(
+    mut payload: Multipart,
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+) -> HttpResponse {
+    let max_file_size: usize = 20_000;
+    let max_file_count: usize = 3;
+    let legal_file_types: [Mime; 6] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, APPLICATION_JSON, APPLICATION_PDF, TEXT_CSV];
+
+    let content_length: usize = match req.headers().get(CONTENT_LENGTH) {
+        Some(header_value) => header_value.to_str().unwrap_or("0").parse().unwrap(),
+        None => 0,
+    };
+
+    dbg!(&content_length);
+
+    if content_length == 0 || content_length > max_file_size {
+        let validation_response = ValidationResponse {
+            msg: "Content Length Error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::BadRequest()
+            .header("HX-Retarget", "#validation_response")
+            .body(body);
+    }
+
+    let mut current_count: usize = 0;
+    let mut filenames: Vec<String> = vec![];
+    loop {
+        if current_count >= max_file_count {
+            break;
+        }
+
+        if let Ok(Some(mut field)) = payload.try_next().await {
+            if field.name() != "upload" {
+                continue;
+            }
+            let filetype: Option<&Mime> = field.content_type();
+            dbg!(filetype);
+            if filetype.is_none() {
+                continue;
+            }
+            if !legal_file_types.contains(&filetype.unwrap()) {
+                // continue;
+                let validation_response = ValidationResponse {
+                    msg: "File Type Not Allowed".to_owned(),
+                    class: "validation_error".to_owned(),
+                };
+                let body = hb.render("validation", &validation_response).unwrap();
+                return HttpResponse::BadRequest()
+                    .header("HX-Retarget", "#validation_response")
+                    .body(body);
+            }
+            let dir: &str = "./static/images/consults/";
+
+            let const_uuid = Uuid::new_v4();
+
+            let destination: String = format!(
+                "{}{}-{}",
+                dir,
+                const_uuid,
+                field.content_disposition().get_filename().unwrap(),
+            );
+            dbg!(&destination);
+            let mut saved_file = fs::File::create(&destination).unwrap();
+            while let Ok(Some(chunk)) = field.try_next().await {
+                let _ = saved_file.write_all(&chunk).unwrap();
+            }
+            let filename = format!("{}{}.{}", dir, const_uuid, Path::new(field.content_disposition().get_filename().unwrap()).extension().and_then(OsStr::to_str).unwrap_or("none"));
+            dbg!(&filename);
+
+            let mut to_save = filename.clone();
+            if let Some((_, desired)) = to_save.split_once("./static") {
+                to_save = desired.to_owned();
+            }
+            dbg!(&filename);
+            dbg!(&to_save);
+
+            filenames.push(to_save);
+
+            web::block(move || async move {
+                let updated_doc = fs::File::open(&destination).unwrap();
+                let extension = Path::new(&destination).extension().and_then(OsStr::to_str).unwrap_or("none");
+                let filename = format!("{}{}.{}", dir, const_uuid, extension);
+                let contents = read_file_buffer(&destination, &filename);
+                let _ = fs::remove_file(&destination).unwrap();
+
+            })
+            .await
+            .unwrap()
+            .await;
+        } else {
+            break;
+        }
+        current_count += 1;
+    }
+    // Message here is filename because we want that set to value via Hyperscript
+    let validation_response = ValidationResponse {
+        msg: filenames[0].to_string(),
+        class: "validation_success".to_owned(),
+    };
+    let body = hb.render("validation", &validation_response).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
