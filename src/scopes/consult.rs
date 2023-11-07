@@ -16,7 +16,7 @@ use sqlx::{QueryBuilder, Execute, Postgres, Pool, postgres::PgRow, Error, FromRo
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, ValidationResponse},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, ValidationResponse, UserAlert},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -105,32 +105,138 @@ async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     client_options
 }
 
+fn validate_consultant_input(body: &ConsultPost) -> bool {
+    true
+}
+
+fn get_mime_type_id(path: &str) -> i32 {
+    4
+}
+
+#[derive(Debug, Serialize, FromRow, Deserialize)]
+pub struct AttachmentResponse {
+    attachment_id: i32
+}
+
+#[derive(Debug, Serialize, FromRow, Deserialize)]
+pub struct ConsultResponse {
+    consult_id: i32,
+}
+
 #[post("/form")]
 async fn create_consult(
     body: web::Form<ConsultPost>,
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
 ) -> impl Responder {
-    match sqlx::query_as::<_, ConsultPost>(
-        "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-    )
-    .bind(body.consultant_id)
-    .bind(body.client_id)
-    .bind(body.location_id)
-    .bind(body.consult_start)
-    .bind(body.consult_end)
-    .bind(body.notes.clone())
-    .fetch_one(&state.db)
-    .await
-    {
-        Ok(consult) => {
-            let body = hb.render("consult/consult-list", &{}).unwrap();
-            return HttpResponse::Ok().body(body);
+    if validate_consultant_input(&body) {
+        let consult_start_string = body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
+        dbg!(&consult_start_string);
+        let consult_end_string = body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
+        dbg!(&consult_end_string);
+        let consult_end_datetime = DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+        dbg!(&consult_end_datetime);
+        dbg!(&consult_start_string);
+        let consult_start_datetime = DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+        dbg!(&consult_start_datetime);
+        let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
+        // Get Current User
+        if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
+            let mime_type_id = get_mime_type_id(&body.attachment_path.as_ref().unwrap());
+            let channel = "upload".to_string();
+            let short_desc = "Replace me with genuine desc".to_string();
+            match sqlx::query_as::<_, AttachmentResponse>(
+                "INSERT INTO attachments (path, user_id, mime_type_id, channel, short_desc) VALUES ($1, $2, $3, $4, $5) RETURNING attachment_id",
+            )
+            .bind(body.attachment_path.clone().unwrap().trim().to_string())
+            // FIXME
+            .bind(body.client_id)
+            .bind(mime_type_id)
+            .bind(channel)
+            .bind(short_desc)
+            .fetch_one(&state.db)
+            .await
+            {
+                Ok(attachment_resp) => {
+                    let consult_attachments_array = vec![attachment_resp.attachment_id];
+                    match sqlx::query_as::<_, ConsultResponse>(
+                        "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING consult_id",
+                    )
+                    .bind(body.consultant_id)
+                    .bind(body.client_id)
+                    .bind(body.location_id)
+                    .bind(consult_start_datetime)
+                    .bind(consult_end_datetime)
+                    .bind(body.notes.clone())
+                    .bind(consult_attachments_array)
+                    .fetch_one(&state.db)
+                    .await
+                    {
+                        Ok(consult_response) => {
+                            let user_alert = UserAlert {
+                                msg: format!("Consult added successfully: ID #{:?}", consult_response.consult_id),
+                                class: "alert_success".to_owned(),
+                            };
+                            let body = hb.render("crud-api", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                        Err(err) => {
+                            dbg!(&err);
+                            let user_alert = UserAlert {
+                                msg: format!("Error Updating User After Adding Them As Consult: {:?}", err),
+                                class: "alert_error".to_owned(),
+                            };
+                            let body = hb.render("crud-api", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                    }
+                }
+                Err(err) => {
+                    dbg!(&err);
+                    let user_alert = UserAlert {
+                        msg: format!("Error Adding the Attachment: {:?}", err),
+                        class: "alert_error".to_owned(),
+                    };
+                    let body = hb.render("crud-api", &user_alert).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
+        } else {
+            match sqlx::query_as::<_, ConsultPost>(
+                "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            )
+            .bind(body.consultant_id)
+            .bind(body.client_id)
+            .bind(body.location_id)
+            .bind(consult_start_datetime)
+            .bind(consult_end_datetime)
+            .bind(body.notes.clone())
+            .fetch_one(&state.db)
+            .await
+            {
+                Ok(consult) => {
+                    let body = hb.render("consult/consult-list", &{}).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+                Err(err) => {
+                    dbg!(&err);
+                    let error_msg = format!("Error occurred in (DB layer): {}.", err).to_owned();
+                    let validation_response = ValidationResponse {
+                        msg: error_msg,
+                        class: "validation_error".to_owned(),
+                    };
+                    let body = hb.render("validation", &validation_response).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
         }
-        Err(err) => {
-            let body = hb.render("validation", &err.to_string()).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
+    } else {
+        let validation_response = ValidationResponse {
+            msg: "Validation error".to_owned(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
+        return HttpResponse::Ok().body(body);
     }
 }
 
@@ -452,7 +558,7 @@ fn read_file_buffer(filepath: &str, new_filepath: &str) -> Result<(), Box<dyn st
     let mut new_file = fs::File::create(&new_filepath).unwrap();
     loop {
         let read_count = file.read(&mut buffer)?;
-        new_file.write_all(&buffer[..read_count]);
+        let _ = new_file.write_all(&buffer[..read_count]);
 
         if read_count != BUFFER_LEN {
             break;
@@ -545,6 +651,7 @@ async fn upload(
 
             web::block(move || async move {
                 let updated_doc = fs::File::open(&destination).unwrap();
+                // FIXME
                 let extension = Path::new(&destination).extension().and_then(OsStr::to_str).unwrap_or("none");
                 let filename = format!("{}{}.{}", dir, const_uuid, extension);
                 let contents = read_file_buffer(&destination, &filename);

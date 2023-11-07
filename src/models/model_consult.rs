@@ -10,8 +10,11 @@ pub struct ConsultPost {
     pub client_id: i32,
     pub consultant_id: i32,
     pub location_id: i32,
-    pub consult_start: DateTime<Utc>,
-    pub consult_end: Option<DateTime<Utc>>,
+    pub attachment_path: Option<String>,
+    pub consult_start_date: String,
+    pub consult_start_time: String,
+    pub consult_end_date: String,
+    pub consult_end_time: String,
     #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: String,
 }

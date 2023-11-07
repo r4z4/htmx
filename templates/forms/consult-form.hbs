@@ -34,7 +34,11 @@
       action="/consult/form" 
       method="post"
     {{/if}}
-    hx-target="#list_api"
+    {{#if entity}}
+      hx-target="#list_api"
+    {{else}}
+      hx-target="#crud_api"
+    {{/if}}
     hx-target-5*="#consult_errors"
     hx-target-404="#consult_errors"
     hx-target-400="#consult_errors"
@@ -132,7 +136,7 @@
       </li>
 
       <li>
-        <input type="text" id="attachment_path" name="attachment_path" class="field-style field-full align-none" placeholder="Attachment Path" value="{{entity.img_path}}" readonly />
+        <input type="text" id="attachment_path" name="attachment_path" class="field-style field-full align-none" placeholder="Attachment Path" value="" readonly />
       </li>
 
       <li>
