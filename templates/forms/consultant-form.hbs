@@ -7,6 +7,13 @@
       evt.detail.isError = false;
     }
   });
+ document.getElementById('file_upload').addEventListener('change', function(e) {
+    if (e.target.files[0]) {
+      document.getElementById('upload_btn').disabled = false
+    } else {
+      document.getElementById('upload_btn').disabled = true
+    }
+  });
 </script>
 
 {{
@@ -108,8 +115,12 @@
   </form>
   <form hx-encoding='multipart/form-data' hx-post='/consultant/upload' hx-swap="innerHTML" hx-target="#validation_response"
       _='on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100'>
-    <input type='file' name='upload'>
-    <button>
+    <input 
+      type='file' 
+      id="file_upload" 
+      name='upload'
+    >
+    <button id="upload_btn" disabled="true">
         Upload
     </button>
     <progress id='progress' value='0' max='100'></progress>

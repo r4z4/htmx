@@ -476,12 +476,14 @@ async fn upload(
 ) -> HttpResponse {
     let max_file_size: usize = 20_000;
     let max_file_count: usize = 3;
-    let legal_file_types: [Mime; 4] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG];
+    let legal_file_types: [Mime; 3] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG];
 
     let content_length: usize = match req.headers().get(CONTENT_LENGTH) {
         Some(header_value) => header_value.to_str().unwrap_or("0").parse().unwrap(),
         None => 0,
     };
+
+    dbg!(&content_length);
 
     if content_length == 0 || content_length > max_file_size {
         let validation_response = ValidationResponse {
