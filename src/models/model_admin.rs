@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Encode, FromRow};
 use validator::Validate;
-use crate::config::{validate_username, validate_primary_address};
+use crate::config::{validate_username, validate_primary_address, validate_secondary_address};
 
 use crate::config::{SelectOption, StringSelectOption};
 
@@ -76,6 +76,7 @@ pub struct AdminSubadminPostRequest {
     pub email: String,
     #[validate(custom = "validate_primary_address")]
     pub address_one: String,
+    #[validate(custom = "validate_secondary_address")]
     pub address_two: Option<String>,
     #[validate(length(max = 28, message = "Zip must be 5 chars"))]
     pub city: String,

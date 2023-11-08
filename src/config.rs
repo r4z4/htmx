@@ -204,12 +204,7 @@ pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
         },
         Err(err) => {
             dbg!(&err);
-            vec![
-                SelectOption {
-                    key: Some("Select One".to_string()),
-                    value: 0,
-                }
-            ]
+            vec![SelectOption::from((0, Some("Select One".to_string())))]
         }
     }
 }
@@ -300,6 +295,10 @@ pub fn specialty_options() -> Vec<SelectOption> {
 //     return responsive_table_data;
 // }
 
+/*************************
+*** Validation Helpers ***
+*************************/
+
 pub fn validate_username(username: &str) -> Result<(), ValidationError> {
     if username.len() < 3 {
         Err(ValidationError::new(
@@ -323,8 +322,29 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
         Ok(())
     } else {
         Err(ValidationError::new(
-            "Primary Address does not contain a valid Identifier (St, Ave)",
+            "Primary Address does not contain a valid Identifier (St, Ave ...)",
         ))
+    }
+}
+
+pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
+    let len_range = 3..15;
+    if len_range.contains(&addr_two.len()) {
+        Err(ValidationError::new(
+            "Secondary address must be 3 to 15 characters",
+        ))
+    } else {
+        let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
+        let first = apt_ste[0].to_owned();
+        dbg!(&first);
+        // No input comes in as blank Some("")
+        if ACCEPTED_SECONDARIES.contains(&first) || addr_two == "" {
+            Ok(())
+        } else {
+            Err(ValidationError::new(
+                "Secondary Address must contain a valid Identifier (Unit, Apt, # ...)",
+            ))
+        }
     }
 }
 

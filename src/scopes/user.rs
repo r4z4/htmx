@@ -1,15 +1,15 @@
 use crate::{
-    config::{self, SelectOption, ValidationResponse, category_options},
+    config::{SelectOption, ValidationResponse, category_options},
     models::model_user::{
-        UserHomeModel, UserHomeQuery, UserModel, UserSettingsModel, UserSettingsObj,
+        UserHomeModel, UserHomeQuery, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
     },
     AppState, HeaderValueExt, ValidatedUser,
 };
 use actix_web::{
-    get, post, put,
-    web::{self, Data, Json},
-    HttpMessage, HttpRequest, HttpResponse, Responder, Scope,
+    get, put,
+    web::{self},
+    HttpRequest, HttpResponse, Responder, Scope,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -27,36 +27,18 @@ pub fn user_scope() -> Scope {
 
 pub fn theme_options() -> Vec<SelectOption> {
     [
-        SelectOption {
-            key: Some("classic".to_owned()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("dark".to_owned()),
-            value: 2,
-        },
+        SelectOption::from((1, Some("classic".to_string()))),
+        SelectOption::from((2, Some("dark".to_string()))),
     ]
     .to_vec()
 }
 
 pub fn list_view_options() -> Vec<SelectOption> {
     [
-        SelectOption {
-            key: Some("consult".to_owned()),
-            value: 1,
-        },
-        SelectOption {
-            key: Some("consultant".to_owned()),
-            value: 2,
-        },
-        SelectOption {
-            key: Some("client".to_owned()),
-            value: 3,
-        },
-        SelectOption {
-            key: Some("location".to_owned()),
-            value: 4,
-        },
+        SelectOption::from((1, Some("consult".to_string()))),
+        SelectOption::from((2, Some("consultant".to_string()))),
+        SelectOption::from((3, Some("client".to_string()))),
+        SelectOption::from((4, Some("location".to_string()))),
     ]
     .to_vec()
 }

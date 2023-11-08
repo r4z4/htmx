@@ -110,7 +110,27 @@ fn validate_consultant_input(body: &ConsultPost) -> bool {
 }
 
 fn get_mime_type_id(path: &str) -> i32 {
-    4
+    let extension = Path::new(path).extension().and_then(OsStr::to_str).unwrap_or("none");
+    match extension {
+        ".png" => 1,
+        ".jpeg" => 2,
+        ".gif" => 3,
+        ".webp" => 4,
+        ".svg+xml" => 5,
+        ".wav" => 6,
+        ".mpeg" => 7,
+        ".webm" => 8,
+        ".webm" => 9,
+        ".mpeg" => 10,
+        ".mp4" => 11,
+        ".json" => 12,
+        ".pdf" => 13,
+        ".csv" => 14,
+        ".html" => 15,
+        ".ics" => 16,
+        "none" => 0, 
+        _ => 0,
+    }
 }
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
@@ -685,46 +705,28 @@ mod tests {
         hbs_helpers::{concat_str_args, int_eq},
         test_common::{self, *},
     };
-    use test_context::{test_context, TestContext};
+    use test_context::{test_context};
 
     fn mock_locations() -> Vec<SelectOption> {
         [
-            SelectOption {
-                key: Some("Loc 1".to_owned()),
-                value: 1,
-            },
-            SelectOption {
-                key: Some("Loc 2".to_owned()),
-                value: 2,
-            },
+            SelectOption::from((1, Some("Loc 1".to_string()))),
+            SelectOption::from((2, Some("Loc 2".to_string()))),
         ]
         .to_vec()
     }
 
     fn mock_clients() -> Vec<SelectOption> {
         [
-            SelectOption {
-                key: Some("Client 1".to_owned()),
-                value: 1,
-            },
-            SelectOption {
-                key: Some("Client 2".to_owned()),
-                value: 2,
-            },
+            SelectOption::from((1, Some("Client 1".to_string()))),
+            SelectOption::from((2, Some("Client 2".to_string()))),
         ]
         .to_vec()
     }
 
     fn mock_consultants() -> Vec<SelectOption> {
         [
-            SelectOption {
-                key: Some("Consultant 1".to_owned()),
-                value: 1,
-            },
-            SelectOption {
-                key: Some("Consultant 2".to_owned()),
-                value: 2,
-            },
+            SelectOption::from((1, Some("Consultant 1".to_string()))),
+            SelectOption::from((2, Some("Consultant 2".to_string()))),
         ]
         .to_vec()
     }

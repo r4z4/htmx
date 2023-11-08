@@ -2,21 +2,21 @@ use std::borrow::Borrow;
 
 use actix_web::{
     get, patch, post,
-    web::{self, Data, Json},
+    web::{self, Data},
     HttpRequest, HttpResponse, Responder, Scope,
 };
 use serde_json::json;
 
 use crate::{
     config::{
-        self, location_contacts, states, FilterOptions, FormErrorResponse, ResponsiveTableData,
+        self, FilterOptions, FormErrorResponse, ResponsiveTableData,
         SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, HeaderValueExt, ValidatedUser, ValidationError, ValError,
+    AppState, HeaderValueExt, ValidatedUser, ValError,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -591,6 +591,7 @@ mod tests {
         test_common::{self, *},
     };
     use test_context::{test_context, TestContext};
+    use crate::config::{location_contacts, states};
 
     #[test_context(Context)]
     #[test]

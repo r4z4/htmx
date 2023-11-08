@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use struct_iterable::Iterable;
 use validator::Validate;
-use crate::config::validate_primary_address;
+use crate::config::{validate_primary_address, validate_secondary_address};
 use crate::config::{SelectOption, StringSelectOption};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,11 +40,7 @@ pub struct ClientPostRequest {
     pub client_company_name: Option<String>,
     #[validate(custom = "validate_primary_address")]
     pub client_address_one: String,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "Invalid Secondary"
-    ))]
+    #[validate(custom = "validate_secondary_address")]
     pub client_address_two: Option<String>,
     pub account_id: i32,
     pub specialty_id: i32,

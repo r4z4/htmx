@@ -3,8 +3,8 @@ use sqlx::FromRow;
 use struct_iterable::Iterable;
 use validator::{Validate, ValidationError};
 
-use crate::config::{SelectOption, StringSelectOption, ACCEPTED_PRIMARIES};
-use crate::config::{validate_primary_address};
+use crate::config::{SelectOption, StringSelectOption};
+use crate::config::{validate_primary_address, validate_secondary_address};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseLocationList {
     pub locations: Vec<LocationList>,
@@ -59,11 +59,7 @@ pub struct LocationPostRequest {
     #[validate(custom = "validate_primary_address")]
     #[validate(contains = " ")]
     pub location_address_one: String,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "Invalid Secondary"
-    ))]
+    #[validate(custom = "validate_secondary_address")]
     pub location_address_two: Option<String>,
     #[validate(length(
         min = 2,
@@ -99,11 +95,7 @@ pub struct LocationPatchRequest {
     pub location_name: Option<String>,
     #[validate(custom = "validate_primary_address")]
     pub location_address_one: Option<String>,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "City must be between 2 & 28 chars"
-    ))]
+    #[validate(custom = "validate_secondary_address")]
     pub location_address_two: Option<Option<String>>,
     #[validate(length(
         min = 2,

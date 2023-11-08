@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, vec, ops::Deref};
+use std::{borrow::Borrow, vec};
 
 use actix_web::{
     get, post,
@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES, FixedTableData,
+        ACCEPTED_SECONDARIES
     },
     models::{
         model_admin::{
@@ -358,7 +358,7 @@ async fn subadmin_form(
 
     if user_result.is_err() {
         dbg!(&user_result);
-        let err = "Error occurred while fetching subamin form";
+        let err = "Error occurred while fetching subadmin form";
         let body = hb.render("validation", &err).unwrap();
         return HttpResponse::Ok().body(body);
     }
