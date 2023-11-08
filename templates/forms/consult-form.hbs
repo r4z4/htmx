@@ -141,7 +141,7 @@
 
       <li>
         <div>
-          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" value="{{entity.notes}}" />
+          <input type="textarea" class="field-style field-full align-none" id="notes" name="notes" placeholder="Consult Notes (Max 200)" maxlength="200" value="{{entity.notes}}" />
         </div>
       </li>
 
@@ -162,9 +162,10 @@
     <form hx-encoding='multipart/form-data' hx-post='/consult/upload' hx-swap="innerHTML" hx-target="#validation_response"
       _='on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100'>
     <input 
-      type='file' 
+      type="file" 
       id="file_upload" 
-      name='upload'
+      name="upload"
+      accept=".jpeg,.png,.jpg,.gif,.csv,.pdf,.json"
     >
     <button id="upload_btn" disabled="true">
         Upload

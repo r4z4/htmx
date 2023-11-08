@@ -1,12 +1,10 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use struct_iterable::Iterable;
-use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 use crate::config::{SelectOption, StringSelectOption, ACCEPTED_PRIMARIES};
-
+use crate::config::{validate_primary_address};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseLocationList {
     pub locations: Vec<LocationList>,
@@ -48,24 +46,6 @@ fn validate_unique_location_name(location_name: &str) -> Result<(), ValidationEr
     Ok(())
 }
 
-fn validate_primary_addr(location_address_one: &str) -> Result<(), ValidationError> {
-    let street_strings: Vec<&str> = location_address_one
-        .split(" ")
-        .collect::<Vec<&str>>()
-        .to_owned();
-    let ss_len = street_strings.len();
-    // Getting last two to account for 101 Hartford St. W etc..
-    if ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 1])
-        || ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 2])
-    {
-        Ok(())
-    } else {
-        Err(ValidationError::new(
-            "Primary Address does not contain a valid Identifier (St, Ave)",
-        ))
-    }
-}
-
 #[derive(Debug, Validate, Serialize, Deserialize, FromRow)]
 pub struct LocationPostRequest {
     // #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"), custom = "validate_unique_location_name")]
@@ -76,22 +56,24 @@ pub struct LocationPostRequest {
         message = "Don't use that name, it's terrible!"
     ))]
     pub location_name: String,
-    #[validate(
-        length(min = 3, message = "Location Address must ..."),
-        custom = "validate_primary_addr"
-    )]
+    #[validate(custom = "validate_primary_address")]
     #[validate(contains = " ")]
     pub location_address_one: String,
+    #[validate(length(
+        min = 2,
+        max = 28,
+        message = "Invalid Secondary"
+    ))]
     pub location_address_two: Option<String>,
     #[validate(length(
         min = 2,
         max = 28,
-        message = "Location Address must be between 2 & 28 chars"
+        message = "City must be between 2 & 28 chars"
     ))]
     pub location_city: String,
     // #[validate(length(min = 3, message = "Must be in list of states"))]
     pub location_state: String,
-    // #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
+    #[validate(length(equal = 3, message = "Zip must be 5 chars"))]
     pub location_zip: String,
     pub location_contact_id: i32,
     #[validate(length(equal = 12, message = "Phone must be 12 characters (w/ -)"))]
@@ -111,15 +93,29 @@ pub struct LocationFormRequest {
     pub location_phone: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Iterable)]
+#[derive(Debug, Serialize, Validate, Deserialize, Iterable)]
 pub struct LocationPatchRequest {
+    #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"))]
     pub location_name: Option<String>,
+    #[validate(custom = "validate_primary_address")]
     pub location_address_one: Option<String>,
+    #[validate(length(
+        min = 2,
+        max = 28,
+        message = "City must be between 2 & 28 chars"
+    ))]
     pub location_address_two: Option<Option<String>>,
+    #[validate(length(
+        min = 2,
+        max = 28,
+        message = "City must be between 2 & 28 chars"
+    ))]
     pub location_city: Option<String>,
     pub location_state: Option<String>,
+    #[validate(length(equal = 3, message = "Zip must be 5 chars"))]
     pub location_zip: Option<String>,
     pub location_contact_id: Option<i32>,
+    #[validate(length(equal = 12, message = "Phone must be 12 characters (w/ -)"))]
     pub location_phone: Option<Option<String>>,
 }
 

@@ -15,26 +15,26 @@
     <ul>
       <div id="subadmin_errors"></div>
       <li>
-          <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" value={{username}} />
-          <input type="email" name="email" class="field-style field-split align-right" placeholder="Email" value={{email}} />
+          <input type="text" name="username" class="field-style field-split align-left" placeholder="Username" maxlength="20" value={{username}} />
+          <input type="email" name="email" class="field-style field-split align-right" placeholder="Email"  maxlength="30" value={{email}} />
       </li>
       <li>
-          <input type="text" name="f_name" class="field-style field-split align-left" placeholder="First Name" />
-          <input type="text" name="l_name" class="field-style field-split align-right" placeholder="Last Name" />
+          <input type="text" name="f_name" class="field-style field-split align-left" maxlength="20" placeholder="First Name" />
+          <input type="text" name="l_name" class="field-style field-split align-right" maxlength="25" placeholder="Last Name" />
       </li>
       <li>
-        <input type="text" name="address_one" class="field-style field-addr-one" placeholder="Address" required />
-        <input type="text" id="address_two" name="address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" disabled="true"/>
+        <input type="text" id="address_one" name="address_one" class="field-style field-addr-one" maxlength="20" placeholder="Address" required />
+        <input type="text" id="address_two" name="address_two" class="field-style field-addr-two" maxlength="10" placeholder="Apt, Ste etc.. (Optional)" disabled="true"/>
       </li>
       <li>
-        <input type="text" name="location_city" class="field-style field-city" placeholder="City" required />
+        <input type="text" name="location_city" class="field-style field-city"  maxlength="28" placeholder="City" required />
         {{!-- <input type="select" name="state" class="field-style field-state" placeholder="State" /> --}}
         <select class="field-style field-state" id="location_state" name="location_state" required>
             {{#each state_options}}
               <option value="{{this.value}}">{{this.key}}</option>
             {{/each}}
         </select>
-        <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" required />
+        <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" maxlength="5" pattern="[0-9]{5}" required />
       </li>
       <li>
         <input type="tel" name="primary_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" />

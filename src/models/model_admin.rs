@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Encode, FromRow};
+use validator::Validate;
+use crate::config::{validate_username, validate_primary_address};
 
 use crate::config::{SelectOption, StringSelectOption};
 
@@ -66,22 +68,27 @@ pub struct AdminUserFormQuery {
     pub avatar_path: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Validate, Debug, Default, Clone)]
 pub struct AdminSubadminPostRequest {
     pub user_type_id: i32,
+    #[validate(custom = "validate_username")]
     pub username: String,
     pub email: String,
+    #[validate(custom = "validate_primary_address")]
     pub address_one: String,
     pub address_two: Option<String>,
+    #[validate(length(max = 28, message = "Zip must be 5 chars"))]
     pub city: String,
     pub state: String,
+    #[validate(length(equal = 5, message = "Zip must be 5 chars"))]
     pub zip: String,
     pub primary_phone: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Validate, Debug, Default, Clone)]
 pub struct AdminUserPostRequest {
     pub user_type_id: i32,
+    #[validate(custom = "validate_username")]
     pub username: String,
     pub email: String,
     pub avatar_path: Option<String>,

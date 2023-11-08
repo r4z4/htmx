@@ -30,25 +30,22 @@
   <form 
     hx-boost="true"
     {{#if entity}}
+      hx-target="#list_api"
       hx-patch={{concat_str_args "/consultant/form/" entity.slug}}
       {{!-- action={{concat_str_args "/consultant/form/" entity.slug}} 
       method="patch" --}}
     {{else}}
+      hx-target="#crud_api"
       hx-post="/consultant/form"
       {{!-- action="/consultant/form" 
       method="post" --}}
-    {{/if}}
-    {{#if entity}}
-      hx-target="#list_api"
-    {{else}}
-      hx-target="#crud_api"
     {{/if}}
     hx-target-5*="#consultant_errors"
     hx-target-404="#consultant_errors"
     hx-target-400="#consultant_errors"
     hx-target-4*="#consultant_errors"
     {{!-- hx-headers='{"Content-Type": "multipart/form-data"}' --}}
-    hx-swap="innerHTML"
+    hx-swap="outerHTML"
   >
     <ul>
       {{#if user_options}}
@@ -61,8 +58,8 @@
         </li>
       {{/if}}
       <li>
-          <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" value="{{entity.consultant_f_name}}" required="true" />
-          <input type="text" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" value="{{entity.consultant_l_name}}" required="true" />
+          <input type="text" name="consultant_f_name" class="field-style field-split align-left" placeholder="First Name" maxlength="20" value="{{entity.consultant_f_name}}" required="true" />
+          <input type="text" name="consultant_l_name" class="field-style field-split align-right" placeholder="Last Name" maxlength="20" value="{{entity.consultant_l_name}}" required="true" />
       </li>
       <li>
           <input type="text" id="img_path" name="img_path" class="field-style field-full align-none" placeholder="Image Path" value="{{entity.img_path}}" readonly />
@@ -119,6 +116,7 @@
       type='file' 
       id="file_upload" 
       name='upload'
+      accept=".jpeg,.png,.jpg,.gif"
     >
     <button id="upload_btn" disabled="true">
         Upload

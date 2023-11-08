@@ -82,8 +82,8 @@
           />
       </li>
       <li>
-        <input type="text" name="client_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.client_address_one}}" required />
-        <input type="text" id="client_address_two" name="client_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" disabled="true" value="{{entity.client_address_two}}" />
+        <input type="text" id="client_address_one" name="client_address_one" class="field-style field-addr-one" placeholder="Address"  maxlength="20" value="{{entity.client_address_one}}" required />
+        <input type="text" id="client_address_two" name="client_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)"  maxlength="10" disabled="true" value="{{entity.client_address_two}}" />
       </li>
       <li>
         <input type="text" name="client_city" class="field-style field-city" placeholder="City" value="{{entity.client_city}}" required />
@@ -102,7 +102,7 @@
               {{/if}}
             {{/each}}
         </select>
-        <input type="text" name="client_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" value="{{entity.client_zip}}" required />
+        <input type="zip" name="client_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" maxlength="5" value="{{entity.client_zip}}" required />
       </li>
       <li>
           <input type="email" name="client_email" class="field-style field-full align-none" placeholder="Email" value="{{entity.client_email}}" required="true" />

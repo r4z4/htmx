@@ -300,6 +300,34 @@ pub fn specialty_options() -> Vec<SelectOption> {
 //     return responsive_table_data;
 // }
 
+pub fn validate_username(username: &str) -> Result<(), ValidationError> {
+    if username.len() < 3 {
+        Err(ValidationError::new(
+            "Username must be 3 chars",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
+    let street_strings: Vec<&str> = addr
+        .split(" ")
+        .collect::<Vec<&str>>()
+        .to_owned();
+    let ss_len = street_strings.len();
+    // Getting last two to account for 101 Hartford St. W etc..
+    if ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 1])
+        || ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 2])
+    {
+        Ok(())
+    } else {
+        Err(ValidationError::new(
+            "Primary Address does not contain a valid Identifier (St, Ave)",
+        ))
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct TableRow {
     pub th: String,
