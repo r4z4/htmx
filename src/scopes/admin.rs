@@ -134,8 +134,12 @@ async fn recent_activity(
     .await;
 
     if recent.is_err() {
-        let err = "Error occurred while fetching from pg_stat";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching from pg_stat";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -209,10 +213,12 @@ pub async fn get_contact_submissions(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all contact submission records";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all contact submission records";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -265,10 +271,12 @@ pub async fn get_users_handler(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all location records";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all location records";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -307,8 +315,12 @@ async fn user_form(
     .await;
 
     if user_result.is_err() {
-        let err = "Error occurred while fetching user form";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching user form";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -358,8 +370,12 @@ async fn subadmin_form(
 
     if user_result.is_err() {
         dbg!(&user_result);
-        let err = "Error occurred while fetching subadmin form";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching subadmin form";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 

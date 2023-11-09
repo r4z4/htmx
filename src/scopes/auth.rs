@@ -336,8 +336,12 @@ async fn logout(
             }
         }
     } else {
-        let message = "No cookie present at logout".to_owned();
-        let body = hb.render("validation", &format!("{:?}", message)).unwrap();
+        let error_msg = "No cookie present at logout".to_owned();
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 }

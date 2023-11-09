@@ -73,8 +73,12 @@ async fn search_location(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all location records";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all location records";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -146,8 +150,12 @@ pub async fn get_locations_handler(
         dbg!(&query_result);
 
         if query_result.is_err() {
-            let err = "Error occurred while fetching searched location records";
-            let body = hb.render("validation", &err).unwrap();
+            let error_msg = "Error occurred while fetching searched location records";
+            let validation_response = ValidationResponse {
+                msg: error_msg.to_string(),
+                class: "validation_error".to_owned(),
+            };
+            let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
 
@@ -191,10 +199,12 @@ pub async fn get_locations_handler(
         dbg!(&query_result);
 
         if query_result.is_err() {
-            let err = "Error occurred while fetching all location records";
-            // return HttpResponse::InternalServerError()
-            //     .json(json!({"status": "error","message": message}));
-            let body = hb.render("validation", &err).unwrap();
+            let error_msg = "Error occurred while fetching all location records";
+            let validation_response = ValidationResponse {
+                msg: error_msg.to_string(),
+                class: "validation_error".to_owned(),
+            };
+            let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
 
@@ -242,8 +252,12 @@ async fn location_form(
     .await;
 
     if account_result.is_err() {
-        let err = "Error occurred while fetching account option KVs";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching account option KVs";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -279,10 +293,12 @@ async fn location_edit_form(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching record for location form";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching record for location form";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 

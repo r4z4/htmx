@@ -334,10 +334,12 @@ async fn consult_edit_form(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all consult records";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all consult records";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -490,10 +492,12 @@ pub async fn get_consults_handler(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all consultant records";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all consultant records";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -555,8 +559,12 @@ async fn get_attachments(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching attachments for consult";
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching attachments for consult";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 

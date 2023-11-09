@@ -165,10 +165,12 @@ async fn client_edit_form(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching record for location form";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching record for location form";
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
     let account_options = account_options(&state).await;

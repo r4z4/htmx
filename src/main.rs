@@ -500,8 +500,12 @@ async fn content(
 
         HttpResponse::Ok().body(body)
     } else {
-        let err = "Error retrieving content".to_owned();
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error retrieving content".to_owned();
+        let validation_response = ValidationResponse {
+            msg: error_msg.to_string(),
+            class: "validation_error".to_owned(),
+        };
+        let body = hb.render("validation", &validation_response).unwrap();
         HttpResponse::Ok().body(body)
     }
 }
@@ -555,8 +559,12 @@ async fn create_todo(
             let body = hb.render("todo-list", &data).unwrap();
             return HttpResponse::Ok().body(body);
         }
-        Err(err) => {
-            let body = hb.render("validation", &err).unwrap();
+        Err(error_msg) => {
+            let validation_response = ValidationResponse {
+                msg: error_msg.to_string(),
+                class: "validation_error".to_owned(),
+            };
+            let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
     }
