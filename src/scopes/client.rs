@@ -69,10 +69,9 @@ pub async fn get_clients_handler(
     dbg!(&query_result);
 
     if query_result.is_err() {
-        let err = "Error occurred while fetching all client records";
-        // return HttpResponse::InternalServerError()
-        //     .json(json!({"status": "error","message": message}));
-        let body = hb.render("validation", &err).unwrap();
+        let error_msg = "Error occurred while fetching all client records";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+        let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
 
@@ -166,10 +165,7 @@ async fn client_edit_form(
 
     if query_result.is_err() {
         let error_msg = "Error occurred while fetching record for location form";
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -265,10 +261,8 @@ async fn create_client(
         }
     } else {
         println!("Val error");
-        let validation_response = ValidationResponse {
-            msg: "Validation error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Validation error";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
 
@@ -394,10 +388,8 @@ async fn patch_client(
         }
     } else {
         println!("Val error");
-        let validation_response = ValidationResponse {
-            msg: "Validation error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Validation error";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::BadRequest().body(body);
     }

@@ -132,6 +132,16 @@ pub struct ValidationResponse {
     pub class: String,
 }
 
+impl From<(&str, &str)> for ValidationResponse {
+    fn from(pair: (&str, &str)) -> Self {
+        let (msg, class) = pair;
+        ValidationResponse { 
+            msg: msg.to_string(),
+            class: class.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
     pub entity_type_id: i32,

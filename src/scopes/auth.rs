@@ -248,25 +248,22 @@ async fn basic_auth(
                     Err(err) => {
                         dbg!(&err);
                         let error_msg = "Invalid Login Request".to_owned() + format!("{}", err).as_str();
-                        let validation_response = ValidationResponse {
-                            msg: error_msg,
-                            class: "validation_error".to_owned(),
-                        };
+                        let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                 }
             } else {
-                let err = "Invalid Login Request".to_owned();
-                let body = hb.render("validation", &err).unwrap();
+                let error_msg = "Invalid Login Request";
+                let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }
         Err(err) => {
-            // let static_err = "Error occurred while logging in (DB).";
-            let body = hb.render("validation", &format!("{:?}", err)).unwrap();
+            let validation_response = ValidationResponse::from((format!("{:?}", err).as_str(), "validation_error"));
+            let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
-            // HttpResponse::InternalServerError().json(format!("{:?}", err))
         }
     }
 }
@@ -336,11 +333,8 @@ async fn logout(
             }
         }
     } else {
-        let error_msg = "No cookie present at logout".to_owned();
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "No cookie present at logout";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -381,41 +375,29 @@ async fn validate_email(
         {
             Ok(result) => {
                 if result.exists {
-                    let error_msg = "Email already taken!".to_owned();
-                    let validation_response = ValidationResponse {
-                        msg: error_msg,
-                        class: "validation_error".to_owned(),
-                    };
+                    let error_msg = "Email already taken!";
+                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 } else {
-                    let success_msg = "Email is available for use".to_owned();
-                    let validation_response = ValidationResponse {
-                        msg: success_msg,
-                        class: "validation_success".to_owned(),
-                    };
+                    let success_msg = "Email is available for use";
+                    let validation_response = ValidationResponse::from((success_msg, "validation_success"));
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
                 dbg!(&err);
-                let error_msg = "Error occurred in (DB layer).".to_owned();
-                let validation_response = ValidationResponse {
-                    msg: error_msg,
-                    class: "validation_error".to_owned(),
-                };
+                let error_msg = "Error occurred in (DB layer).";
+                let validation_response = ValidationResponse::from((error_msg, "validation_error"));
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::Ok().body(body);
                 // HttpResponse::InternalServerError().json(format!("{:?}", err))
             }
         }
     } else {
-        let error_msg = "Incorrect Format.".to_owned();
-        let validation_response = ValidationResponse {
-            msg: error_msg,
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Incorrect Format.";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -483,20 +465,16 @@ async fn forgot_password(
             let email_input = SendEmailInput::from((body.email.as_str(), format!("A password reset was requested on {}", created_at_fmt).as_str()));
             match send_email(email_input).await {
                 Ok(_) => {
-                    let validation_response = ValidationResponse {
-                        msg: "Reset Password link has been sent.".to_owned(),
-                        class: "validation_success".to_owned(),
-                    };
+                    let success_msg = "Reset Password link has been sent.";
+                    let validation_response = ValidationResponse::from((success_msg, "validation_success"));
                     let body = hb
                         .render("validation", &validation_response)
                         .unwrap();
                     return HttpResponse::Ok().body(body);
                 }
                 Err(e) => {
-                    let validation_response = ValidationResponse {
-                        msg: "Unable to send Reset Password link. Please ensure you have entered a valid email address.".to_owned(),
-                        class: "validation_error".to_owned(),
-                    };
+                    let error_msg = "Unable to send Reset Password link. Please ensure you have entered a valid email address.";
+                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
                     let body = hb
                         .render("validation", &validation_response)
                         .unwrap();
@@ -505,10 +483,8 @@ async fn forgot_password(
             }
         },
         Err(err) => {
-            let validation_response = ValidationResponse {
-                msg: "Error at the DB layer.".to_owned(),
-                class: "validation_error".to_owned(),
-            };
+            let error_msg = format!("Error at the DB layer. {}", err);
+            let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
             let body = hb
                 .render("validation", &validation_response)
                 .unwrap();

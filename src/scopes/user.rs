@@ -189,10 +189,7 @@ async fn edit_settings(
             }
         }
     } else {
-        let validation_response = ValidationResponse {
-            msg: "Validation error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from(("Validation error", "validation_error"));
         let body = hb.render("validation", &format!("{:?}", validation_response)).unwrap();
         return HttpResponse::Ok()
         .header("HX-Retarget", "#validation")

@@ -130,10 +130,7 @@ pub async fn get_consultants_handler(
 
     if query_result.is_err() {
         let error_msg = "Error occurred while fetching all consultant records";
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -278,10 +275,7 @@ async fn consultant_form(
 
     if user_result.is_err() {
         let error_msg = "Error occurred while fetching user option KVs";
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -320,10 +314,7 @@ async fn consultant_edit_form(
 
     if query_result.is_err() {
         let error_msg = "Error occurred while fetching record for consultant form";
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -439,10 +430,8 @@ async fn create_consultant(
         }
     } else {
         println!("Val error");
-        let validation_response = ValidationResponse {
-            msg: "Validation error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Validation error";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
 
@@ -494,10 +483,8 @@ async fn upload(
     dbg!(&content_length);
 
     if content_length == 0 || content_length > max_file_size {
-        let validation_response = ValidationResponse {
-            msg: "Content Length Error".to_owned(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Content Length Error";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::BadRequest()
             .header("HX-Retarget", "#validation_response")
@@ -522,10 +509,8 @@ async fn upload(
             }
             if !legal_file_types.contains(&filetype.unwrap()) {
                 // continue;
-                let validation_response = ValidationResponse {
-                    msg: "File Type Not Allowed".to_owned(),
-                    class: "validation_error".to_owned(),
-                };
+                let error_msg = "File Type Not Allowed";
+                let validation_response = ValidationResponse::from((error_msg, "validation_error"));
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::BadRequest()
                     .header("HX-Retarget", "#validation_response")
@@ -577,10 +562,8 @@ async fn upload(
         current_count += 1;
     }
     // Message here is filename because we want that set to value via Hyperscript
-    let validation_response = ValidationResponse {
-        msg: filenames[0].to_string(),
-        class: "validation_success".to_owned(),
-    };
+    let success_msg = &filenames[0];
+    let validation_response = ValidationResponse::from((success_msg.as_str(), "validation_success"));
     let body = hb.render("validation", &validation_response).unwrap();
     return HttpResponse::Ok().body(body);
 }

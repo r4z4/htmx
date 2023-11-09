@@ -500,11 +500,8 @@ async fn content(
 
         HttpResponse::Ok().body(body)
     } else {
-        let error_msg = "Error retrieving content".to_owned();
-        let validation_response = ValidationResponse {
-            msg: error_msg.to_string(),
-            class: "validation_error".to_owned(),
-        };
+        let error_msg = "Error retrieving content";
+        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -560,10 +557,7 @@ async fn create_todo(
             return HttpResponse::Ok().body(body);
         }
         Err(error_msg) => {
-            let validation_response = ValidationResponse {
-                msg: error_msg.to_string(),
-                class: "validation_error".to_owned(),
-            };
+            let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
             let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
@@ -629,10 +623,7 @@ async fn contact_us_submission(
     if is_valid.is_err() {
         // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
         let error_msg = "Validation Error".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
-        let validation_response = ValidationResponse {
-            msg: error_msg,
-            class: "validation_error".to_owned(),
-        };
+        let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::BadRequest()
             .header("HX-Retarget", "#validation_response")
@@ -652,21 +643,15 @@ async fn contact_us_submission(
         .await
         {
             Ok(_) => {
-                let success_msg = "Message successfully sent. Thank you :)".to_owned();
-                let validation_response = ValidationResponse {
-                    msg: success_msg,
-                    class: "validation_success".to_owned(),
-                };
+                let success_msg = "Message successfully sent. Thank you :)";
+                let validation_response = ValidationResponse::from((success_msg, "validation_success"));
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
                 let error_msg = "Error Adding Record".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
-                let validation_response = ValidationResponse {
-                    msg: error_msg,
-                    class: "validation_error".to_owned(),
-                };
+                let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
                 let body = hb.render("validation", &validation_response).unwrap();
                 return HttpResponse::InternalServerError()
                     .header("HX-Retarget", "#validation_response")
