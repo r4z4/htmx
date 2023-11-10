@@ -401,9 +401,9 @@ fn validate_admin_subadmin_input(body: &AdminSubadminPostRequest) -> bool {
     dbg!(&body);
     if let Some(addr_two) = &body.address_two {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0].to_owned();
+        let first = apt_ste[0];
         dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(first.borrow()) {
+        if ACCEPTED_SECONDARIES.contains(&first) {
             true
         } else {
             false

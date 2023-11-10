@@ -188,9 +188,9 @@ fn validate_client_input(body: &ClientPostRequest) -> bool {
     dbg!(&body);
     if let Some(addr_two) = &body.client_address_two {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0].to_owned();
+        let first = apt_ste[0];
         dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(first.borrow()) {
+        if ACCEPTED_SECONDARIES.contains(&first) {
             true
         } else {
             false
@@ -281,9 +281,9 @@ fn validate_patch(body: &ClientPostRequest) -> bool {
     dbg!(&body);
     if let Some(addr_two) = &body.client_address_two {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0].to_owned();
+        let first = apt_ste[0];
         dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(first.borrow()) {
+        if ACCEPTED_SECONDARIES.contains(&first) {
             true
         } else {
             false

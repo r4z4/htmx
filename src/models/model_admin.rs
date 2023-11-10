@@ -78,7 +78,7 @@ pub struct AdminSubadminPostRequest {
     pub address_one: String,
     #[validate(custom = "validate_secondary_address")]
     pub address_two: Option<String>,
-    #[validate(length(max = 28, message = "Zip must be 5 chars"))]
+    #[validate(length(max = 28, message = "City must be less than 28 chars"))]
     pub city: String,
     pub state: String,
     #[validate(length(equal = 5, message = "Zip must be 5 chars"))]

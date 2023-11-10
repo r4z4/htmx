@@ -304,10 +304,10 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
     dbg!(&body);
     if let Some(addr_two) = &body.location_address_two {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0].to_owned();
+        let first = apt_ste[0];
         dbg!(&first);
         // No input comes in as blank Some("")
-        if ACCEPTED_SECONDARIES.contains(first.borrow()) || addr_two == "" {
+        if ACCEPTED_SECONDARIES.contains(&first) || addr_two == "" {
             true
         } else {
             false
@@ -343,7 +343,12 @@ async fn validate_and_get_user(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FullPageTemplateData {
     user_alert: UserAlert,
-    user: ValidatedUser,
+    user: Option<ValidatedUser>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct IndexData {
+    message: String,
 }
 
 #[post("/form")]
@@ -362,6 +367,7 @@ async fn create_location(
         dbg!(cookie.clone());
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
+                dbg!(&user_option);
                 if let Some(user) = user_option {
                     let user = ValidatedUser {
                         username: user.username,
@@ -425,9 +431,10 @@ async fn create_location(
                         // return HttpResponse::Ok().body(body);
                     }
                 } else {
-                    let message =
-                        "Your session seems to have expired. Please login again.".to_owned();
-                    let body = hb.render("index", &message).unwrap();
+                    let index_data = IndexData {
+                        message: "Your session seems to have expired. Please login again.".to_owned()
+                    };
+                    let body = hb.render("index", &index_data).unwrap();
 
                     HttpResponse::Ok().body(body)
                 }
@@ -435,8 +442,10 @@ async fn create_location(
             Err(_err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
-                let message = "Error in validate and get user.".to_owned();
-                let body = hb.render("index", &message).unwrap();
+                let index_data = IndexData {
+                    message: format!("Error in validate and get user: {}", _err.error)
+                };
+                let body = hb.render("index", &index_data).unwrap();
 
                 HttpResponse::Ok().body(body)
             }
@@ -530,7 +539,8 @@ async fn patch_location(
                     location_zip = $6,
                     location_phone = $7,
                     location_contact_id = $8
-                WHERE slug = $9",
+                WHERE slug = $9
+                RETURNING location_id",
         )
         .bind(&body.location_name)
         .bind(&body.location_address_one)
@@ -550,16 +560,23 @@ async fn patch_location(
                     msg: format!("Location added successfully: ID #{:?}", loc.location_id),
                     class: "alert_success".to_owned(),
                 };
+                let full_page_data = FullPageTemplateData {
+                    user_alert: user_alert.clone(),
+                    user: None,
+                };
                 let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error patching location: {:?}", err),
-                    class: "alert_error".to_owned(),
-                };
-                let body = hb.render("list-api", &user_alert).unwrap();
+                let error_msg = format!("Validation error: {}", &err);
+                let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
+                let body = hb.render("validation", &validation_response).unwrap();
+                // let user_alert = UserAlert {
+                //     msg: format!("Error patching location: {:?}", err),
+                //     class: "alert_error".to_owned(),
+                // };
+                // let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }

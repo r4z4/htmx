@@ -69,7 +69,7 @@ pub struct LocationPostRequest {
     pub location_city: String,
     // #[validate(length(min = 3, message = "Must be in list of states"))]
     pub location_state: String,
-    #[validate(length(equal = 3, message = "Zip must be 5 chars"))]
+    #[validate(length(equal = 5, message = "Zip must be 5 chars"))]
     pub location_zip: String,
     pub location_contact_id: i32,
     #[validate(length(equal = 12, message = "Phone must be 12 characters (w/ -)"))]
@@ -104,7 +104,7 @@ pub struct LocationPatchRequest {
     ))]
     pub location_city: Option<String>,
     pub location_state: Option<String>,
-    #[validate(length(equal = 3, message = "Zip must be 5 chars"))]
+    #[validate(length(equal = 5, message = "Zip must be 5 chars"))]
     pub location_zip: Option<String>,
     pub location_contact_id: Option<i32>,
     #[validate(length(equal = 12, message = "Phone must be 12 characters (w/ -)"))]

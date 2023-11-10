@@ -20,16 +20,17 @@ lazy_static! {
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})"
     )
     .unwrap();
-    pub static ref ACCEPTED_SECONDARIES: Vec<String> = vec![
-        "Apt".to_owned(),
-        "Apt.".to_owned(),
-        "Ste".to_owned(),
-        "Ste.".to_owned(),
-        "Suite".to_owned(),
-        "Apartment".to_owned(),
-        "#".to_owned(),
-        "No.".to_owned(),
-        "No".to_owned()
+    pub static ref ACCEPTED_SECONDARIES: Vec<&'static str> = vec![
+        "Apt",
+        "Apt.",
+        "Ste",
+        "Ste.",
+        "Suite",
+        "Apartment",
+        "#",
+        "Pt.",
+        "No.",
+        "No"
     ];
     pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec![
         "St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.",
@@ -339,13 +340,13 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
 
 pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
     let len_range = 3..15;
-    if len_range.contains(&addr_two.len()) {
+    if !len_range.contains(&addr_two.len()) {
         Err(ValidationError::new(
             "Secondary address must be 3 to 15 characters",
         ))
     } else {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0].to_owned();
+        let first = apt_ste[0];
         dbg!(&first);
         // No input comes in as blank Some("")
         if ACCEPTED_SECONDARIES.contains(&first) || addr_two == "" {
@@ -559,9 +560,12 @@ pub async fn validate_and_get_user(
     .await
     {
         Ok(user_option) => Ok(user_option),
-        Err(err) => Err(crate::ValError {
-            error: format!("You must not be verfied: {}", err),
-        }),
+        Err(err) => {
+            dbg!(&err);
+            Err(crate::ValError {
+                error: format!("You must not be verified: {}", err),
+            })
+        }
     }
 }
 

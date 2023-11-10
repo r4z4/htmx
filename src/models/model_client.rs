@@ -53,7 +53,7 @@ pub struct ClientPostRequest {
     ))]
     pub client_city: String,
     pub client_state: String,
-    #[validate(length(equal = 3, message = "Zip must be 5 chars"))]
+    #[validate(length(equal = 5, message = "Zip must be 5 chars"))]
     pub client_zip: String,
     pub client_dob: Option<String>,
     #[validate(length(equal = 12, message = "Phone must be 12 characters (w/ -)"))]
