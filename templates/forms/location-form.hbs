@@ -8,6 +8,7 @@
     }
   });
 </script>
+<script src="/scripts/phone_input.js"></script>
 
 {{
 #>
@@ -52,8 +53,8 @@
         {{/if}} --}}
       </li>
       <li>
-        <input type="text" name="location_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.location_address_one}}" required="true" />
-        <input type="text" name="location_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" maxlength="10" value="{{entity.location_address_two}}" />
+        <input type="text" id="location_address_one" name="location_address_one" class="field-style field-addr-one" placeholder="Address" value="{{entity.location_address_one}}" required="true" />
+        <input type="text" id="location_address_two" name="location_address_two" class="field-style field-addr-two" placeholder="Apt, Ste etc.. (Optional)" maxlength="10" value="{{entity.location_address_two}}" />
       </li>
       <li>
         <input type="text" name="location_city" class="field-style field-city" placeholder="City" maxlength="28" value="{{entity.location_city}}" required="true" />
@@ -79,7 +80,7 @@
         <input type="text" name="location_zip" class="field-style field-zip" placeholder="Zip" pattern="[0-9]{5}" maxlength="5" value="{{entity.location_zip}}" required="true" />
       </li>
       <li>
-        <input type="tel" name="location_phone" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" value="{{entity.location_phone}}" />
+        <input type="tel" name="location_phone" id="phone_input" class="field-style field-split align-left" placeholder="000-000-0000" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" value="{{entity.location_phone}}" />
         <select class="field-style field-split align-right" id="location_contact_id" name="location_contact_id" value="{{entity.location_contact_id}}">
             {{!-- Only display default option if new form (or no value, but location_contact has a default value) --}}
             {{#unless @root.entity}}

@@ -7,6 +7,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sqlx::{FromRow, Postgres, Pool};
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::{fmt::Debug, net::IpAddr};
 use std::fs::File;
@@ -333,20 +335,24 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
     {
         Ok(())
     } else {
+        // Code, not message
         Err(ValidationError::new(
-            "Primary Address does not contain a valid Identifier (St, Ave ...)",
+            //"Primary Address does not contain a valid Identifier (St, Ave ...)",
+            "Primary Address",
         ))
     }
 }
 
 pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
     // No input comes in as blank Some(""). These get turned into NULLs in DB.
-    if addr_two == "" {return Ok(())}
+    // if addr_two == "" {return Ok(())}
     let len_range = 3..15;
     if !len_range.contains(&addr_two.len()) {
-        Err(ValidationError::new(
-            "Secondary address must be 3 to 15 characters",
-        ))
+        Err(ValidationError {
+            code: std::borrow::Cow::Borrowed("Secondary address must be 3 to 15 characters"),
+            message: Some(Cow::from("Secondary".to_owned())),
+            params: HashMap::new(),
+        })
     } else {
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
         let first = apt_ste[0];
