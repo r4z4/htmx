@@ -248,7 +248,7 @@ fieldset {
     resize:none;
 }
 
-#contact, .contact_container button[type="submit"] {
+.contact_container button[type="submit"] {
     display: inline-block;
     outline: 0;
     border: none;
@@ -941,7 +941,6 @@ section{
 .about_image{
     background-color: #12192c;
     display: flex;
-    border-radius: 12px 0 0 12px;
 }
 .about_image img{
     height:50vh;

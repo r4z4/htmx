@@ -1,4 +1,3 @@
-use actix_web::HttpResponse;
 use actix_web::{web::Data, HttpRequest};
 use lazy_static::lazy_static;
 use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
@@ -33,7 +32,12 @@ lazy_static! {
         "#",
         "Pt.",
         "No.",
-        "No"
+        "No",
+        "Unit",
+        "Ut",
+        "Un.",
+        "Un",
+        "Ut."
     ];
     pub static ref ACCEPTED_PRIMARIES: Vec<&'static str> = vec![
         "St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.",
@@ -315,15 +319,25 @@ pub fn specialty_options() -> Vec<SelectOption> {
 
 pub fn validate_username(username: &str) -> Result<(), ValidationError> {
     if username.len() < 3 {
-        Err(ValidationError::new(
-            "Username must be 3 chars",
-        ))
+        Err(ValidationError {
+            // FIXME: Use key? Make code a descriptor like 'length' or 'range'
+            code: std::borrow::Cow::Borrowed("length"),
+            message: Some(Cow::from("Username must be 3 chars.")),
+            params: HashMap::new(),
+        })
     } else {
         Ok(())
     }
 }
 
 pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
+    if !addr.contains(" ") {
+        return Err(ValidationError {
+            code: std::borrow::Cow::Borrowed("contain"),
+            message: Some(Cow::from("Primary Address must contain a space.")),
+            params: HashMap::new(),
+        });
+    }
     let street_strings: Vec<&str> = addr
         .split(" ")
         .collect::<Vec<&str>>()
@@ -335,22 +349,22 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
     {
         Ok(())
     } else {
-        // Code, not message
-        Err(ValidationError::new(
-            //"Primary Address does not contain a valid Identifier (St, Ave ...)",
-            "Primary Address",
-        ))
+        Err(ValidationError {
+            code: std::borrow::Cow::Borrowed("identifier"),
+            message: Some(Cow::from("Primary Address must contain a valid Identifier (St., Ave, Lane ...)")),
+            params: HashMap::new(),
+        })
     }
 }
 
 pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
     // No input comes in as blank Some(""). These get turned into NULLs in DB.
-    // if addr_two == "" {return Ok(())}
+    if addr_two == "" {return Ok(())}
     let len_range = 3..15;
     if !len_range.contains(&addr_two.len()) {
         Err(ValidationError {
-            code: std::borrow::Cow::Borrowed("Secondary address must be 3 to 15 characters"),
-            message: Some(Cow::from("Secondary".to_owned())),
+            code: std::borrow::Cow::Borrowed("length"),
+            message: Some(Cow::from("Secondary address must be 3 to 15 characters")),
             params: HashMap::new(),
         })
     } else {
@@ -360,9 +374,15 @@ pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError>
         if ACCEPTED_SECONDARIES.contains(&first) {
             Ok(())
         } else {
-            Err(ValidationError::new(
-                "Secondary Address must contain a valid Identifier (Unit, Apt, # ...)",
-            ))
+            Err(ValidationError {
+                code: std::borrow::Cow::Borrowed("identifier"),
+                message: Some(Cow::from("Secondary Address must contain a valid Identifier (Unit, Apt, # ...)")),
+                params: HashMap::new(),
+            })
+            // See if I can impl From with a message
+            // Err(ValidationError::new(
+            //     "Secondary Address must contain a valid Identifier (Unit, Apt, # ...)",
+            // ))
         }
     }
 }

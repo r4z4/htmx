@@ -7,8 +7,17 @@
       evt.detail.isError = false;
     }
   });
+  var phoneInput = document.getElementById('phone_input');
+  var contactForm = document.forms.location_form;
+  phoneInput.addEventListener('input', function (e) {
+    var x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+    e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2] + (x[3] ? '-' + x[3] : '');
+  });
+  contactForm.addEventListener('submit', function(e) {
+    phoneInput.value = phoneInput.value.replace(/\D/g, '');
+  });
 </script>
-<script src="/scripts/phone_input.js"></script>
+{{!-- <script src="/scripts/phone_input.js"></script> --}}
 
 {{
 #>

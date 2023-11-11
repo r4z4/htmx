@@ -2,12 +2,12 @@
   <h4>Please correct the following validation errors.</h4>
   {{#each errors}}
   <div class="error_div">
-    <p>{{this.key}}</p>
-    <ul>
+    <h5>{{to_title_case this.key}}</h5>
+    <div>
       {{#each this.errs}}
-        <li>{{this.code}}</li>
+        <p>{{this.message}}</p>
       {{/each}}
-    </ul>
+    </div>
   </div>
   {{/each}}
 </div>
