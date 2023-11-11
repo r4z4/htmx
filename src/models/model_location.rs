@@ -56,7 +56,7 @@ pub struct LocationPostRequest {
         message = "Don't use that name, it's terrible!"
     ))]
     pub location_name: String,
-    #[validate(custom = "validate_primary_address")]
+    #[validate(custom(function = "validate_primary_address", message = "Primary address is improperly formatted."))]
     #[validate(contains = " ")]
     pub location_address_one: String,
     #[validate(custom = "validate_secondary_address")]

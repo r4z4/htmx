@@ -10,7 +10,7 @@ use serde_json::json;
 use crate::{
     config::{
         self, FilterOptions, FormErrorResponse, ResponsiveTableData,
-        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, validate_and_get_user,
+        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, validate_and_get_user, get_validation_response,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
@@ -345,6 +345,18 @@ async fn create_location(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 dbg!(&user_option);
+
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    let validation_response = get_validation_response(is_valid);
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#location_errors")
+                        .body(body);
+                }
+
                 if let Some(user) = user_option {
                     let user = ValidatedUser {
                         username: user.username,

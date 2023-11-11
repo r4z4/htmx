@@ -340,6 +340,8 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
 }
 
 pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
+    // No input comes in as blank Some(""). These get turned into NULLs in DB.
+    if addr_two == "" {return Ok(())}
     let len_range = 3..15;
     if !len_range.contains(&addr_two.len()) {
         Err(ValidationError::new(
@@ -349,8 +351,7 @@ pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError>
         let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
         let first = apt_ste[0];
         dbg!(&first);
-        // No input comes in as blank Some("")
-        if ACCEPTED_SECONDARIES.contains(&first) || addr_two == "" {
+        if ACCEPTED_SECONDARIES.contains(&first) {
             Ok(())
         } else {
             Err(ValidationError::new(
