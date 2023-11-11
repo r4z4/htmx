@@ -10,7 +10,7 @@ use serde_json::json;
 use crate::{
     config::{
         self, FilterOptions, FormErrorResponse, ResponsiveTableData,
-        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
+        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, validate_and_get_user,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
@@ -317,29 +317,6 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
     }
 }
 
-async fn validate_and_get_user(
-    cookie: &actix_web::http::header::HeaderValue,
-    state: &Data<AppState>,
-) -> Result<Option<ValidatedUser>, ValError> {
-    println!("Validating {}", format!("{:?}", cookie.clone()));
-    match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email, user_type_id
-        FROM users
-        LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
-        WHERE session_id = $1
-        AND expires > NOW()",
-    )
-    .bind(cookie.to_string())
-    .fetch_optional(&state.db)
-    .await
-    {
-        Ok(user_option) => Ok(user_option),
-        Err(err) => Err(ValError {
-            error: format!("You must not be verfied: {}", err),
-        }),
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FullPageTemplateData {
     user_alert: UserAlert,
@@ -440,6 +417,7 @@ async fn create_location(
                 }
             }
             Err(_err) => {
+                dbg!(&_err);
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let index_data = IndexData {

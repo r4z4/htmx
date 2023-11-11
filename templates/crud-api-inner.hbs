@@ -1,0 +1,37 @@
+ <div class="crud" id="crud_api">
+    <h1>Consults CRUD Ops</h1>
+    <p>{{{name}}}</p>
+    <div class="btn_div">
+        <button
+            hx-get="/consult/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Consult
+        </button>
+        <button
+            hx-get="/location/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Location
+        </button>
+        <button
+            hx-get="/consultant/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Consultant
+        </button>
+        <button
+            hx-get="/client/form" 
+            hx-target="#crud_op_container" 
+        >
+            Add a Client
+        </button>
+    </div>
+
+    <div id="crud_response">
+    </div>
+
+    <div class="op_container" id="crud_op_container">
+        <p id="recent_activity_p" hx-get="/admin/recent-activity" hx-trigger="every 2s" hx-swap="innerHTML" hx-target="#crud_op_container">Loading...</p>
+    </div>
+</div>

@@ -9,7 +9,7 @@ use actix_web::{
 use crate::{
     config::{
         self, FilterOptions, FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert,
-        ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
+        ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, get_validation_response,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -207,6 +207,18 @@ async fn create_client(
     state: web::Data<AppState>,
 ) -> impl Responder {
     dbg!(&body);
+
+    let is_valid = body.validate();
+    if is_valid.is_err() {
+        let validation_response = get_validation_response(is_valid);
+        let body = hb
+            .render("forms/form-validation", &validation_response)
+            .unwrap();
+        return HttpResponse::BadRequest()
+            .header("HX-Retarget", "#client_errors")
+            .body(body);
+    }
+
     // Need PG Extension for UUID via PG -> CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     if validate_client_input(&body) {
         let dob_date = if body.client_dob.is_some() {
@@ -246,7 +258,7 @@ async fn create_client(
                     msg: format!("Client added successfully: client_id #{:?}", loc.client_id),
                     class: "alert_success".to_owned(),
                 };
-                let body = hb.render("crud-api", &user_alert).unwrap();
+                let body = hb.render("crud-api-inner", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {

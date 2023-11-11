@@ -1,3 +1,4 @@
+use actix_web::HttpResponse;
 use actix_web::{web::Data, HttpRequest};
 use lazy_static::lazy_static;
 use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
@@ -9,7 +10,7 @@ use sqlx::{FromRow, Postgres, Pool};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::{fmt::Debug, net::IpAddr};
 use std::fs::File;
-use validator::{Validate, ValidationError};
+use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{AppState, HeaderValueExt, ValidatedUser};
 
@@ -540,6 +541,29 @@ pub fn get_ip(req: HttpRequest) -> IpAddr {
     });
     let ip_addr = socket.ip();
     ip_addr
+}
+
+pub fn get_validation_response(is_valid: Result<(), ValidationErrors>) -> FormErrorResponse {
+    println!("get_validation_response firing");
+    let val_errs = is_valid
+    .err()
+    .unwrap()
+    .field_errors()
+    .iter()
+    .map(|x| {
+        let (key, errs) = x;
+        ValidationErrorMap {
+            key: key.to_string(),
+            errs: errs.to_vec(),
+        }
+    })
+    .collect::<Vec<ValidationErrorMap>>();
+    dbg!(&val_errs);
+    // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+    let validation_response = FormErrorResponse {
+        errors: Some(val_errs),
+    };
+    validation_response
 }
 
 pub async fn validate_and_get_user(

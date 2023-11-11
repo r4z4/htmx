@@ -74,7 +74,7 @@ pub struct AdminSubadminPostRequest {
     #[validate(custom = "validate_username")]
     pub username: String,
     pub email: String,
-    #[validate(custom = "validate_primary_address")]
+    #[validate(custom(function = "validate_primary_address", message = "Primary Address is improperly formatted"))]
     pub address_one: String,
     #[validate(custom = "validate_secondary_address")]
     pub address_two: Option<String>,

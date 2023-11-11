@@ -93,7 +93,7 @@ pub struct LocationFormRequest {
 pub struct LocationPatchRequest {
     #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"))]
     pub location_name: Option<String>,
-    #[validate(custom = "validate_primary_address")]
+    #[validate(custom(function = "validate_primary_address", message = "Primary Address is improperly formatted"))]
     pub location_address_one: Option<String>,
     #[validate(custom = "validate_secondary_address")]
     pub location_address_two: Option<Option<String>>,

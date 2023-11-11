@@ -404,7 +404,7 @@ async fn create_consultant(
                             msg: format!("Consultant added successfully: ID #{:?}", update_response.user_id),
                             class: "alert_success".to_owned(),
                         };
-                        let body = hb.render("crud-api", &user_alert).unwrap();
+                        let body = hb.render("crud-api-inner", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                     Err(err) => {

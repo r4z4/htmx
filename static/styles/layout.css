@@ -248,7 +248,7 @@ fieldset {
     resize:none;
 }
 
-#contact, .compose_container button[type="submit"] {
+#contact, .contact_container button[type="submit"] {
     display: inline-block;
     outline: 0;
     border: none;
@@ -317,7 +317,7 @@ fieldset {
 	font-size:13px;
 }
 
-#compose input[type="text"], #compose input[type="email"], #compose input[type="select"]:hover, #contact textarea {
+#compose input[type="text"], #compose input[type="email"], #compose input[type="select"], #contact textarea {
 	width:100%;
 	border:1px solid #CCC;
 	background:#FFF;
@@ -325,7 +325,7 @@ fieldset {
 	padding:10px;
 }
 
-#compose input[type="text"]:hover, #compose input[type="email"]:hover, #compose input[type="select"]:hover, #compose textarea:hover {
+#compose input[type="text"]:hover, #compose input[type="email"]:hover, #compose input[type="select"], #compose textarea:hover {
 	-webkit-transition:border-color 0.3s ease-in-out;
 	-moz-transition:border-color 0.3s ease-in-out;
 	transition:border-color 0.3s ease-in-out;
