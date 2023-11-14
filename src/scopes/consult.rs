@@ -195,7 +195,7 @@ async fn create_consult(
                         Ok(consult_response) => {
                             let user_alert = UserAlert {
                                 msg: format!("Consult added successfully: ID #{:?}", consult_response.consult_id),
-                                class: "alert_success".to_owned(),
+                                alert_class: "alert_success".to_owned(),
                             };
                             let body = hb.render("crud-api", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
@@ -204,7 +204,7 @@ async fn create_consult(
                             dbg!(&err);
                             let user_alert = UserAlert {
                                 msg: format!("Error Updating User After Adding Them As Consult: {:?}", err),
-                                class: "alert_error".to_owned(),
+                                alert_class: "alert_error".to_owned(),
                             };
                             let body = hb.render("crud-api", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
@@ -215,7 +215,7 @@ async fn create_consult(
                     dbg!(&err);
                     let user_alert = UserAlert {
                         msg: format!("Error Adding the Attachment: {:?}", err),
-                        class: "alert_error".to_owned(),
+                        alert_class: "alert_error".to_owned(),
                     };
                     let body = hb.render("crud-api", &user_alert).unwrap();
                     return HttpResponse::Ok().body(body);

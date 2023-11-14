@@ -131,7 +131,7 @@ impl Config {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct UserAlert {
     pub msg: String,
-    pub class: String,
+    pub alert_class: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -205,6 +205,17 @@ pub async fn get_state_options(pool: &Pool<Postgres>) -> Vec<StringSelectOption>
 pub struct Category {
     category_id: i32,
     category_name: String,
+}
+
+pub fn entity_name(entity_type_id: i32) -> &'static str {
+    match entity_type_id {
+        1 | 2 | 3 => "user",
+        4 => "consultant",
+        5 => "location",
+        6 => "consult",
+        7 => "client",
+        _ => "user",
+    }
 }
 
 pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {

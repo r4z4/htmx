@@ -256,7 +256,7 @@ async fn create_client(
                 dbg!(loc.client_id);
                 let user_alert = UserAlert {
                     msg: format!("Client added successfully: client_id #{:?}", loc.client_id),
-                    class: "alert_success".to_owned(),
+                    alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("crud-api-inner", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -265,7 +265,7 @@ async fn create_client(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error adding client: {:?}", err),
-                    class: "alert_error".to_owned(),
+                    alert_class: "alert_error".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -383,7 +383,7 @@ async fn patch_client(
                 dbg!(client.client_id);
                 let user_alert = UserAlert {
                     msg: format!("Location added successfully: ID #{:?}", client.client_id),
-                    class: "alert_success".to_owned(),
+                    alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -392,7 +392,7 @@ async fn patch_client(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error patching location: {:?}", err),
-                    class: "alert_error".to_owned(),
+                    alert_class: "alert_error".to_owned(),
                 };
                 let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);

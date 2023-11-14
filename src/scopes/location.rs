@@ -391,7 +391,7 @@ async fn create_location(
                                 dbg!(loc.location_id);
                                 let user_alert = UserAlert {
                                     msg: format!("Location added successfully: ID #{:?}", loc.location_id),
-                                    class: "alert_success".to_owned(),
+                                    alert_class: "alert_success".to_owned(),
                                 };
                                 let template_data = json!({
                                     "user_alert": user_alert,
@@ -404,7 +404,7 @@ async fn create_location(
                                 dbg!(&err);
                                 let user_alert = UserAlert {
                                     msg: format!("Error adding location: {:?}", err),
-                                    class: "alert_error".to_owned(),
+                                    alert_class: "alert_error".to_owned(),
                                 };
                                 let body = hb.render("crud-api", &user_alert).unwrap();
                                 return HttpResponse::Ok().body(body);
@@ -420,7 +420,7 @@ async fn create_location(
                         // // To test the alert more easily
                         // let user_alert = UserAlert {
                         //     msg: "Error adding location:".to_owned(),
-                        //     class: "alert_error".to_owned(),
+                        //     alert_class: "alert_error".to_owned(),
                         // };
                         // let body = hb.render("crud-api", &user_alert).unwrap();
                         // return HttpResponse::Ok().body(body);
@@ -554,7 +554,7 @@ async fn patch_location(
                 dbg!(loc.location_id);
                 let user_alert = UserAlert {
                     msg: format!("Location added successfully: ID #{:?}", loc.location_id),
-                    class: "alert_success".to_owned(),
+                    alert_class: "alert_success".to_owned(),
                 };
                 let full_page_data = FullPageTemplateData {
                     user_alert: user_alert.clone(),
@@ -570,7 +570,7 @@ async fn patch_location(
                 let body = hb.render("validation", &validation_response).unwrap();
                 // let user_alert = UserAlert {
                 //     msg: format!("Error patching location: {:?}", err),
-                //     class: "alert_error".to_owned(),
+                //     alert_class: "alert_error".to_owned(),
                 // };
                 // let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -586,7 +586,7 @@ async fn patch_location(
         // // To test the alert more easily
         // let user_alert = UserAlert {
         //     msg: "Error adding location:".to_owned(),
-        //     class: "alert_error".to_owned(),
+        //     alert_class: "alert_error".to_owned(),
         // };
         // let body = hb.render("crud-api", &user_alert).unwrap();
         // return HttpResponse::Ok().body(body);

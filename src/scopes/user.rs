@@ -1,5 +1,5 @@
 use crate::{
-    config::{SelectOption, ValidationResponse, category_options, validate_and_get_user, UserAlert},
+    config::{SelectOption, ValidationResponse, category_options, validate_and_get_user, UserAlert, entity_name},
     models::model_user::{
         UserHomeModel, UserHomeQuery, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
@@ -135,39 +135,10 @@ async fn compose(
 }
 
 pub fn get_sub_sql(subscribed: bool, entity_id: i32, entity_type_id: i32) -> String {
-    match entity_type_id {
-        1 => {
-            if subscribed {
-                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            } else {
-                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            }
-        },
-        2 => {
-            if subscribed {
-                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            } else {
-                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            }
-        },
-        3 => {
-            if subscribed {
-                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            } else {
-                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            }
-        },
-        4 => "UPDATE users SET consultant_subs = ARRAY_APPEND(consultant_subs, (SELECT consultant_id FROM consultants WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
-        5 => {
-            if subscribed {
-                format!("UPDATE users SET location_subs = ARRAY_REMOVE(location_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            } else {
-                format!("UPDATE users SET location_subs = ARRAY_APPEND(location_subs, {}) WHERE username = $1 RETURNING username", entity_id)
-            }
-        },
-        6 => "UPDATE users SET consult_subs = ARRAY_APPEND(consult_subs, (SELECT consult_id FROM consults WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
-        7 => "UPDATE users SET client_subs = ARRAY_APPEND(client_subs, (SELECT client_id FROM clients WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
-        _ => "UPDATE users SET user_subs = ARRAY_APPEND(user_subs, (SELECT user_id FROM users WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
+    if subscribed {
+        format!("UPDATE users SET {}_subs = ARRAY_REMOVE({}_subs, {}) WHERE username = $1 RETURNING username", entity_name(entity_type_id), entity_name(entity_type_id), entity_id)
+    } else {
+        format!("UPDATE users SET {}_subs = ARRAY_APPEND({}_subs, {}) WHERE username = $1 RETURNING username", entity_name(entity_type_id), entity_name(entity_type_id), entity_id)
     }
 }
 
@@ -176,11 +147,9 @@ pub struct EntityId {
     id: i32
 }
 
-async fn get_id(id: i32, slug: &str, pool: &Pool<Postgres>) -> i32 {
-    match id {
-        1 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        2 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        3 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i32 {
+    match entity_type_id {
+        1 | 2 | 3 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
         4 => sqlx::query_as::<_, EntityId>("SELECT consultant_id AS id FROM consultants WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
         5 => sqlx::query_as::<_, EntityId>("SELECT location_id AS id FROM locations WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
         6 => sqlx::query_as::<_, EntityId>("SELECT consult_id AS id FROM consults WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
@@ -211,13 +180,11 @@ async fn subscribe(
                 let user = user_option.clone().unwrap();
                 let username = user.username;
 
-                let entity_id = get_id(entity_type_id, &slug, &state.db).await;
+                let entity_id = slug_to_id(entity_type_id, &slug, &state.db).await;
 
                 let subscribed =
                     match entity_type_id {
-                        1 => user.user_subs.contains(&entity_id),
-                        2 => user.user_subs.contains(&entity_id),
-                        3 => user.user_subs.contains(&entity_id),
+                        1 | 2 | 3 => user.user_subs.contains(&entity_id),
                         4 => user.consultant_subs.contains(&entity_id), 
                         5 => user.location_subs.contains(&entity_id),
                         6 => user.consult_subs.contains(&entity_id),
@@ -236,7 +203,7 @@ async fn subscribe(
                     Ok(resp) => {
                         let user_alert = UserAlert {
                             msg: format!("Subscription {} successfully", {if subscribed {"removed"} else {"added"}}),
-                            class: "alert_success".to_owned(),
+                            alert_class: "alert_success".to_owned(),
                         };
                         let template_body = hb.render("user-alert", &user_alert).unwrap();
                         return HttpResponse::Ok().body(template_body);
@@ -245,7 +212,7 @@ async fn subscribe(
                         dbg!(&err);
                         let user_alert = UserAlert {
                             msg: format!("Error adding subscription: {:?}", err),
-                            class: "alert_error".to_owned(),
+                            alert_class: "alert_error".to_owned(),
                         };
                         let body = hb.render("user-alert", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);

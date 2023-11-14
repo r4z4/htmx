@@ -402,7 +402,7 @@ async fn create_consultant(
                     Ok(update_response) => {
                         let user_alert = UserAlert {
                             msg: format!("Consultant added successfully: ID #{:?}", update_response.user_id),
-                            class: "alert_success".to_owned(),
+                            alert_class: "alert_success".to_owned(),
                         };
                         let body = hb.render("crud-api-inner", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
@@ -411,7 +411,7 @@ async fn create_consultant(
                         dbg!(&err);
                         let user_alert = UserAlert {
                             msg: format!("Error Updating User After Adding Them As Consultant: {:?}", err),
-                            class: "alert_error".to_owned(),
+                            alert_class: "alert_error".to_owned(),
                         };
                         let body = hb.render("crud-api", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
@@ -422,7 +422,7 @@ async fn create_consultant(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error adding consultant: {:?}", err),
-                    class: "alert_error".to_owned(),
+                    alert_class: "alert_error".to_owned(),
                 };
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -438,7 +438,7 @@ async fn create_consultant(
         // // To test the alert more easily
         // let user_alert = UserAlert {
         //     msg: "Error adding location:".to_owned(),
-        //     class: "alert_error".to_owned(),
+        //     alert_class: "alert_error".to_owned(),
         // };
         // let body = hb.render("crud-api", &user_alert).unwrap();
         // return HttpResponse::Ok().body(body);

@@ -455,7 +455,7 @@ async fn edit_user(
                             dbg!(usr.user_id);
                             let user_alert = UserAlert {
                                 msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.user_id),
-                                class: "alert_success".to_owned(),
+                                alert_class: "alert_success".to_owned(),
                             };
                             let body = hb.render("admin-home", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
@@ -464,7 +464,7 @@ async fn edit_user(
                             dbg!(&err);
                             let user_alert = UserAlert {
                                 msg: format!("Error updated user DETAILS: {:?}", err),
-                                class: "alert_error".to_owned(),
+                                alert_class: "alert_error".to_owned(),
                             };
                             let body = hb.render("admin-home", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
@@ -473,7 +473,7 @@ async fn edit_user(
                 } else {
                     let user_alert = UserAlert {
                         msg: format!("User #{:?} successfully updated.", usr.user_id),
-                        class: "alert_success".to_owned(),
+                        alert_class: "alert_success".to_owned(),
                     };
                     let body = hb.render("admin-home", &user_alert).unwrap();
                     return HttpResponse::Ok().body(body);
@@ -483,7 +483,7 @@ async fn edit_user(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error updated user DETAILS: {:?}", err),
-                    class: "alert_error".to_owned(),
+                    alert_class: "alert_error".to_owned(),
                 };
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -535,7 +535,7 @@ async fn edit_subadmin(
                 dbg!(usr.user_id);
                 let user_alert = UserAlert {
                     msg: format!("User #{:?} successfully updated.", usr.user_id),
-                    class: "alert_success".to_owned(),
+                    alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
@@ -544,7 +544,7 @@ async fn edit_subadmin(
                 dbg!(&err);
                 let user_alert = UserAlert {
                     msg: format!("Error updated user DETAILS: {:?}", err),
-                    class: "alert_error".to_owned(),
+                    alert_class: "alert_error".to_owned(),
                 };
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
