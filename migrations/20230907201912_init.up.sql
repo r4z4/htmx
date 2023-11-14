@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS users (
         user_type_id INT NOT NULL DEFAULT 2,
         secret TEXT DEFAULT NULL,
         password TEXT NOT NULL,
+
+        user_subs INTEGER[] DEFAULT ARRAY[1]::INTEGER[],
+        consultant_subs INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+        client_subs INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+        location_subs INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+        consult_subs INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+
         avatar_path TEXT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),

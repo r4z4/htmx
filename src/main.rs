@@ -13,7 +13,7 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
-    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte, get_list_view
+    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte, get_list_view, subscribe_rte
 };
 use validator::{Validate, ValidationError};
 use models::{
@@ -104,6 +104,11 @@ async fn index(
                         email: user.email,
                         user_type_id: user.user_type_id,
                         list_view: user.list_view,
+                        user_subs: user.user_subs,
+                        client_subs: user.client_subs,
+                        consult_subs: user.consult_subs,
+                        location_subs: user.location_subs,
+                        consultant_subs: user.consultant_subs,
                     };
                     let template_data = HomepageTemplate {
                         err: None,
@@ -223,6 +228,11 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                         email: user.email,
                         user_type_id: user.user_type_id,
                         list_view: user.list_view,
+                        user_subs: user.user_subs,
+                        client_subs: user.client_subs,
+                        consult_subs: user.consult_subs,
+                        location_subs: user.location_subs,
+                        consultant_subs: user.consultant_subs,
                     };
                     let template_data = json! {{
                         "user": user,
@@ -440,6 +450,11 @@ async fn detail(
                         email: user.email,
                         user_type_id: user.user_type_id,
                         list_view: user.list_view,
+                        user_subs: user.user_subs,
+                        client_subs: user.client_subs,
+                        consult_subs: user.consult_subs,
+                        location_subs: user.location_subs,
+                        consultant_subs: user.consultant_subs,
                     };
                     let template_data = json! {{
                         "user": user,
@@ -513,10 +528,15 @@ pub struct ValError {
 }
 #[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize)]
 pub struct ValidatedUser {
+    email: String,
     username: String,
     user_type_id: i32,
-    email: String,
     list_view: String,
+    user_subs: Vec<i32>,
+    client_subs: Vec<i32>,
+    consult_subs: Vec<i32>,
+    location_subs: Vec<i32>,
+    consultant_subs: Vec<i32>,
 }
 
 pub trait HeaderValueExt {
@@ -705,6 +725,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("form_rte", Box::new(form_rte));
     handlebars.register_helper("sort_rte", Box::new(sort_rte));
     handlebars.register_helper("attachments_rte", Box::new(attachments_rte));
+    handlebars.register_helper("subscribe_rte", Box::new(subscribe_rte));
     handlebars.register_helper("get_search_rte", Box::new(get_search_rte));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
     handlebars.register_helper("get_list_view", Box::new(get_list_view));

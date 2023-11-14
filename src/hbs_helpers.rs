@@ -56,6 +56,10 @@ handlebars_helper!(attachments_rte: |slug: String, entity_type_id: i32| {
     }
 });
 
+handlebars_helper!(subscribe_rte: |slug: String, entity_type_id: i32| {
+    String::from("/user/subscribe/") + &entity_type_id.to_string().as_str() + "/" + &slug
+});
+
 handlebars_helper!(get_list_view: |list_view: String| {
     match list_view.as_str() {
         "consult" => String::from("/consult/list"),

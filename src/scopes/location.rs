@@ -325,7 +325,7 @@ pub struct FullPageTemplateData {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IndexData {
-    message: String,
+    pub message: String,
 }
 
 #[post("/form")]
@@ -358,11 +358,17 @@ async fn create_location(
                 }
 
                 if let Some(user) = user_option {
+                    // FIXME: Why I am rebuilding this?
                     let user = ValidatedUser {
                         username: user.username,
                         email: user.email,
                         user_type_id: user.user_type_id,
                         list_view: user.list_view,
+                        user_subs: user.user_subs,
+                        client_subs: user.client_subs,
+                        consult_subs: user.consult_subs,
+                        location_subs: user.location_subs,
+                        consultant_subs: user.consultant_subs,
                     };
                     // let user_body = hb.render("homepage", &user).unwrap();
                     if validate_location_input(&body) {

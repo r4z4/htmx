@@ -75,6 +75,11 @@ pub struct AuthUser {
     user_type_id: i32,
     list_view: String,
     email: String,
+    user_subs: Vec<i32>,
+    client_subs: Vec<i32>,
+    consult_subs: Vec<i32>,
+    location_subs: Vec<i32>,
+    consultant_subs: Vec<i32>,
 }
 
 pub fn auth_scope() -> Scope {
@@ -191,7 +196,7 @@ async fn basic_auth(
     let password = &body.password;
 
     match sqlx::query_as::<_, AuthUser>(
-        "SELECT users.user_id, username, password, email, user_type_id, user_settings.list_view
+        "SELECT users.user_id, username, password, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
         FROM users 
         INNER JOIN user_settings ON user_settings.user_id = users.user_id
         WHERE username = $1",
@@ -233,6 +238,11 @@ async fn basic_auth(
                             email: user.email,
                             user_type_id: user.user_type_id,
                             list_view: user.list_view,
+                            user_subs: user.user_subs,
+                            client_subs: user.client_subs,
+                            consult_subs: user.consult_subs,
+                            location_subs: user.location_subs,
+                            consultant_subs: user.consultant_subs,
                         };
                         let template_data = HomepageTemplate {
                             err: None,

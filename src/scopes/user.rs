@@ -1,10 +1,10 @@
 use crate::{
-    config::{SelectOption, ValidationResponse, category_options},
+    config::{SelectOption, ValidationResponse, category_options, validate_and_get_user, UserAlert},
     models::model_user::{
         UserHomeModel, UserHomeQuery, UserSettingsObj,
         UserSettingsPost, UserSettingsQuery,
     },
-    AppState, HeaderValueExt, ValidatedUser,
+    AppState, HeaderValueExt, ValidatedUser, scopes::location::IndexData,
 };
 use actix_web::{
     get, put,
@@ -14,6 +14,7 @@ use actix_web::{
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use sqlx::{FromRow, Pool, Postgres};
 
 pub fn user_scope() -> Scope {
     web::scope("/user")
@@ -21,6 +22,7 @@ pub fn user_scope() -> Scope {
         .service(home)
         .service(settings)
         .service(compose)
+        .service(subscribe)
         //.service(profile)
         .service(edit_settings)
 }
@@ -130,6 +132,146 @@ async fn compose(
         .render("compose", &template_data)
         .unwrap();
     return HttpResponse::Ok().body(body);
+}
+
+pub fn get_sub_sql(subscribed: bool, entity_id: i32, entity_type_id: i32) -> String {
+    match entity_type_id {
+        1 => {
+            if subscribed {
+                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            } else {
+                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            }
+        },
+        2 => {
+            if subscribed {
+                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            } else {
+                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            }
+        },
+        3 => {
+            if subscribed {
+                format!("UPDATE users SET user_subs = ARRAY_REMOVE(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            } else {
+                format!("UPDATE users SET user_subs = ARRAY_APPEND(user_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            }
+        },
+        4 => "UPDATE users SET consultant_subs = ARRAY_APPEND(consultant_subs, (SELECT consultant_id FROM consultants WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
+        5 => {
+            if subscribed {
+                format!("UPDATE users SET location_subs = ARRAY_REMOVE(location_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            } else {
+                format!("UPDATE users SET location_subs = ARRAY_APPEND(location_subs, {}) WHERE username = $1 RETURNING username", entity_id)
+            }
+        },
+        6 => "UPDATE users SET consult_subs = ARRAY_APPEND(consult_subs, (SELECT consult_id FROM consults WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
+        7 => "UPDATE users SET client_subs = ARRAY_APPEND(client_subs, (SELECT client_id FROM clients WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
+        _ => "UPDATE users SET user_subs = ARRAY_APPEND(user_subs, (SELECT user_id FROM users WHERE slug = $1)) WHERE username = $2 RETURNING username".to_string(),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct EntityId {
+    id: i32
+}
+
+async fn get_id(id: i32, slug: &str, pool: &Pool<Postgres>) -> i32 {
+    match id {
+        1 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        2 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        3 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        4 => sqlx::query_as::<_, EntityId>("SELECT consultant_id AS id FROM consultants WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        5 => sqlx::query_as::<_, EntityId>("SELECT location_id AS id FROM locations WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        6 => sqlx::query_as::<_, EntityId>("SELECT consult_id AS id FROM consults WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        7 => sqlx::query_as::<_, EntityId>("SELECT client_id AS id FROM clients WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        _ => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct SubscribeResponse {
+    username: String
+}
+
+#[get("/subscribe/{entity_type_id}/{entity_slug}")]
+async fn subscribe(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
+    path: web::Path<(i32, String)>,
+) -> impl Responder {  
+    let (entity_type_id, slug) = path.into_inner();
+    let headers = req.headers();
+    if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
+        dbg!(cookie.clone());
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user_option) => {
+                dbg!(&user_option);
+                let user = user_option.clone().unwrap();
+                let username = user.username;
+
+                let entity_id = get_id(entity_type_id, &slug, &state.db).await;
+
+                let subscribed =
+                    match entity_type_id {
+                        1 => user.user_subs.contains(&entity_id),
+                        2 => user.user_subs.contains(&entity_id),
+                        3 => user.user_subs.contains(&entity_id),
+                        4 => user.consultant_subs.contains(&entity_id), 
+                        5 => user.location_subs.contains(&entity_id),
+                        6 => user.consult_subs.contains(&entity_id),
+                        7 => user.client_subs.contains(&entity_id),
+                        _ => user.user_subs.contains(&entity_id),
+                    };
+
+                let sql = get_sub_sql(subscribed, entity_id, entity_type_id);
+                match sqlx::query_as::<_, SubscribeResponse>(
+                    &sql,
+                )
+                .bind(&username)
+                .fetch_one(&state.db)
+                .await
+                {
+                    Ok(resp) => {
+                        let user_alert = UserAlert {
+                            msg: format!("Subscription {} successfully", {if subscribed {"removed"} else {"added"}}),
+                            class: "alert_success".to_owned(),
+                        };
+                        let template_body = hb.render("user-alert", &user_alert).unwrap();
+                        return HttpResponse::Ok().body(template_body);
+                    }
+                    Err(err) => {
+                        dbg!(&err);
+                        let user_alert = UserAlert {
+                            msg: format!("Error adding subscription: {:?}", err),
+                            class: "alert_error".to_owned(),
+                        };
+                        let body = hb.render("user-alert", &user_alert).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                }
+            },
+            Err(_err) => {
+                dbg!(&_err);
+                // User's cookie is invalid or expired. Need to get a new one via logging in.
+                // They had a session. Could give them details about that. Get from DB.
+                let index_data = IndexData {
+                    message: format!("Error in validate and get user: {}", _err.error)
+                };
+                let body = hb.render("index", &index_data).unwrap();
+
+                HttpResponse::Ok().body(body)
+            }
+        }
+    } else {
+        let data = json!({
+            "header": "Login Form",
+        });
+        let body = hb.render("index", &data).unwrap();
+
+        HttpResponse::Ok().body(body)
+    }
 }
 
 fn validate_user_settings_input(body: &UserSettingsPost) -> bool {
@@ -249,7 +391,8 @@ async fn home(
     // let user_id = get_user_id_from_token();
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserHomeQuery>(
-            "SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated, user_settings.list_view
+            "SELECT users.user_id, username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, users.created_at, users.updated_at, 
+                    COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated, user_settings.list_view
                 -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
                 -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
             FROM users
@@ -269,6 +412,11 @@ async fn home(
                     email: unwrapped_user.email.clone(),
                     user_type_id: unwrapped_user.user_type_id,
                     list_view: unwrapped_user.list_view,
+                    user_subs: unwrapped_user.user_subs,
+                    client_subs: unwrapped_user.client_subs,
+                    consult_subs: unwrapped_user.consult_subs,
+                    location_subs: unwrapped_user.location_subs,
+                    consultant_subs: unwrapped_user.consultant_subs,
                 };
                 let user_home_model = UserHomeModel {
                     user_id: unwrapped_user.user_id,
