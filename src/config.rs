@@ -10,7 +10,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::{fmt::Debug, net::IpAddr};
-use std::fs::File;
+use std::fs::{File, self};
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{AppState, HeaderValueExt, ValidatedUser};
@@ -238,6 +238,32 @@ pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct UserPostFile {
+    default: String,
+    description: String,
+    title: String,
+    posts: Vec<Post>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+struct UserPost<'a> {
+    slug: String,
+    title: String,
+    author: i32,
+    date: String,
+    body: &'a str,
+}
+
+fn read_yaml() -> UserPostFile {
+    let file_path = "config/blog.yml";
+    let contents = fs::read_to_string(file_path)
+    .expect(format!("Should have been able to read the file: {file_path}").as_str());
+
+    // don't unwrap like this in the real world! Errors will result in panic!
+    let post_file: UserPostFile = serde_yaml::from_str::<UserPostFile>(&contents).unwrap();
+    post_file
+}
+
 pub fn states() -> Vec<StringSelectOption> {
     vec![
         StringSelectOption {
@@ -283,6 +309,8 @@ pub fn user_type_options() -> Vec<SelectOption> {
 }
 
 pub fn territory_options() -> Vec<SelectOption> {
+    // let file = read_yaml();
+    // dbg!(&file);
     vec![
         SelectOption::from((1, Some("National".to_string()))),
         SelectOption::from((2, Some("Northeast".to_string()))),

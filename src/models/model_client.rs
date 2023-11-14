@@ -22,15 +22,16 @@ pub struct ClientList {
     pub client_id: i32,
     pub slug: String,
     pub specialty_name: String,
-    pub client_company_name: Option<String>,
-    pub client_f_name: Option<String>,
-    pub client_l_name: Option<String>,
+    // pub client_company_name: Option<String>,
+    // pub client_f_name: Option<String>,
+    // pub client_l_name: Option<String>,
+    pub client_name: Option<String>,
     pub client_email: String,
-    pub client_address_one: String,
-    pub client_address_two: Option<String>,
+    pub address: String,
+    // pub client_address_two: Option<String>,
     pub client_city: String,
     pub client_zip: String,
-    pub client_primary_phone: Option<String>,
+    pub phone: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Validate, Iterable)]

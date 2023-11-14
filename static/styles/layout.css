@@ -248,7 +248,7 @@ fieldset {
     resize:none;
 }
 
-.contact_container button[type="submit"] {
+.contact_container, .compose_container button[type="submit"] {
     display: inline-block;
     outline: 0;
     border: none;

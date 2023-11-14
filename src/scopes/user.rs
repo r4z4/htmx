@@ -436,7 +436,7 @@ async fn home(
 //     {
 //         Ok(user_option) => Ok(user_option),
 //         Err(err) => Err(ValidationError {
-//             error: format!("You must not be verfied: {}", err)
+//             error: format!("You must not be verified: {}", err)
 //         }),
 //     }
 // }

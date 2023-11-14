@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use actix_web::{
     get, patch, post,
     web::{self, Data, Json},
@@ -18,7 +16,6 @@ use crate::{
 };
 use chrono::NaiveDate;
 use handlebars::Handlebars;
-use uuid::Uuid;
 use validator::Validate;
 
 pub fn client_scope() -> Scope {
@@ -31,6 +28,7 @@ pub fn client_scope() -> Scope {
         .service(client_edit_form)
 }
 
+// col names transformed into table headers. use aliases.
 #[get("/list")]
 pub async fn get_clients_handler(
     opts: web::Query<FilterOptions>,
@@ -47,15 +45,12 @@ pub async fn get_clients_handler(
             client_id, 
             slug,
             specialty_name,
-            client_company_name,
-            client_f_name,
-            client_l_name,
+            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
             client_email,
-            client_address_one,
-            client_address_two,
+            client_address_one AS address,
             client_city,
             client_zip,
-            client_primary_phone
+            client_primary_phone AS phone
         FROM clients
         INNER JOIN specialties ON specialties.specialty_id = clients.specialty_id
         ORDER by client_id
@@ -420,14 +415,8 @@ mod tests {
     use test_context::{test_context, TestContext};
     fn mock_opts() -> Vec<SelectOption> {
         vec![
-            SelectOption {
-                key: Some("One".to_owned()),
-                value: 1,
-            },
-            SelectOption {
-                key: Some("Two".to_owned()),
-                value: 2,
-            },
+            SelectOption::from((1, Some("One".to_string()))),
+            SelectOption::from((2, Some("Two".to_string()))),
         ]
     }
 
