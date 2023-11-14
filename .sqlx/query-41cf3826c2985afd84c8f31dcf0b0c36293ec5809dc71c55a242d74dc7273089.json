@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n            client_id, \n            slug,\n            specialty_name,\n            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,\n            client_email,\n            client_address_one AS address,\n            client_city,\n            client_zip,\n            client_primary_phone AS phone\n        FROM clients\n        INNER JOIN specialties ON specialties.specialty_id = clients.specialty_id\n        ORDER by client_id\n        LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "client_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "specialty_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "client_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "client_email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "client_city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "client_zip",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "phone",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "41cf3826c2985afd84c8f31dcf0b0c36293ec5809dc71c55a242d74dc7273089"
+}
