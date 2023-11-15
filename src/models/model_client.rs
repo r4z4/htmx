@@ -1,10 +1,10 @@
+use crate::config::{validate_primary_address, validate_secondary_address};
+use crate::config::{SelectOption, StringSelectOption};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use struct_iterable::Iterable;
 use validator::Validate;
-use crate::config::{validate_primary_address, validate_secondary_address};
-use crate::config::{SelectOption, StringSelectOption};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseClientList {
@@ -47,11 +47,7 @@ pub struct ClientPostRequest {
     pub specialty_id: i32,
     #[validate(email)]
     pub client_email: String,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "City must be between 2 & 28 chars"
-    ))]
+    #[validate(length(min = 2, max = 28, message = "City must be between 2 & 28 chars"))]
     pub client_city: String,
     pub client_state: String,
     #[validate(length(equal = 5, message = "Zip must be 5 chars"))]

@@ -6,8 +6,9 @@ use actix_web::{
 
 use crate::{
     config::{
-        self, FilterOptions, FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert,
-        ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, get_validation_response,
+        self, get_n_pages, get_validation_response, FilterOptions, FormErrorResponse,
+        ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
+        ACCEPTED_SECONDARIES,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -100,6 +101,8 @@ async fn client_form(
     // path: web::Path<i32>,
 ) -> impl Responder {
     println!("client_form firing");
+
+    let _ = get_n_pages(8).await;
 
     let account_options = account_options(&state).await;
     let template_data = ClientFormTemplate {

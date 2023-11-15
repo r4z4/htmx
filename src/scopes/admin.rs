@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES
+        ACCEPTED_SECONDARIES,
     },
     models::{
         model_admin::{
@@ -99,16 +99,16 @@ async fn admin_home(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PgStat {
-    schemaname: Option<String>, 
-    relname: Option<String>, 
+    schemaname: Option<String>,
+    relname: Option<String>,
     slug: Option<Uuid>,
-    heap_blks_read: Option<i64>, 
-    heap_blks_hit: Option<i64>, 
-    idx_blks_read: Option<i64>, 
-    idx_blks_hit: Option<i64>, 
-    toast_blks_read: Option<i64>, 
-    toast_blks_hit: Option<i64>, 
-    tidx_blks_read: Option<i64>, 
+    heap_blks_read: Option<i64>,
+    heap_blks_hit: Option<i64>,
+    idx_blks_read: Option<i64>,
+    idx_blks_hit: Option<i64>,
+    toast_blks_read: Option<i64>,
+    toast_blks_hit: Option<i64>,
+    tidx_blks_read: Option<i64>,
     tidx_blks_hit: Option<i64>,
 }
 
@@ -124,7 +124,6 @@ async fn recent_activity(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
 ) -> impl Responder {
-
     let recent = sqlx::query_as!(
         PgStat,
         "SELECT schemaname, relname, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
@@ -166,12 +165,12 @@ async fn recent_activity(
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ContactSubmission {
-    name: String, 
-    email: String, 
-    phone: String, 
-    ip_addr: String, 
-    message: String, 
-    created_at: DateTime<Utc>
+    name: String,
+    email: String,
+    phone: String,
+    ip_addr: String,
+    message: String,
+    created_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
@@ -218,12 +217,22 @@ pub async fn get_contact_submissions(
 
     let messages = query_result.unwrap();
 
-    let table_headers = vec!["name".to_owned(), "email".to_owned(), "phone".to_owned(), "ip_addr".to_owned(), "message".to_owned(), "created_at".to_owned()];
+    let table_headers = vec![
+        "name".to_owned(),
+        "email".to_owned(),
+        "phone".to_owned(),
+        "ip_addr".to_owned(),
+        "message".to_owned(),
+        "created_at".to_owned(),
+    ];
 
-    let table_rows = messages.iter().map(|msg| TableRow {
-        th: (*msg.email).to_string(),
-        tds: msg.clone(),
-    }).collect::<Vec<TableRow>>();
+    let table_rows = messages
+        .iter()
+        .map(|msg| TableRow {
+            th: (*msg.email).to_string(),
+            tds: msg.clone(),
+        })
+        .collect::<Vec<TableRow>>();
 
     let fixed_table_data = FixedTableData2 {
         table_headers: table_headers,
@@ -491,7 +500,8 @@ async fn edit_user(
         }
     } else {
         println!("Val error");
-        let validation_response = ValidationResponse::from(("Validation error", "validation_error"));
+        let validation_response =
+            ValidationResponse::from(("Validation error", "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
@@ -552,7 +562,8 @@ async fn edit_subadmin(
         }
     } else {
         println!("Val error");
-        let validation_response = ValidationResponse::from(("Validation error", "validation_error"));
+        let validation_response =
+            ValidationResponse::from(("Validation error", "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }

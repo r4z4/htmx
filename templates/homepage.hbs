@@ -19,6 +19,26 @@
     {{/if}}
     <div id="news_container">
         <h4>Recent News / Feed</h4>
+        {{#if feed_data.posts}}
+            {{#each feed_data.posts}}
+                <div id="user_post_div">
+                    <p>{{this.title}}</p>
+                    <p>{{this.date}}</p>
+                </div>
+            {{/each}}
+        {{else}}
+            <h6>No Recent Posts</h6>
+        {{/if}}
+        {{#if feed_data.consults}}
+            {{#each feed_data.consults}}
+                <div id="user_post_div">
+                    <p>{{this.notes}}</p>
+                    <p>Location ID: {{this.location_id}}</p>
+                </div>
+            {{/each}}
+        {{else}}
+            <h6>No Recent Activity</h6>
+        {{/if}}
     </div>
 </div>
 {{/main-layout}}

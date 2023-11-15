@@ -1,22 +1,17 @@
-use std::borrow::Borrow;
-
-use actix_web::{
-    get, patch, post,
-    web::{self, Data},
-    HttpRequest, HttpResponse, Responder, Scope,
-};
+use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
 use serde_json::json;
 
 use crate::{
     config::{
-        self, FilterOptions, FormErrorResponse, ResponsiveTableData,
-        SelectOption, UserAlert, ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES, validate_and_get_user, get_validation_response,
+        self, get_validation_response, validate_and_get_user, FilterOptions, FormErrorResponse,
+        ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
+        ACCEPTED_SECONDARIES,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, HeaderValueExt, ValidatedUser, ValError,
+    AppState, ValidatedUser,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -413,7 +408,8 @@ async fn create_location(
                     } else {
                         println!("Val error");
                         let error_msg = "Validation error";
-                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let validation_response =
+                            ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
 
@@ -427,7 +423,8 @@ async fn create_location(
                     }
                 } else {
                     let index_data = IndexData {
-                        message: "Your session seems to have expired. Please login again.".to_owned()
+                        message: "Your session seems to have expired. Please login again."
+                            .to_owned(),
                     };
                     let body = hb.render("index", &index_data).unwrap();
 
@@ -439,7 +436,7 @@ async fn create_location(
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let index_data = IndexData {
-                    message: format!("Error in validate and get user: {}", _err.error)
+                    message: format!("Error in validate and get user: {}", _err.error),
                 };
                 let body = hb.render("index", &index_data).unwrap();
 
@@ -566,7 +563,8 @@ async fn patch_location(
             Err(err) => {
                 dbg!(&err);
                 let error_msg = format!("Validation error: {}", &err);
-                let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
+                let validation_response =
+                    ValidationResponse::from((error_msg.as_str(), "validation_error"));
                 let body = hb.render("validation", &validation_response).unwrap();
                 // let user_alert = UserAlert {
                 //     msg: format!("Error patching location: {:?}", err),
@@ -596,12 +594,12 @@ async fn patch_location(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{location_contacts, states};
     use crate::{
         hbs_helpers::{int_eq, str_eq},
         test_common::{self, *},
     };
     use test_context::{test_context, TestContext};
-    use crate::config::{location_contacts, states};
 
     #[test_context(Context)]
     #[test]

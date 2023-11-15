@@ -1,16 +1,22 @@
 use actix_web::{web::Data, HttpRequest};
+use chrono::{DateTime, Duration, Utc};
+use futures_util::{stream, Stream, StreamExt};
 use lazy_static::lazy_static;
-use lettre::{Message, message::header::ContentType, transport::stub::StubTransport, Transport};
+use lettre::{message::header::ContentType, transport::stub::StubTransport, Message, Transport};
 use mini_markdown::render;
+use rand::distributions::{Distribution, Uniform};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
-use sqlx::{FromRow, Postgres, Pool};
+use sqlx::{FromRow, Pool, Postgres};
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddr};
+use std::thread::sleep;
+use std::time::{self, Instant};
 use std::{fmt::Debug, net::IpAddr};
-use std::fs::{File, self};
+use struct_iterable::Iterable;
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::{AppState, HeaderValueExt, ValidatedUser};
@@ -43,9 +49,8 @@ lazy_static! {
         "St.", "St", "Street", "Ave.", "Av.", "Ave", "Avenue", "Parkway", "Pkwy", "Pkwy.", "Dr.",
         "Dr", "Drive", "Ln", "Lane", "Ln."
     ];
-    pub static ref VULGAR_LIST: Vec<&'static str> = vec![
-        "shit", "fuck", "ass", "retard", "gay", "faggot", "jew"
-    ];
+    pub static ref VULGAR_LIST: Vec<&'static str> =
+        vec!["shit", "fuck", "ass", "retard", "gay", "faggot", "jew"];
 }
 
 #[derive(Serialize, Debug)]
@@ -87,7 +92,7 @@ pub struct SelectOption {
 impl From<(i32, Option<String>)> for SelectOption {
     fn from(pair: (i32, Option<String>)) -> Self {
         let (value, key) = pair;
-        SelectOption { 
+        SelectOption {
             key: key,
             value: value,
         }
@@ -143,7 +148,7 @@ pub struct ValidationResponse {
 impl From<(&str, &str)> for ValidationResponse {
     fn from(pair: (&str, &str)) -> Self {
         let (msg, class) = pair;
-        ValidationResponse { 
+        ValidationResponse {
             msg: msg.to_string(),
             class: class.to_string(),
         }
@@ -162,14 +167,11 @@ pub struct ResponsiveTableData<T> {
 
 #[derive(Serialize, Validate, FromRow, Deserialize, Debug, Default, Clone)]
 pub struct State {
-    state_name: String
+    state_name: String,
 }
 
 pub fn is_dirty(msg: &str) -> bool {
-    let words: Vec<&str> = msg
-    .split(" ")
-    .collect::<Vec<&str>>()
-    .to_owned();
+    let words: Vec<&str> = msg.split(" ").collect::<Vec<&str>>().to_owned();
     let word_count = words.len();
     // Getting last two to account for 101 Hartford St. W etc..
     let dirty = words.iter().any(|word| VULGAR_LIST.contains(word));
@@ -177,29 +179,60 @@ pub fn is_dirty(msg: &str) -> bool {
 }
 
 pub async fn get_state_options(pool: &Pool<Postgres>) -> Vec<StringSelectOption> {
-    match sqlx::query_as::<_, State>(
-        "SELECT state_name FROM states",
-    )
-    .fetch_all(pool)
-    .await
+    match sqlx::query_as::<_, State>("SELECT state_name FROM states")
+        .fetch_all(pool)
+        .await
     {
-        Ok(state_list) => {
-            state_list.iter().map(|state| StringSelectOption {
+        Ok(state_list) => state_list
+            .iter()
+            .map(|state| StringSelectOption {
                 key: Some(state.state_name.to_owned()),
                 value: state.state_name.to_owned(),
-            }).collect::<Vec<StringSelectOption>>()
-        },
+            })
+            .collect::<Vec<StringSelectOption>>(),
         Err(err) => {
             dbg!(&err);
-            vec![
-                StringSelectOption {
-                    key: Some("Select One".to_string()),
-                    value: "Select One".to_string(),
-                }
-            ]
+            vec![StringSelectOption {
+                key: Some("Select One".to_string()),
+                value: "Select One".to_string(),
+            }]
         }
     }
-} 
+}
+
+lazy_static! {
+    static ref START_TIME: Instant = Instant::now();
+}
+
+async fn get_page(i: usize) -> Vec<usize> {
+    println!("get_page()");
+    let millis = Uniform::from(200..1000).sample(&mut rand::thread_rng());
+    println!(
+        "[{}] # get_page({}) will complete in {} ms",
+        START_TIME.elapsed().as_millis(),
+        i,
+        millis
+    );
+
+    sleep(time::Duration::from_millis(millis));
+    println!(
+        "[{}] # get_page({}) completed",
+        START_TIME.elapsed().as_millis(),
+        i
+    );
+
+    (10 * i..10 * (i + 1)).collect()
+}
+
+pub async fn get_n_pages(n: usize) -> Vec<Vec<usize>> {
+    println!("get_n_pages()");
+    get_pages().take(n).collect().await
+}
+
+fn get_pages() -> impl Stream<Item = Vec<usize>> {
+    println!("get_pages()");
+    stream::iter(0..).then(|i| get_page(i))
+}
 
 #[derive(Serialize, Validate, FromRow, Deserialize, Debug, Default, Clone)]
 pub struct Category {
@@ -219,18 +252,17 @@ pub fn entity_name(entity_type_id: i32) -> &'static str {
 }
 
 pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
-    match sqlx::query_as::<_, Category>(
-        "SELECT category_id, category_name FROM article_categories",
-    )
-    .fetch_all(pool)
-    .await
+    match sqlx::query_as::<_, Category>("SELECT category_id, category_name FROM article_categories")
+        .fetch_all(pool)
+        .await
     {
-        Ok(state_list) => {
-            state_list.iter().map(|category| SelectOption {
+        Ok(state_list) => state_list
+            .iter()
+            .map(|category| SelectOption {
                 key: Some(category.category_name.to_owned()),
                 value: category.category_id,
-            }).collect::<Vec<SelectOption>>()
-        },
+            })
+            .collect::<Vec<SelectOption>>(),
         Err(err) => {
             dbg!(&err);
             vec![SelectOption::from((0, Some("Select One".to_string())))]
@@ -238,26 +270,85 @@ pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct UserPostFile {
-    default: String,
-    description: String,
-    title: String,
-    posts: Vec<Post>,
-}
-#[derive(Debug, Serialize, Deserialize)]
-struct UserPost<'a> {
-    slug: String,
-    title: String,
-    author: i32,
-    date: String,
-    body: &'a str,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserFeedData {
+    pub posts: Option<Vec<UserPost>>,
+    pub consults: Option<Vec<UserFeedResponse>>,
 }
 
-fn read_yaml() -> UserPostFile {
+#[derive(Serialize, Validate, FromRow, Deserialize, Debug, Clone)]
+pub struct UserFeedResponse {
+    slug: String,
+    consultant_id: i32,
+    client_id: i32,
+    location_id: i32,
+    consult_start: DateTime<Utc>,
+    notes: Option<String>,
+    consult_attachments: Option<Vec<i32>>,
+    created_at: DateTime<Utc>,
+    updated_at: Option<DateTime<Utc>>,
+}
+// = ANY($1) is a workaround for SQLx & IN operator
+pub async fn user_feed(
+    user_subs: &Vec<i32>,
+    consultant_subs: &Vec<i32>,
+    client_subs: &Vec<i32>,
+    location_subs: &Vec<i32>,
+    pool: &Pool<Postgres>,
+) -> UserFeedData {
+    match sqlx::query_as::<_, UserFeedResponse>(
+        "SELECT consult_id,slug,consultant_id,client_id,location_id,consult_start,notes,consult_attachments,created_at,updated_at FROM consults
+        WHERE (client_id = ANY($1) OR location_id = ANY($2) OR consultant_id = ANY($3))
+        AND created_at >= NOW() - INTERVAL '7 DAYS' OR updated_at >= NOW() - INTERVAL '7 DAYS'",
+    )
+    .bind(client_subs)
+    .bind(location_subs)
+    .bind(consultant_subs)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(resp) => {
+            let post_file = read_yaml();
+            let sub_posts =  post_file.posts.into_iter().filter(|post: &UserPost| {
+                user_subs.contains(&post.author)
+            }).collect::<Vec<UserPost>>();
+
+            let feed_data = UserFeedData {
+                posts: Some(sub_posts),
+                consults: Some(resp),
+            };
+            feed_data
+        },
+        Err(err) => {
+            dbg!(err);
+            UserFeedData {
+                posts: None,
+                consults: None,
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserPostFile {
+    pub default: String,
+    pub description: String,
+    pub title: String,
+    pub posts: Vec<UserPost>,
+}
+#[derive(Debug, Serialize, Deserialize, Iterable, Clone)]
+pub struct UserPost {
+    pub slug: String,
+    pub title: String,
+    pub author: i32,
+    pub date: String,
+    pub body: String,
+}
+
+pub fn read_yaml() -> UserPostFile {
     let file_path = "config/blog.yml";
     let contents = fs::read_to_string(file_path)
-    .expect(format!("Should have been able to read the file: {file_path}").as_str());
+        .expect(format!("Should have been able to read the file: {file_path}").as_str());
 
     // don't unwrap like this in the real world! Errors will result in panic!
     let post_file: UserPostFile = serde_yaml::from_str::<UserPostFile>(&contents).unwrap();
@@ -377,10 +468,7 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
             params: HashMap::new(),
         });
     }
-    let street_strings: Vec<&str> = addr
-        .split(" ")
-        .collect::<Vec<&str>>()
-        .to_owned();
+    let street_strings: Vec<&str> = addr.split(" ").collect::<Vec<&str>>().to_owned();
     let ss_len = street_strings.len();
     // Getting last two to account for 101 Hartford St. W etc..
     if ACCEPTED_PRIMARIES.contains(&street_strings[ss_len - 1])
@@ -390,7 +478,9 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
     } else {
         Err(ValidationError {
             code: std::borrow::Cow::Borrowed("identifier"),
-            message: Some(Cow::from("Primary Address must contain a valid Identifier (St., Ave, Lane ...)")),
+            message: Some(Cow::from(
+                "Primary Address must contain a valid Identifier (St., Ave, Lane ...)",
+            )),
             params: HashMap::new(),
         })
     }
@@ -398,7 +488,9 @@ pub fn validate_primary_address(addr: &str) -> Result<(), ValidationError> {
 
 pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError> {
     // No input comes in as blank Some(""). These get turned into NULLs in DB.
-    if addr_two == "" {return Ok(())}
+    if addr_two == "" {
+        return Ok(());
+    }
     let len_range = 3..15;
     if !len_range.contains(&addr_two.len()) {
         Err(ValidationError {
@@ -415,7 +507,9 @@ pub fn validate_secondary_address(addr_two: &str) -> Result<(), ValidationError>
         } else {
             Err(ValidationError {
                 code: std::borrow::Cow::Borrowed("identifier"),
-                message: Some(Cow::from("Secondary Address must contain a valid Identifier (Unit, Apt, # ...)")),
+                message: Some(Cow::from(
+                    "Secondary Address must contain a valid Identifier (Unit, Apt, # ...)",
+                )),
                 params: HashMap::new(),
             })
             // See if I can impl From with a message
@@ -602,9 +696,9 @@ pub fn mock_fixed_table_data() -> FixedTableData {
 }
 
 pub fn get_ip(req: HttpRequest) -> IpAddr {
-    let socket = req.peer_addr().unwrap_or_else(|| {
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 9999)
-    });
+    let socket = req
+        .peer_addr()
+        .unwrap_or_else(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 9999));
     let ip_addr = socket.ip();
     ip_addr
 }
@@ -612,18 +706,18 @@ pub fn get_ip(req: HttpRequest) -> IpAddr {
 pub fn get_validation_response(is_valid: Result<(), ValidationErrors>) -> FormErrorResponse {
     println!("get_validation_response firing");
     let val_errs = is_valid
-    .err()
-    .unwrap()
-    .field_errors()
-    .iter()
-    .map(|x| {
-        let (key, errs) = x;
-        ValidationErrorMap {
-            key: key.to_string(),
-            errs: errs.to_vec(),
-        }
-    })
-    .collect::<Vec<ValidationErrorMap>>();
+        .err()
+        .unwrap()
+        .field_errors()
+        .iter()
+        .map(|x| {
+            let (key, errs) = x;
+            ValidationErrorMap {
+                key: key.to_string(),
+                errs: errs.to_vec(),
+            }
+        })
+        .collect::<Vec<ValidationErrorMap>>();
     dbg!(&val_errs);
     // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
     let validation_response = FormErrorResponse {
@@ -667,16 +761,14 @@ pub struct SendEmailInput {
 impl From<(&str, &str)> for SendEmailInput {
     fn from(pair: (&str, &str)) -> Self {
         let (to_email, msg) = pair;
-        SendEmailInput { 
+        SendEmailInput {
             to_email: to_email.to_string(),
             msg: msg.to_string(),
         }
     }
 }
 
-pub async fn send_email(
-    email_input: SendEmailInput
-) -> Result<(), String> {
+pub async fn send_email(email_input: SendEmailInput) -> Result<(), String> {
     let email = Message::builder()
         .from("NoBody <nobody@domain.tld>".parse().unwrap())
         .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
@@ -686,34 +778,34 @@ pub async fn send_email(
         .body(email_input.msg.to_owned())
         .unwrap();
 
-        // dbg!(&email);
+    // dbg!(&email);
 
-        // let smtp_user = env::var("SMTP_USER").unwrap_or("NoUsername".to_string());
-        // let smtp_pass = env::var("SMTP_PASS").unwrap_or("NoPass".to_string());
+    // let smtp_user = env::var("SMTP_USER").unwrap_or("NoUsername".to_string());
+    // let smtp_pass = env::var("SMTP_PASS").unwrap_or("NoPass".to_string());
 
-        // let creds = Credentials::new(smtp_user, smtp_pass);
-        // // Open a remote connection to gmail
-        // let mailer = SmtpTransport::relay("smtp.gmail.com")
-        //     .unwrap()
-        //     .credentials(creds)
-        //     .build();
+    // let creds = Credentials::new(smtp_user, smtp_pass);
+    // // Open a remote connection to gmail
+    // let mailer = SmtpTransport::relay("smtp.gmail.com")
+    //     .unwrap()
+    //     .credentials(creds)
+    //     .build();
 
-        let mut sender = StubTransport::new_ok();
-        let result = sender.send(&email);
-        assert!(result.is_ok());
-        assert_eq!(
+    let mut sender = StubTransport::new_ok();
+    let result = sender.send(&email);
+    assert!(result.is_ok());
+    assert_eq!(
         sender.messages(),
         vec![(
             email.envelope().clone(),
             String::from_utf8(email.formatted()).unwrap()
         )],
-        );
+    );
 
-        // Send the email
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err("Error Sending Email".to_owned()),
-        }
+    // Send the email
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err("Error Sending Email".to_owned()),
+    }
 }
 
 #[cfg(test)]
@@ -729,6 +821,4 @@ mod tests {
         let result = send_email(email_input).await;
         assert!(result.is_ok());
     }
-
 }
-

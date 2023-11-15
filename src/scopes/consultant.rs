@@ -16,7 +16,7 @@ use handlebars::Handlebars;
 use image::{imageops::FilterType, DynamicImage};
 use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, FromRow, Row, QueryBuilder, Postgres, Pool};
+use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, QueryBuilder, Row};
 use std::io::Write;
 use uuid::Uuid;
 
@@ -48,7 +48,10 @@ pub struct ResponsiveConsultantData {
     entities: Vec<ResponseConsultant>,
 }
 
-async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<ResponseConsultant>, Error> {
+async fn sort_query(
+    opts: &FilterOptions,
+    pool: &Pool<Postgres>,
+) -> Result<Vec<ResponseConsultant>, Error> {
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
     dbg!(&opts);
@@ -62,19 +65,25 @@ async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<
         consultant_l_name
     FROM consultants
     INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-    INNER JOIN territories ON territories.territory_id = consultants.territory_id"
+    INNER JOIN territories ON territories.territory_id = consultants.territory_id",
     );
 
     if let Some(search) = &opts.search {
         query.push(" WHERE consultant_l_name LIKE ");
-        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+        query.push(String::from(
+            "'%".to_owned() + &opts.search.clone().unwrap() + "%'",
+        ));
         query.push(" OR consultant_f_name LIKE ");
-        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+        query.push(String::from(
+            "'%".to_owned() + &opts.search.clone().unwrap() + "%'",
+        ));
     }
 
     if let Some(sort_key) = &opts.key {
         query.push(" ORDER BY ");
-        query.push(String::from(sort_key.to_owned() + " " + &opts.dir.clone().unwrap()));
+        query.push(String::from(
+            sort_key.to_owned() + " " + &opts.dir.clone().unwrap(),
+        ));
     } else {
         query.push(" ORDER BY consultants.updated_at DESC, consultants.created_at DESC");
     }
@@ -90,7 +99,11 @@ async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<
     // This almost got me there. Error on .as_str() for consult_start column
     // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
 
-    let consultants = res.unwrap().iter().map(|row| ResponseConsultant::from_row(row).unwrap()).collect::<Vec<ResponseConsultant>>();
+    let consultants = res
+        .unwrap()
+        .iter()
+        .map(|row| ResponseConsultant::from_row(row).unwrap())
+        .collect::<Vec<ResponseConsultant>>();
 
     Ok(consultants)
 
@@ -109,8 +122,15 @@ impl<'r> FromRow<'r, PgRow> for ResponseConsultant {
         let territory_name = row.try_get("territory_name")?;
         let consultant_f_name = row.try_get("consultant_f_name")?;
         let consultant_l_name = row.try_get("consultant_l_name")?;
-        
-        Ok(ResponseConsultant{ slug, consultant_id, specialty_name, territory_name, consultant_f_name, consultant_l_name })
+
+        Ok(ResponseConsultant {
+            slug,
+            consultant_id,
+            specialty_name,
+            territory_name,
+            consultant_f_name,
+            consultant_l_name,
+        })
     }
 }
 
@@ -162,7 +182,7 @@ pub async fn get_consultants_handler(
     //     let search_sql = format!("%{}%", like);
     //     let query_result = sqlx::query_as!(
     //         ResponseConsultant,
-    //         "SELECT 
+    //         "SELECT
     //             consultant_id,
     //             slug,
     //             specialty_name,
@@ -174,7 +194,7 @@ pub async fn get_consultants_handler(
     //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
     //         WHERE consultant_f_name LIKE $3
     //         OR consultant_l_name LIKE $3
-    //         ORDER by consultant_id 
+    //         ORDER by consultant_id
     //         LIMIT $1 OFFSET $2",
     //         limit as i32,
     //         offset as i32,
@@ -210,7 +230,7 @@ pub async fn get_consultants_handler(
     // } else {
     //     let query_result = sqlx::query_as!(
     //         ResponseConsultant,
-    //         "SELECT 
+    //         "SELECT
     //             consultant_id,
     //             slug,
     //             specialty_name,
@@ -220,7 +240,7 @@ pub async fn get_consultants_handler(
     //         FROM consultants
     //         INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
     //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
-    //         ORDER by consultant_id 
+    //         ORDER by consultant_id
     //         LIMIT $1 OFFSET $2",
     //         limit as i32,
     //         offset as i32
@@ -563,7 +583,8 @@ async fn upload(
     }
     // Message here is filename because we want that set to value via Hyperscript
     let success_msg = &filenames[0];
-    let validation_response = ValidationResponse::from((success_msg.as_str(), "validation_success"));
+    let validation_response =
+        ValidationResponse::from((success_msg.as_str(), "validation_success"));
     let body = hb.render("validation", &validation_response).unwrap();
     return HttpResponse::Ok().body(body);
 }

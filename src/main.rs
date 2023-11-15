@@ -3,27 +3,30 @@ use std::env;
 use actix_files::Files;
 use actix_web::{
     get,
-    http::header::{Header, HeaderValue},
+    http::header::HeaderValue,
     post,
-    web::{self, post, Data},
+    web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::{Post, VULGAR_LIST, is_dirty};
+use config::{is_dirty, read_yaml, Post, UserFeedData, UserPost};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
-    attachments_rte, concat_args, concat_str_args, form_rte, get_search_rte, get_table_title,
-    int_eq, int_in, loc_vec_len_ten, lower_and_single, str_eq, to_title_case, sort_rte, get_list_view, subscribe_rte
+    attachments_rte, concat_args, concat_str_args, form_rte, get_list_view, get_search_rte,
+    get_table_title, int_eq, int_in, loc_vec_len_ten, lower_and_single, sort_rte, str_eq,
+    subscribe_rte, to_title_case,
 };
-use validator::{Validate, ValidationError};
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
+use validator::{Validate, ValidationError};
 
-use crate::config::{mock_fixed_table_data, validate_and_get_user, ValidationResponse, get_ip};
+use crate::config::{
+    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse,
+};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
@@ -80,6 +83,7 @@ pub struct ResponsiveTableRow {
 pub struct HomepageTemplate {
     err: Option<String>,
     user: Option<ValidatedUser>,
+    feed_data: UserFeedData,
 }
 
 #[get("/")]
@@ -110,9 +114,18 @@ async fn index(
                         location_subs: user.location_subs,
                         consultant_subs: user.consultant_subs,
                     };
+                    let feed_data = user_feed(
+                        &user.user_subs,
+                        &user.consultant_subs,
+                        &user.client_subs,
+                        &user.location_subs,
+                        &state.db,
+                    )
+                    .await;
                     let template_data = HomepageTemplate {
                         err: None,
                         user: Some(user),
+                        feed_data: feed_data,
                     };
                     let body = hb.render("homepage", &template_data).unwrap();
                     return HttpResponse::Ok()
@@ -140,18 +153,20 @@ async fn index(
             "header": "Login Form",
         });
         let body = hb.render("index", &data).unwrap();
-        HttpResponse::Ok()
-        .header("HX-Redirect", "/")
-        .body(body)
+        HttpResponse::Ok().header("HX-Redirect", "/").body(body)
     }
 }
 
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport};
 use lettre::transport::stub::StubTransport;
+use lettre::{Message, SmtpTransport, Transport};
 #[get("/send-email")]
-async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>,) -> impl Responder {
+async fn send_email(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
     let email = Message::builder()
         .from("NoBody <nobody@domain.tld>".parse().unwrap())
         .reply_to("Yuin <yuin@domain.tld>".parse().unwrap())
@@ -165,7 +180,7 @@ async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data
 
     // let smtp_user = env::var("SMTP_USER").unwrap_or("NoUsername".to_string());
     // let smtp_pass = env::var("SMTP_PASS").unwrap_or("NoPass".to_string());
-    
+
     // let creds = Credentials::new(smtp_user, smtp_pass);
     // // Open a remote connection to gmail
     // let mailer = SmtpTransport::relay("smtp.gmail.com")
@@ -183,7 +198,7 @@ async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data
             String::from_utf8(email.formatted()).unwrap()
         )],
     );
-    
+
     // Send the email
     match result {
         Ok(_) => {
@@ -195,7 +210,7 @@ async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data
             }};
             let body = hb.render("about-us", &template_data).unwrap();
             HttpResponse::Ok().body(body)
-        },
+        }
         Err(e) => {
             let msg = format!("Could not send email: {e:?}");
             dbg!(&msg);
@@ -205,12 +220,16 @@ async fn send_email(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data
             }};
             let body = hb.render("about-us", &template_data).unwrap();
             HttpResponse::Ok().body(body)
-        },
+        }
     }
 }
 
 #[get("/about-us")]
-async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<AppState>,) -> impl Responder {
+async fn about_us(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
     let headers = req.headers();
     let data = json!({
         "name": "ExtRev",
@@ -239,7 +258,7 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                         "data": &data,
                     }};
                     let body = hb.render("about-us", &template_data).unwrap();
-    
+
                     HttpResponse::Ok().body(body)
                 } else {
                     let template_data = json! {{
@@ -259,6 +278,10 @@ async fn about_us(hb: web::Data<Handlebars<'_>>, req: HttpRequest, state: Data<A
                         err.error
                     )),
                     user: None,
+                    feed_data: UserFeedData {
+                        posts: None,
+                        consults: None,
+                    },
                 };
                 // let data = HbError {
                 //     str: format!(
@@ -287,7 +310,6 @@ async fn crud_api(
     state: Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-
         match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
@@ -377,9 +399,18 @@ async fn homepage(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
+                    let feed_data = user_feed(
+                        &user.user_subs,
+                        &user.consultant_subs,
+                        &user.client_subs,
+                        &user.location_subs,
+                        &state.db,
+                    )
+                    .await;
                     let template_data = HomepageTemplate {
                         err: None,
                         user: Some(user),
+                        feed_data: feed_data,
                     };
                     let body = hb.render("homepage", &template_data).unwrap();
                     dbg!(&body);
@@ -388,6 +419,10 @@ async fn homepage(
                     let template_data = HomepageTemplate {
                         err: Some("Seems your session has expired. Please login again".to_owned()),
                         user: None,
+                        feed_data: UserFeedData {
+                            posts: None,
+                            consults: None,
+                        },
                     };
                     let body = hb.render("homepage", &template_data).unwrap();
                     HttpResponse::Ok().body(body)
@@ -402,6 +437,10 @@ async fn homepage(
                         err.error
                     )),
                     user: None,
+                    feed_data: UserFeedData {
+                        posts: None,
+                        consults: None,
+                    },
                 };
                 let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
@@ -411,6 +450,10 @@ async fn homepage(
         let template_data = HomepageTemplate {
             err: Some("Cookie is missing".to_owned()),
             user: None,
+            feed_data: UserFeedData {
+                posts: None,
+                consults: None,
+            },
         };
         let body = hb.render("homepage", &template_data).unwrap();
         HttpResponse::Ok().body(body)
@@ -481,6 +524,10 @@ async fn detail(
                         err.error
                     )),
                     user: None,
+                    feed_data: UserFeedData {
+                        posts: None,
+                        consults: None,
+                    },
                 };
                 let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
@@ -577,7 +624,8 @@ async fn create_todo(
             return HttpResponse::Ok().body(body);
         }
         Err(error_msg) => {
-            let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
+            let validation_response =
+                ValidationResponse::from((error_msg.as_str(), "validation_error"));
             let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
@@ -594,9 +642,7 @@ async fn contact_us(
         "type": "article",
     });
 
-    let body = hb
-        .render("forms/contact-us", &data)
-        .unwrap();
+    let body = hb.render("forms/contact-us", &data).unwrap();
     return HttpResponse::Ok().body(body);
 }
 
@@ -619,7 +665,11 @@ pub struct ContactUsRequest {
     #[validate(length(min = 3, message = "Invalid Email"))]
     email: String,
     #[validate(
-        length(min = 10, max = 255, message = "Invalid Message. Please see the message criteria."),
+        length(
+            min = 10,
+            max = 255,
+            message = "Invalid Message. Please see the message criteria."
+        ),
         custom = "validate_contact_message"
     )]
     message: String,
@@ -636,14 +686,16 @@ async fn contact_us_submission(
     body: web::Form<ContactUsRequest>,
     req: HttpRequest,
     state: web::Data<AppState>,
-) -> impl Responder {  
+) -> impl Responder {
     let is_valid = body.validate();
     let ip_addr = get_ip(req);
     let ip_addr_str = ip_addr.to_string();
     if is_valid.is_err() {
         // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
-        let error_msg = "Validation Error".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
-        let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
+        let error_msg =
+            "Validation Error".to_owned() + format!("{}", is_valid.err().unwrap()).as_str();
+        let validation_response =
+            ValidationResponse::from((error_msg.as_str(), "validation_error"));
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::BadRequest()
             .header("HX-Retarget", "#validation_response")
@@ -805,6 +857,10 @@ mod tests {
         let template_data = HomepageTemplate {
             err: Some(err_msg.clone()),
             user: None,
+            feed_data: UserFeedData {
+                posts: None,
+                consults: None,
+            },
         };
         let mut hb = Handlebars::new();
         hb.register_templates_directory(".hbs", "./templates")
@@ -820,6 +876,5 @@ mod tests {
             .unwrap();
 
         assert_eq!(element.inner_text(parser), err_msg);
-
     }
 }

@@ -1,22 +1,31 @@
-use std::{fs::{self, File}, io::{Write, Read}, path::Path, ffi::OsStr};
+use std::{
+    ffi::OsStr,
+    fs::{self, File},
+    io::{Read, Write},
+    path::Path,
+};
 
 use actix_multipart::Multipart;
 use actix_web::{
-    get, post,
+    get,
+    http::header::CONTENT_LENGTH,
+    post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope, HttpRequest, http::header::CONTENT_LENGTH,
+    HttpRequest, HttpResponse, Responder, Scope,
 };
-use futures_util::TryStreamExt;
-use image::{imageops::FilterType, DynamicImage};
 use chrono::{DateTime, NaiveDate, Utc};
+use futures_util::TryStreamExt;
 use handlebars::Handlebars;
-use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, APPLICATION_JSON, APPLICATION_PDF, CSV, TEXT_CSV};
+use image::{imageops::FilterType, DynamicImage};
+use mime::{
+    Mime, APPLICATION_JSON, APPLICATION_PDF, CSV, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV,
+};
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Execute, Postgres, Pool, postgres::PgRow, Error, FromRow, Row};
+use sqlx::{postgres::PgRow, Error, Execute, FromRow, Pool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, ValidationResponse, UserAlert},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -110,7 +119,10 @@ fn validate_consultant_input(body: &ConsultPost) -> bool {
 }
 
 fn get_mime_type_id(path: &str) -> i32 {
-    let extension = Path::new(path).extension().and_then(OsStr::to_str).unwrap_or("none");
+    let extension = Path::new(path)
+        .extension()
+        .and_then(OsStr::to_str)
+        .unwrap_or("none");
     match extension {
         ".png" => 1,
         ".jpeg" => 2,
@@ -128,14 +140,14 @@ fn get_mime_type_id(path: &str) -> i32 {
         ".csv" => 14,
         ".html" => 15,
         ".ics" => 16,
-        "none" => 0, 
+        "none" => 0,
         _ => 0,
     }
 }
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct AttachmentResponse {
-    attachment_id: i32
+    attachment_id: i32,
 }
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
@@ -150,14 +162,18 @@ async fn create_consult(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if validate_consultant_input(&body) {
-        let consult_start_string = body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
+        let consult_start_string =
+            body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
         dbg!(&consult_start_string);
-        let consult_end_string = body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
+        let consult_end_string =
+            body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
         dbg!(&consult_end_string);
-        let consult_end_datetime = DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+        let consult_end_datetime =
+            DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
         dbg!(&consult_end_datetime);
         dbg!(&consult_start_string);
-        let consult_start_datetime = DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+        let consult_start_datetime =
+            DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
         dbg!(&consult_start_datetime);
         let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
         // Get Current User
@@ -378,8 +394,10 @@ async fn consult_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
-
-async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<ConsultList>, Error> {
+async fn sort_query(
+    opts: &FilterOptions,
+    pool: &Pool<Postgres>,
+) -> Result<Vec<ConsultList>, Error> {
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
     dbg!(&opts);
@@ -395,17 +413,21 @@ async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<
     FROM consults
     INNER JOIN clients ON consults.client_id = clients.client_id
     INNER JOIN locations ON consults.location_id = locations.location_id
-    INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id"
+    INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id",
     );
 
     if let Some(search) = &opts.search {
         query.push(" WHERE notes LIKE ");
-        query.push(String::from("'%".to_owned() + &opts.search.clone().unwrap() + "%'"));
+        query.push(String::from(
+            "'%".to_owned() + &opts.search.clone().unwrap() + "%'",
+        ));
     }
 
     if let Some(sort_key) = &opts.key {
         query.push(" ORDER BY ");
-        query.push(String::from(sort_key.to_owned() + " " + &opts.dir.clone().unwrap()));
+        query.push(String::from(
+            sort_key.to_owned() + " " + &opts.dir.clone().unwrap(),
+        ));
     } else {
         query.push(" ORDER BY consults.updated_at DESC, consults.created_at DESC");
     }
@@ -421,7 +443,11 @@ async fn sort_query(opts: &FilterOptions, pool: &Pool<Postgres>,) -> Result<Vec<
     // This almost got me there. Error on .as_str() for consult_start column
     // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
 
-    let consults = res.unwrap().iter().map(|row| ConsultList::from_row(row).unwrap()).collect::<Vec<ConsultList>>();
+    let consults = res
+        .unwrap()
+        .iter()
+        .map(|row| ConsultList::from_row(row).unwrap())
+        .collect::<Vec<ConsultList>>();
 
     Ok(consults)
 
@@ -442,7 +468,15 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
         let consult_end = row.try_get("consult_end")?;
         let notes = row.try_get("notes")?;
 
-        Ok(ConsultList{ slug, consultant_name, location_name, client_name, consult_start, consult_end, notes })
+        Ok(ConsultList {
+            slug,
+            consultant_name,
+            location_name,
+            client_name,
+            consult_start,
+            consult_end,
+            notes,
+        })
     }
 }
 
@@ -461,14 +495,14 @@ pub async fn get_consults_handler(
 
     // let query_result = sqlx::query_as!(
     //     ConsultList,
-    //     "SELECT 
-    //         consults.slug, 
-    //         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
-    //         location_name, 
-    //         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
-    //         consult_start, 
-    //         consult_end, 
-    //         notes 
+    //     "SELECT
+    //         consults.slug,
+    //         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name,
+    //         location_name,
+    //         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
+    //         consult_start,
+    //         consult_end,
+    //         notes
     //     FROM consults
     //     INNER JOIN clients ON consults.client_id = clients.client_id
     //     INNER JOIN locations ON consults.location_id = locations.location_id
@@ -502,9 +536,7 @@ pub async fn get_consults_handler(
 
     // Only return whole Table if brand new
     if opts.key.is_none() && opts.search.is_none() {
-        let body = hb
-            .render("responsive-table", &consults_table_data)
-            .unwrap();
+        let body = hb.render("responsive-table", &consults_table_data).unwrap();
         return HttpResponse::Ok().body(body);
     } else {
         let body = hb
@@ -589,7 +621,14 @@ async fn upload(
 ) -> HttpResponse {
     let max_file_size: usize = 20_000;
     let max_file_count: usize = 3;
-    let legal_file_types: [Mime; 6] = [IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, APPLICATION_JSON, APPLICATION_PDF, TEXT_CSV];
+    let legal_file_types: [Mime; 6] = [
+        IMAGE_GIF,
+        IMAGE_JPEG,
+        IMAGE_PNG,
+        APPLICATION_JSON,
+        APPLICATION_PDF,
+        TEXT_CSV,
+    ];
 
     let content_length: usize = match req.headers().get(CONTENT_LENGTH) {
         Some(header_value) => header_value.to_str().unwrap_or("0").parse().unwrap(),
@@ -647,7 +686,15 @@ async fn upload(
             while let Ok(Some(chunk)) = field.try_next().await {
                 let _ = saved_file.write_all(&chunk).unwrap();
             }
-            let filename = format!("{}{}.{}", dir, const_uuid, Path::new(field.content_disposition().get_filename().unwrap()).extension().and_then(OsStr::to_str).unwrap_or("none"));
+            let filename = format!(
+                "{}{}.{}",
+                dir,
+                const_uuid,
+                Path::new(field.content_disposition().get_filename().unwrap())
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .unwrap_or("none")
+            );
             dbg!(&filename);
 
             let mut to_save = filename.clone();
@@ -662,11 +709,13 @@ async fn upload(
             web::block(move || async move {
                 let updated_doc = fs::File::open(&destination).unwrap();
                 // FIXME
-                let extension = Path::new(&destination).extension().and_then(OsStr::to_str).unwrap_or("none");
+                let extension = Path::new(&destination)
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .unwrap_or("none");
                 let filename = format!("{}{}.{}", dir, const_uuid, extension);
                 let contents = read_file_buffer(&destination, &filename);
                 let _ = fs::remove_file(&destination).unwrap();
-
             })
             .await
             .unwrap()
@@ -678,7 +727,8 @@ async fn upload(
     }
     // Message here is filename because we want that set to value via Hyperscript
     let success_msg = &filenames[0];
-    let validation_response = ValidationResponse::from((success_msg.as_str(), "validation_success"));
+    let validation_response =
+        ValidationResponse::from((success_msg.as_str(), "validation_success"));
     let body = hb.render("validation", &validation_response).unwrap();
     return HttpResponse::Ok().body(body);
 }
@@ -693,7 +743,7 @@ mod tests {
         hbs_helpers::{concat_str_args, int_eq},
         test_common::{self, *},
     };
-    use test_context::{test_context};
+    use test_context::test_context;
 
     fn mock_locations() -> Vec<SelectOption> {
         [

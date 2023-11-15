@@ -8,15 +8,17 @@ use chrono::{DateTime, Duration, Utc};
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use std::{
-    sync::Arc,
-    ops::Deref,
-};
+use std::{ops::Deref, sync::Arc};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::{RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME, send_email, get_ip, SendEmailInput}, ValidatedUser, HomepageTemplate};
 use crate::{config::ValidationResponse, AppState, HeaderValueExt};
+use crate::{
+    config::{
+        get_ip, send_email, user_feed, SendEmailInput, RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME,
+    },
+    HomepageTemplate, ValidatedUser,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginRequest {
@@ -244,9 +246,11 @@ async fn basic_auth(
                             location_subs: user.location_subs,
                             consultant_subs: user.consultant_subs,
                         };
+                        let feed_data = user_feed(&user.user_subs, &user.consultant_subs, &user.client_subs, &user.location_subs, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,
                             user: Some(user),
+                            feed_data: feed_data,
                         };
                         let body = hb.render("homepage", &template_data).unwrap();
 
@@ -386,12 +390,14 @@ async fn validate_email(
             Ok(result) => {
                 if result.exists {
                     let error_msg = "Email already taken!";
-                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                    let validation_response =
+                        ValidationResponse::from((error_msg, "validation_error"));
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 } else {
                     let success_msg = "Email is available for use";
-                    let validation_response = ValidationResponse::from((success_msg, "validation_success"));
+                    let validation_response =
+                        ValidationResponse::from((success_msg, "validation_success"));
                     let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
@@ -472,32 +478,32 @@ async fn forgot_password(
     {
         Ok(resp) => {
             let created_at_fmt = resp.created_at.format("%b %-d, %-I:%M").to_string();
-            let email_input = SendEmailInput::from((body.email.as_str(), format!("A password reset was requested on {}", created_at_fmt).as_str()));
+            let email_input = SendEmailInput::from((
+                body.email.as_str(),
+                format!("A password reset was requested on {}", created_at_fmt).as_str(),
+            ));
             match send_email(email_input).await {
                 Ok(_) => {
                     let success_msg = "Reset Password link has been sent.";
-                    let validation_response = ValidationResponse::from((success_msg, "validation_success"));
-                    let body = hb
-                        .render("validation", &validation_response)
-                        .unwrap();
+                    let validation_response =
+                        ValidationResponse::from((success_msg, "validation_success"));
+                    let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
                 Err(e) => {
                     let error_msg = "Unable to send Reset Password link. Please ensure you have entered a valid email address.";
-                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-                    let body = hb
-                        .render("validation", &validation_response)
-                        .unwrap();
+                    let validation_response =
+                        ValidationResponse::from((error_msg, "validation_error"));
+                    let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
             }
-        },
+        }
         Err(err) => {
             let error_msg = format!("Error at the DB layer. {}", err);
-            let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
-            let body = hb
-                .render("validation", &validation_response)
-                .unwrap();
+            let validation_response =
+                ValidationResponse::from((error_msg.as_str(), "validation_error"));
+            let body = hb.render("validation", &validation_response).unwrap();
             return HttpResponse::Ok().body(body);
         }
     }
@@ -549,12 +555,14 @@ async fn reset_password(
     .await
     {
         Ok(user) => {
-            let message = "Your Password has been reset. You may now login using these credentials.".to_owned();
+            let message =
+                "Your Password has been reset. You may now login using these credentials."
+                    .to_owned();
             let body = hb
                 .render("forms/reset-password-form", &format!("{:?}", message))
                 .unwrap();
             return HttpResponse::Ok().body(body);
-        },
+        }
         Err(err) => {
             let message = "Unable to Reset Password. Please contact site administrator.".to_owned();
             let body = hb

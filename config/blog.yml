@@ -4,7 +4,7 @@ default: rust-is-hard
 posts:
   - slug: rust-is-hard
     title: "Rust is hard"
-    author: Github Copilot
+    author: 1
     date: 2022-10-23
     body: >
       I've been trying to learn Rust for a while now, but I just can't get it.
@@ -36,7 +36,7 @@ posts:
       again, but they're all
   - slug: expected-404s
     title: "404's should not be expected behavior"
-    author: Dru Jensen
+    author: 2
     date: 2022-10-24
     body: >
       ## The Problem
@@ -94,7 +94,7 @@ posts:
 
   - slug: an-interview-with-github-copilot
     title: "An interview with Github Copilot"
-    author: Dru Jensen
+    author: 2
     date: 2022-10-29
     body: >
       ## Tell me about yourself

@@ -3,8 +3,8 @@ use sqlx::FromRow;
 use struct_iterable::Iterable;
 use validator::{Validate, ValidationError};
 
-use crate::config::{SelectOption, StringSelectOption};
 use crate::config::{validate_primary_address, validate_secondary_address};
+use crate::config::{SelectOption, StringSelectOption};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseLocationList {
     pub locations: Vec<LocationList>,
@@ -60,11 +60,7 @@ pub struct LocationPostRequest {
     pub location_address_one: String,
     #[validate(custom = "validate_secondary_address")]
     pub location_address_two: Option<String>,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "City must be between 2 & 28 chars"
-    ))]
+    #[validate(length(min = 2, max = 28, message = "City must be between 2 & 28 chars"))]
     pub location_city: String,
     // #[validate(length(min = 3, message = "Must be in list of states"))]
     pub location_state: String,
@@ -92,15 +88,14 @@ pub struct LocationFormRequest {
 pub struct LocationPatchRequest {
     #[validate(length(min = 3, message = "Location Name must be greater than 2 chars"))]
     pub location_name: Option<String>,
-    #[validate(custom(function = "validate_primary_address", message = "Primary Address is improperly formatted"))]
+    #[validate(custom(
+        function = "validate_primary_address",
+        message = "Primary Address is improperly formatted"
+    ))]
     pub location_address_one: Option<String>,
     #[validate(custom = "validate_secondary_address")]
     pub location_address_two: Option<Option<String>>,
-    #[validate(length(
-        min = 2,
-        max = 28,
-        message = "City must be between 2 & 28 chars"
-    ))]
+    #[validate(length(min = 2, max = 28, message = "City must be between 2 & 28 chars"))]
     pub location_city: Option<String>,
     pub location_state: Option<String>,
     #[validate(length(equal = 5, message = "Zip must be 5 chars"))]

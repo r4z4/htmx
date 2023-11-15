@@ -1,10 +1,13 @@
 use crate::{
-    config::{SelectOption, ValidationResponse, category_options, validate_and_get_user, UserAlert, entity_name},
-    models::model_user::{
-        UserHomeModel, UserHomeQuery, UserSettingsObj,
-        UserSettingsPost, UserSettingsQuery,
+    config::{
+        category_options, entity_name, read_yaml, validate_and_get_user, SelectOption, UserAlert,
+        UserPost, ValidationResponse,
     },
-    AppState, HeaderValueExt, ValidatedUser, scopes::location::IndexData,
+    models::model_user::{
+        UserHomeModel, UserHomeQuery, UserSettingsObj, UserSettingsPost, UserSettingsQuery,
+    },
+    scopes::location::IndexData,
+    AppState, HeaderValueExt, ValidatedUser,
 };
 use actix_web::{
     get, put,
@@ -122,17 +125,41 @@ async fn compose(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
-) -> impl Responder {  
+) -> impl Responder {
     let template_data = ComposeTemplate {
         typ: "article".to_owned(),
         category_options: category_options(&state.db).await,
     };
 
-    let body = hb
-        .render("compose", &template_data)
-        .unwrap();
+    let body = hb.render("compose", &template_data).unwrap();
     return HttpResponse::Ok().body(body);
 }
+
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct UserFeedData {
+//     posts: Vec<UserPost>,
+// }
+
+// #[get("/user_feed")]
+// async fn user_feed(
+//     hb: web::Data<Handlebars<'_>>,
+//     req: HttpRequest,
+//     state: web::Data<AppState>,
+// ) -> impl Responder {
+//     let post_file = read_yaml();
+//     let user_subs = vec![1,2];
+//     let sub_posts =  post_file.posts.into_iter().filter(|post: &UserPost| {
+//         user_subs.contains(&post.author)
+//     }).collect::<Vec<UserPost>>();
+//     let feed_data = UserFeedData {
+//         posts: sub_posts,
+//     };
+
+//     let body = hb
+//         .render("user-feed", &feed_data)
+//         .unwrap();
+//     return HttpResponse::Ok().body(body);
+// }
 
 pub fn get_sub_sql(subscribed: bool, entity_id: i32, entity_type_id: i32) -> String {
     if subscribed {
@@ -144,23 +171,67 @@ pub fn get_sub_sql(subscribed: bool, entity_id: i32, entity_type_id: i32) -> Str
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct EntityId {
-    id: i32
+    id: i32,
 }
 
 async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i32 {
     match entity_type_id {
-        1 | 2 | 3 => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        4 => sqlx::query_as::<_, EntityId>("SELECT consultant_id AS id FROM consultants WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        5 => sqlx::query_as::<_, EntityId>("SELECT location_id AS id FROM locations WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        6 => sqlx::query_as::<_, EntityId>("SELECT consult_id AS id FROM consults WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        7 => sqlx::query_as::<_, EntityId>("SELECT client_id AS id FROM clients WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
-        _ => sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1").bind(&slug).fetch_one(pool).await.unwrap().id,
+        1 | 2 | 3 => {
+            sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
+        }
+        4 => {
+            sqlx::query_as::<_, EntityId>(
+                "SELECT consultant_id AS id FROM consultants WHERE slug = $1",
+            )
+            .bind(&slug)
+            .fetch_one(pool)
+            .await
+            .unwrap()
+            .id
+        }
+        5 => {
+            sqlx::query_as::<_, EntityId>("SELECT location_id AS id FROM locations WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
+        }
+        6 => {
+            sqlx::query_as::<_, EntityId>("SELECT consult_id AS id FROM consults WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
+        }
+        7 => {
+            sqlx::query_as::<_, EntityId>("SELECT client_id AS id FROM clients WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
+        }
+        _ => {
+            sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
+        }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct SubscribeResponse {
-    username: String
+    username: String,
 }
 
 #[get("/subscribe/{entity_type_id}/{entity_slug}")]
@@ -169,7 +240,7 @@ async fn subscribe(
     req: HttpRequest,
     state: web::Data<AppState>,
     path: web::Path<(i32, String)>,
-) -> impl Responder {  
+) -> impl Responder {
     let (entity_type_id, slug) = path.into_inner();
     let headers = req.headers();
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
@@ -182,27 +253,30 @@ async fn subscribe(
 
                 let entity_id = slug_to_id(entity_type_id, &slug, &state.db).await;
 
-                let subscribed =
-                    match entity_type_id {
-                        1 | 2 | 3 => user.user_subs.contains(&entity_id),
-                        4 => user.consultant_subs.contains(&entity_id), 
-                        5 => user.location_subs.contains(&entity_id),
-                        6 => user.consult_subs.contains(&entity_id),
-                        7 => user.client_subs.contains(&entity_id),
-                        _ => user.user_subs.contains(&entity_id),
-                    };
+                let subscribed = match entity_type_id {
+                    1 | 2 | 3 => user.user_subs.contains(&entity_id),
+                    4 => user.consultant_subs.contains(&entity_id),
+                    5 => user.location_subs.contains(&entity_id),
+                    6 => user.consult_subs.contains(&entity_id),
+                    7 => user.client_subs.contains(&entity_id),
+                    _ => user.user_subs.contains(&entity_id),
+                };
 
                 let sql = get_sub_sql(subscribed, entity_id, entity_type_id);
-                match sqlx::query_as::<_, SubscribeResponse>(
-                    &sql,
-                )
-                .bind(&username)
-                .fetch_one(&state.db)
-                .await
+                match sqlx::query_as::<_, SubscribeResponse>(&sql)
+                    .bind(&username)
+                    .fetch_one(&state.db)
+                    .await
                 {
                     Ok(resp) => {
                         let user_alert = UserAlert {
-                            msg: format!("Subscription {} successfully", {if subscribed {"removed"} else {"added"}}),
+                            msg: format!("Subscription {} successfully", {
+                                if subscribed {
+                                    "removed"
+                                } else {
+                                    "added"
+                                }
+                            }),
                             alert_class: "alert_success".to_owned(),
                         };
                         let template_body = hb.render("user-alert", &user_alert).unwrap();
@@ -218,13 +292,13 @@ async fn subscribe(
                         return HttpResponse::Ok().body(body);
                     }
                 }
-            },
+            }
             Err(_err) => {
                 dbg!(&_err);
                 // User's cookie is invalid or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let index_data = IndexData {
-                    message: format!("Error in validate and get user: {}", _err.error)
+                    message: format!("Error in validate and get user: {}", _err.error),
                 };
                 let body = hb.render("index", &index_data).unwrap();
 
@@ -298,14 +372,16 @@ async fn edit_settings(
             }
         }
     } else {
-        let validation_response = ValidationResponse::from(("Validation error", "validation_error"));
-        let body = hb.render("validation", &format!("{:?}", validation_response)).unwrap();
+        let validation_response =
+            ValidationResponse::from(("Validation error", "validation_error"));
+        let body = hb
+            .render("validation", &format!("{:?}", validation_response))
+            .unwrap();
         return HttpResponse::Ok()
-        .header("HX-Retarget", "#validation")
-        .body(body);
+            .header("HX-Retarget", "#validation")
+            .body(body);
     }
 }
-
 
 // #[get("/profile")]
 // async fn profile(

@@ -1,8 +1,8 @@
+use crate::config::{validate_primary_address, validate_secondary_address, validate_username};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Encode, FromRow};
 use validator::Validate;
-use crate::config::{validate_username, validate_primary_address, validate_secondary_address};
 
 use crate::config::{SelectOption, StringSelectOption};
 
@@ -74,7 +74,10 @@ pub struct AdminSubadminPostRequest {
     #[validate(custom = "validate_username")]
     pub username: String,
     pub email: String,
-    #[validate(custom(function = "validate_primary_address", message = "Primary Address is improperly formatted"))]
+    #[validate(custom(
+        function = "validate_primary_address",
+        message = "Primary Address is improperly formatted"
+    ))]
     pub address_one: String,
     #[validate(custom = "validate_secondary_address")]
     pub address_two: Option<String>,
