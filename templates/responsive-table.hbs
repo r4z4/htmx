@@ -134,9 +134,17 @@
                     {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
                       disabled="true"
                     {{/if}}
+                    _="on htmx:afterRequest 
+                        if #table_response.innerHTML contains 'added' 
+                          set my.innerHTML to '🔕'
+                        end
+                        if #table_response.innerHTML contains 'removed' 
+                          set my.innerHTML to '🔔'
+                        end"
+                          
                     {{!-- hx-target="body" 
                     hx-swap="beforeend" --}}
-                  >🔔
+                  >{{subscribe_icon this.slug @root.entity_type_id}}
                   </button>
                 </td>
             </tr>

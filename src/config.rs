@@ -155,11 +155,21 @@ impl From<(&str, &str)> for ValidationResponse {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct UserSubscriptions {
+    user_subs: Vec<i32>,
+    client_subs: Vec<i32>,
+    consult_subs: Vec<i32>,
+    location_subs: Vec<i32>,
+    consultant_subs: Vec<i32>,
+}
+
 #[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
     pub entity_type_id: i32,
     pub page: usize,
     pub vec_len: usize,
+    // pub subscriptions: UserSubscriptions,
     // #[validate(url)]
     pub lookup_url: String,
     pub entities: Vec<T>,
