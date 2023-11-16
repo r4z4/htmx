@@ -155,13 +155,23 @@ impl From<(&str, &str)> for ValidationResponse {
     }
 }
 
+pub fn test_subs() -> UserSubscriptions {
+    UserSubscriptions {
+        user_subs: vec![1],
+        client_subs: vec![2,3],
+        consult_subs: vec![3,4,5],
+        location_subs: vec![4,6,7],
+        consultant_subs: vec![3,5,6],
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct UserSubscriptions {
-    user_subs: Vec<i32>,
-    client_subs: Vec<i32>,
-    consult_subs: Vec<i32>,
-    location_subs: Vec<i32>,
-    consultant_subs: Vec<i32>,
+    pub user_subs: Vec<i32>,
+    pub client_subs: Vec<i32>,
+    pub consult_subs: Vec<i32>,
+    pub location_subs: Vec<i32>,
+    pub consultant_subs: Vec<i32>,
 }
 
 #[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
@@ -169,7 +179,7 @@ pub struct ResponsiveTableData<T> {
     pub entity_type_id: i32,
     pub page: usize,
     pub vec_len: usize,
-    // pub subscriptions: UserSubscriptions,
+    pub subscriptions: UserSubscriptions,
     // #[validate(url)]
     pub lookup_url: String,
     pub entities: Vec<T>,
@@ -307,7 +317,7 @@ pub async fn user_feed(
     pool: &Pool<Postgres>,
 ) -> UserFeedData {
     match sqlx::query_as::<_, UserFeedResponse>(
-        "SELECT consult_id,slug,consultant_id,client_id,location_id,consult_start,notes,consult_attachments,created_at,updated_at FROM consults
+        "SELECT id,slug,consultant_id,client_id,location_id,consult_start,notes,consult_attachments,created_at,updated_at FROM consults
         WHERE (client_id = ANY($1) OR location_id = ANY($2) OR consultant_id = ANY($3))
         AND created_at >= NOW() - INTERVAL '7 DAYS' OR updated_at >= NOW() - INTERVAL '7 DAYS'",
     )
@@ -744,8 +754,8 @@ pub async fn validate_and_get_user(
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
         FROM users
-        LEFT JOIN user_sessions ON user_sessions.user_id = users.user_id
-        LEFT JOIN user_settings ON user_settings.user_id = users.user_id
+        LEFT JOIN user_sessions ON user_sessions.user_id = users.id
+        LEFT JOIN user_settings ON user_settings.user_id = users.id
         WHERE session_id = $1
         AND expires > NOW()",
     )

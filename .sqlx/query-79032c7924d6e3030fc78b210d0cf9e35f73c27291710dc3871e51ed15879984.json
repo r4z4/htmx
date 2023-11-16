@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT account_id AS value, account_name AS key \n        FROM accounts \n        ORDER by account_name",
+  "query": "SELECT id AS value, account_name AS key \n        FROM accounts \n        ORDER by account_name",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "3b946cee8929a3a5d44eb675d77291bc67d5024a3c842d0946161f29de5f3593"
+  "hash": "79032c7924d6e3030fc78b210d0cf9e35f73c27291710dc3871e51ed15879984"
 }

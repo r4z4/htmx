@@ -36,14 +36,14 @@ pub struct ConsultantListResponse {
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultantList {
-    pub consultant_id: i32,
+    pub id: i32,
     pub slug: String,
     pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct ResponseConsultant {
-    pub consultant_id: i32,
+    pub id: i32,
     pub slug: String,
     pub specialty_name: String,
     pub territory_name: String,

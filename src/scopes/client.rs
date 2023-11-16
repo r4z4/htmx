@@ -8,7 +8,7 @@ use crate::{
     config::{
         self, get_n_pages, get_validation_response, FilterOptions, FormErrorResponse,
         ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES,
+        ACCEPTED_SECONDARIES, test_subs,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -43,7 +43,7 @@ pub async fn get_clients_handler(
     let query_result = sqlx::query_as!(
         ClientList,
         "SELECT 
-            client_id, 
+            clients.id, 
             slug,
             specialty_name,
             COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
@@ -53,8 +53,8 @@ pub async fn get_clients_handler(
             client_zip,
             client_primary_phone AS phone
         FROM clients
-        INNER JOIN specialties ON specialties.specialty_id = clients.specialty_id
-        ORDER by client_id
+        INNER JOIN specialties ON specialties.id = clients.specialty_id
+        ORDER by id
         LIMIT $1 OFFSET $2",
         limit as i32,
         offset as i32
@@ -86,6 +86,7 @@ pub async fn get_clients_handler(
         lookup_url: "/client/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: clients,
+        subscriptions: test_subs(),
     };
 
     dbg!(&clients_table_data);
@@ -120,7 +121,7 @@ async fn client_form(
 async fn account_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     let account_result = sqlx::query_as!(
         SelectOption,
-        "SELECT account_id AS value, account_name AS key 
+        "SELECT id AS value, account_name AS key 
         FROM accounts 
         ORDER by account_name"
     )
@@ -231,7 +232,7 @@ async fn create_client(
 
         match sqlx::query_as::<_, ClientPostResponse>(
             "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
-                    VALUES (NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, ''), $4, NULLIF($5, ''), $6, $7, $8, NULLIF($9, '1900-01-01'), $10, $11, $12, $13) RETURNING client_id",
+                    VALUES (NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, ''), $4, NULLIF($5, ''), $6, $7, $8, NULLIF($9, '1900-01-01'), $10, $11, $12, $13) RETURNING id",
         )
         .bind(&body.client_f_name)
         .bind(&body.client_l_name)
@@ -251,9 +252,9 @@ async fn create_client(
         .await
         {
             Ok(loc) => {
-                dbg!(loc.client_id);
+                dbg!(loc.id);
                 let user_alert = UserAlert {
-                    msg: format!("Client added successfully: client_id #{:?}", loc.client_id),
+                    msg: format!("Client added successfully: client_id #{:?}", loc.id),
                     alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("crud-api-inner", &user_alert).unwrap();
@@ -378,9 +379,9 @@ async fn patch_client(
         .await
         {
             Ok(client) => {
-                dbg!(client.client_id);
+                dbg!(client.id);
                 let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", client.client_id),
+                    msg: format!("Location added successfully: ID #{:?}", client.id),
                     alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("list-api", &user_alert).unwrap();

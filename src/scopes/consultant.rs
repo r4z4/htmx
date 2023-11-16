@@ -23,7 +23,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         specialty_options, territory_options, FilterOptions, ResponsiveTableData, SelectOption,
-        UserAlert, ValidationResponse,
+        UserAlert, ValidationResponse, test_subs,
     },
     models::model_consultant::{
         ConsultantFormRequest, ConsultantFormTemplate, ConsultantPostRequest,
@@ -117,7 +117,7 @@ async fn sort_query(
 impl<'r> FromRow<'r, PgRow> for ResponseConsultant {
     fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         let slug = row.try_get("slug")?;
-        let consultant_id = row.try_get("consultant_id")?;
+        let id = row.try_get("id")?;
         let specialty_name = row.try_get("specialty_name")?;
         let territory_name = row.try_get("territory_name")?;
         let consultant_f_name = row.try_get("consultant_f_name")?;
@@ -125,7 +125,7 @@ impl<'r> FromRow<'r, PgRow> for ResponseConsultant {
 
         Ok(ResponseConsultant {
             slug,
-            consultant_id,
+            id,
             specialty_name,
             territory_name,
             consultant_f_name,
@@ -163,6 +163,7 @@ pub async fn get_consultants_handler(
         lookup_url: "/consultant/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: consultants,
+        subscriptions: test_subs(),
     };
 
     // Only return whole Table if brand new
@@ -285,10 +286,10 @@ async fn consultant_form(
 
     let user_result = sqlx::query_as!(
         SelectOption,
-        "SELECT user_id AS value, username AS key 
+        "SELECT id AS value, username AS key 
         FROM users
         WHERE user_type_id = 3
-        ORDER by user_id DESC"
+        ORDER by id DESC"
     )
     .fetch_all(&state.db)
     .await;

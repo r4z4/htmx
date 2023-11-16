@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES,
+        ACCEPTED_SECONDARIES, UserSubscriptions, test_subs,
     },
     models::{
         model_admin::{
@@ -147,6 +147,7 @@ async fn recent_activity(
         lookup_url: "/consultant/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: recent_queries,
+        subscriptions: test_subs(),
     };
 
     // Only return whole Table if brand new
@@ -259,7 +260,7 @@ pub async fn get_users_handler(
 
     let query_result = sqlx::query_as!(
         AdminUserList,
-        "SELECT user_id, slug, user_type_id, username, email, created_at, avatar_path
+        "SELECT id, slug, user_type_id, username, email, created_at, avatar_path
         FROM users
         WHERE user_type_id = $1
         ORDER by created_at
@@ -288,6 +289,7 @@ pub async fn get_users_handler(
         lookup_url: "/admin/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: users,
+        subscriptions: test_subs(),
     };
 
     dbg!(&users_table_data);
@@ -358,7 +360,7 @@ async fn subadmin_form(
         AdminSubadminFormQuery,
         "SELECT users.username, users.email, user_type_id, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, address_one, address_two, city, state, zip, primary_phone, user_details.updated_at
         FROM users
-        INNER JOIN user_details ON user_details.user_id = users.user_id
+        INNER JOIN user_details ON user_details.user_id = users.id
         WHERE users.slug = $1",
         user_slug
     )
@@ -440,7 +442,7 @@ async fn edit_user(
     if validate_admin_user_input(&body) {
         let user_id = path.into_inner();
         match sqlx::query_as::<_, AdminUserPostResponse>(
-            "UPDATE users SET username = $1, email = $2, user_type_id = $3 WHERE slug = $4 RETURNING user_id",
+            "UPDATE users SET username = $1, email = $2, user_type_id = $3 WHERE slug = $4 RETURNING id",
         )
         .bind(&body.username)
         .bind(&body.email)
@@ -450,20 +452,20 @@ async fn edit_user(
         .await
         {
             Ok(usr) => {
-                dbg!(usr.user_id);
+                dbg!(usr.id);
                 let admin_types = vec![1,2];
                 if admin_types.iter().any(|&i| i == body.user_type_id) {
                     match sqlx::query_as::<_, AdminUserPostResponse>(
-                        "INSERT INTO user_details (user_id) VALUES ($1) RETURNING user_id",
+                        "INSERT INTO user_details (user_id) VALUES ($1) RETURNING id",
                     )
-                    .bind(&usr.user_id)
+                    .bind(&usr.id)
                     .fetch_one(&state.db)
                     .await
                     {
                         Ok(usr) => {
-                            dbg!(usr.user_id);
+                            dbg!(usr.id);
                             let user_alert = UserAlert {
-                                msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.user_id),
+                                msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.id),
                                 alert_class: "alert_success".to_owned(),
                             };
                             let body = hb.render("admin-home", &user_alert).unwrap();
@@ -481,7 +483,7 @@ async fn edit_user(
                     }
                 } else {
                     let user_alert = UserAlert {
-                        msg: format!("User #{:?} successfully updated.", usr.user_id),
+                        msg: format!("User #{:?} successfully updated.", usr.id),
                         alert_class: "alert_success".to_owned(),
                     };
                     let body = hb.render("admin-home", &user_alert).unwrap();
@@ -542,9 +544,9 @@ async fn edit_subadmin(
         .await
         {
             Ok(usr) => {
-                dbg!(usr.user_id);
+                dbg!(usr.id);
                 let user_alert = UserAlert {
-                    msg: format!("User #{:?} successfully updated.", usr.user_id),
+                    msg: format!("User #{:?} successfully updated.", usr.id),
                     alert_class: "alert_success".to_owned(),
                 };
                 let body = hb.render("admin-home", &user_alert).unwrap();

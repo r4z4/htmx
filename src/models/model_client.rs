@@ -19,7 +19,7 @@ pub struct ClientListResponse {
 
 #[derive(Debug, Validate, Serialize, Clone, FromRow, Deserialize)]
 pub struct ClientList {
-    pub client_id: i32,
+    pub id: i32,
     pub slug: String,
     pub specialty_name: String,
     // pub client_company_name: Option<String>,
@@ -103,5 +103,5 @@ pub struct ClientWithDates {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct ClientPostResponse {
-    pub client_id: i32,
+    pub id: i32,
 }

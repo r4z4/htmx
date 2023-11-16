@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT \n            client_id, \n            slug,\n            specialty_name,\n            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,\n            client_email,\n            client_address_one AS address,\n            client_city,\n            client_zip,\n            client_primary_phone AS phone\n        FROM clients\n        INNER JOIN specialties ON specialties.specialty_id = clients.specialty_id\n        ORDER by client_id\n        LIMIT $1 OFFSET $2",
+  "query": "SELECT \n            clients.id, \n            slug,\n            specialty_name,\n            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,\n            client_email,\n            client_address_one AS address,\n            client_city,\n            client_zip,\n            client_primary_phone AS phone\n        FROM clients\n        INNER JOIN specialties ON specialties.id = clients.specialty_id\n        ORDER by id\n        LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "client_id",
+        "name": "id",
         "type_info": "Int4"
       },
       {
@@ -67,5 +67,5 @@
       false
     ]
   },
-  "hash": "41cf3826c2985afd84c8f31dcf0b0c36293ec5809dc71c55a242d74dc7273089"
+  "hash": "32e4c6741b7d47c05a80d0c908a42e78dbff050a43b9666ddd1fd8c6ee0f1cbb"
 }

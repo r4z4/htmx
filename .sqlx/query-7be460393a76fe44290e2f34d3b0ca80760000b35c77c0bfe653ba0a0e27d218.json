@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id AS value, username AS key \n        FROM users\n        WHERE user_type_id = 3\n        ORDER by user_id DESC",
+  "query": "SELECT id AS value, location_name AS key \n        FROM locations \n        ORDER by location_name",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "db875b2fcb66af9b57f52ecae30f6dd05c3cdf710d63ccb111fafe71d77bd006"
+  "hash": "7be460393a76fe44290e2f34d3b0ca80760000b35c77c0bfe653ba0a0e27d218"
 }

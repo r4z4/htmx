@@ -42,7 +42,7 @@ DROP TYPE IF EXISTS mime_type;
 -- );
 
 CREATE TABLE IF NOT EXISTS accounts (
-        account_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         account_name TEXT NOT NULL UNIQUE,
         account_secret TEXT DEFAULT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     );
 
 CREATE TABLE IF NOT EXISTS users (
-        user_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         account_id INTEGER NOT NULL DEFAULT 3,
         username TEXT NOT NULL UNIQUE,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS users (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_account_id
             FOREIGN KEY(account_id) 
-	            REFERENCES accounts(account_id)
+	            REFERENCES accounts(id)
     );
 
 CREATE TABLE IF NOT EXISTS user_details (
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS user_details (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS user_settings (
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
         updated_at TIMESTAMPTZ DEFAULT NULL,
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS reset_password_requests (
@@ -127,11 +127,11 @@ CREATE TABLE IF NOT EXISTS reset_password_requests (
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS specialties (
-        specialty_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         specialty_name TEXT NOT NULL
     );
 
@@ -167,13 +167,13 @@ CREATE TABLE IF NOT EXISTS article_categories (
 
 
 CREATE TABLE IF NOT EXISTS territories (
-        territory_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         territory_name TEXT NOT NULL,
         territory_states TEXT[] NULL
     );
 
 CREATE TABLE IF NOT EXISTS consultants (
-        consultant_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         -- specialty consultant_specialty NOT NULL,
@@ -187,13 +187,13 @@ CREATE TABLE IF NOT EXISTS consultants (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_user
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id),
+	            REFERENCES users(id),
         CONSTRAINT fk_specialty
             FOREIGN KEY(specialty_id) 
-	            REFERENCES specialties(specialty_id),
+	            REFERENCES specialties(id),
         CONSTRAINT fk_territory
             FOREIGN KEY(territory_id) 
-	            REFERENCES territories(territory_id)
+	            REFERENCES territories(id)
     );
 
 CREATE TABLE IF NOT EXISTS consultant_ties (
@@ -207,17 +207,17 @@ CREATE TABLE IF NOT EXISTS consultant_ties (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_consultant
             FOREIGN KEY(consultant_id) 
-	            REFERENCES consultants(consultant_id),
+	            REFERENCES consultants(id),
         CONSTRAINT fk_specialty
             FOREIGN KEY(specialty_id) 
-	            REFERENCES specialties(specialty_id),
+	            REFERENCES specialties(id),
         CONSTRAINT fk_territory
             FOREIGN KEY(territory_id) 
-	            REFERENCES territories(territory_id)
+	            REFERENCES territories(id)
     );
 
 CREATE TABLE IF NOT EXISTS clients (
-        client_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         client_f_name TEXT NULL,
         client_l_name TEXT NULL,
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS clients (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_account
             FOREIGN KEY(account_id) 
-	            REFERENCES accounts(account_id)
+	            REFERENCES accounts(id)
     );
 
 CREATE TABLE IF NOT EXISTS contacts (
@@ -259,7 +259,7 @@ CREATE TABLE IF NOT EXISTS contacts (
 
 -- FIXME: Add PostGIS and lat/long
 CREATE TABLE IF NOT EXISTS locations (
-        location_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         location_name TEXT NOT NULL,
         location_address_one TEXT NOT NULL,
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS locations (
 	            REFERENCES contacts(contact_id),
         CONSTRAINT fk_territory
             FOREIGN KEY(territory_id) 
-	            REFERENCES territories(territory_id)
+	            REFERENCES territories(id)
     );
 
 CREATE TABLE IF NOT EXISTS engagements (
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS engagements (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_user
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS contact_submissions (
@@ -314,7 +314,7 @@ CREATE TABLE IF NOT EXISTS article_submissions (
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CONSTRAINT fk_user
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -329,10 +329,10 @@ CREATE TABLE IF NOT EXISTS messages (
         read_at TIMESTAMPTZ DEFAULT NULL,
         CONSTRAINT fk_sent_to
             FOREIGN KEY(sent_to) 
-	            REFERENCES users(user_id),
+	            REFERENCES users(id),
         CONSTRAINT fk_sent_from
             FOREIGN KEY(sent_from) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS attachments (
@@ -348,11 +348,11 @@ CREATE TABLE IF NOT EXISTS attachments (
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT fk_user_id
             FOREIGN KEY(user_id) 
-	            REFERENCES users(user_id)
+	            REFERENCES users(id)
     );
 
 CREATE TABLE IF NOT EXISTS consults (
-        consult_id SERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         slug TEXT NOT NULL DEFAULT (uuid_generate_v4()),
         consultant_id INTEGER NOT NULL,
         client_id INTEGER NOT NULL,
@@ -365,16 +365,16 @@ CREATE TABLE IF NOT EXISTS consults (
         updated_at TIMESTAMPTZ DEFAULT NULL,
         CONSTRAINT fk_client
             FOREIGN KEY(client_id) 
-	            REFERENCES clients(client_id),
+	            REFERENCES clients(id),
         CONSTRAINT fk_location
             FOREIGN KEY(location_id) 
-	            REFERENCES locations(location_id),
+	            REFERENCES locations(id),
         CONSTRAINT fk_consultant
             FOREIGN KEY(consultant_id) 
-	            REFERENCES consultants(consultant_id)
+	            REFERENCES consultants(id)
     );
 
-INSERT INTO territories (territory_id, territory_name, territory_states)
+INSERT INTO territories (id, territory_name, territory_states)
 VALUES
 (1, 'national',     NULL),
 (2, 'northeast',    ARRAY['DE', 'MD', 'PA', 'NJ', 'NY', 'MA', 'CT', 'VT', 'NH', 'RI', 'ME', 'OH']),
@@ -382,7 +382,7 @@ VALUES
 (4, 'west',         ARRAY['CA', 'WA', 'OR', 'NV', 'AZ', 'NM', 'UT', 'WY', 'ID', 'MT', 'AK', 'CO', 'WY']),
 (5, 'midwest',      ARRAY['NE', 'IA', 'KS', 'OK', 'MO', 'SD', 'ND', 'MN', 'WI', 'MI', 'IN', 'IL', 'TX']);
 
-INSERT INTO specialties (specialty_id, specialty_name)
+INSERT INTO specialties (id, specialty_name)
 VALUES
 (1, 'general'),
 (2, 'finance'),
@@ -642,7 +642,7 @@ CREATE OR REPLACE FUNCTION user_settings_insert_trigger_fnc()
 $$
 BEGIN
     INSERT INTO "user_settings" ( "user_settings_id", "user_id")
-         VALUES(DEFAULT, NEW."user_id");
+         VALUES(DEFAULT, NEW."id");
 RETURN NEW;
 END;
 $$

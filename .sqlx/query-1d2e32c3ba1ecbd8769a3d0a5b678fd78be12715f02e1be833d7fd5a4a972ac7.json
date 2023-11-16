@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, consultant_id AS value \n        FROM consultants ORDER BY key",
+  "query": "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, id AS value \n        FROM clients ORDER BY key",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "bb2a60366e9a98e3b3d2763a05a34daf22bac3a1683a53d9902d132536c07511"
+  "hash": "1d2e32c3ba1ecbd8769a3d0a5b678fd78be12715f02e1be833d7fd5a4a972ac7"
 }

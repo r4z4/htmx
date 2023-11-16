@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id, slug, user_type_id, username, email, created_at, avatar_path\n        FROM users\n        WHERE user_type_id = $1\n        ORDER by created_at\n        LIMIT $2 OFFSET $3",
+  "query": "SELECT id, slug, user_type_id, username, email, created_at, avatar_path\n        FROM users\n        WHERE user_type_id = $1\n        ORDER by created_at\n        LIMIT $2 OFFSET $3",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "user_id",
+        "name": "id",
         "type_info": "Int4"
       },
       {
@@ -56,5 +56,5 @@
       true
     ]
   },
-  "hash": "f5f34259fb6156b62059700fac13817a498ee8c415e4fc87efe4427a75b80de7"
+  "hash": "df8983c528d991e3942b23b8f358735044d4035b28880d56e222815cfd832e7e"
 }

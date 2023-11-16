@@ -177,7 +177,7 @@ pub struct EntityId {
 async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i32 {
     match entity_type_id {
         1 | 2 | 3 => {
-            sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1")
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM users WHERE slug = $1")
                 .bind(&slug)
                 .fetch_one(pool)
                 .await
@@ -186,7 +186,7 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
         }
         4 => {
             sqlx::query_as::<_, EntityId>(
-                "SELECT consultant_id AS id FROM consultants WHERE slug = $1",
+                "SELECT id AS id FROM consultants WHERE slug = $1",
             )
             .bind(&slug)
             .fetch_one(pool)
@@ -195,7 +195,7 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
             .id
         }
         5 => {
-            sqlx::query_as::<_, EntityId>("SELECT location_id AS id FROM locations WHERE slug = $1")
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM locations WHERE slug = $1")
                 .bind(&slug)
                 .fetch_one(pool)
                 .await
@@ -203,7 +203,7 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
                 .id
         }
         6 => {
-            sqlx::query_as::<_, EntityId>("SELECT consult_id AS id FROM consults WHERE slug = $1")
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM consults WHERE slug = $1")
                 .bind(&slug)
                 .fetch_one(pool)
                 .await
@@ -211,7 +211,7 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
                 .id
         }
         7 => {
-            sqlx::query_as::<_, EntityId>("SELECT client_id AS id FROM clients WHERE slug = $1")
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM clients WHERE slug = $1")
                 .bind(&slug)
                 .fetch_one(pool)
                 .await
@@ -219,7 +219,7 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
                 .id
         }
         _ => {
-            sqlx::query_as::<_, EntityId>("SELECT user_id AS id FROM users WHERE slug = $1")
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM users WHERE slug = $1")
                 .bind(&slug)
                 .fetch_one(pool)
                 .await
@@ -342,7 +342,7 @@ async fn edit_settings(
         {
             Ok(user) => {
                 let user_home_model = UserHomeModel {
-                    user_id: user.user_id,
+                    id: user.id,
                     user_type_id: user.user_type_id,
                     username: user.username,
                     theme_options: theme_options(),
@@ -462,7 +462,7 @@ async fn home(
                     consultant_subs: unwrapped_user.consultant_subs,
                 };
                 let user_home_model = UserHomeModel {
-                    user_id: unwrapped_user.user_id,
+                    id: unwrapped_user.id,
                     user_type_id: unwrapped_user.user_type_id,
                     username: unwrapped_user.username,
                     theme_options: theme_options(),

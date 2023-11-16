@@ -13,19 +13,18 @@ use actix_web::{
     web::{self, Data, Json},
     HttpRequest, HttpResponse, Responder, Scope,
 };
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
-use image::{imageops::FilterType, DynamicImage};
 use mime::{
     Mime, APPLICATION_JSON, APPLICATION_PDF, CSV, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, Error, Execute, FromRow, Pool, Postgres, QueryBuilder, Row};
+use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -47,7 +46,7 @@ pub fn consult_scope() -> Scope {
 async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     let location_result = sqlx::query_as!(
         SelectOption,
-        "SELECT location_id AS value, location_name AS key 
+        "SELECT id AS value, location_name AS key 
         FROM locations 
         ORDER by location_name"
     )
@@ -71,7 +70,7 @@ async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     let consultant_result = sqlx::query_as!(
         SelectOption,
-        "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, consultant_id AS value 
+        "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, id AS value 
         FROM consultants ORDER BY key"
     )
     .fetch_all(&state.db)
@@ -94,7 +93,7 @@ async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     let client_result = sqlx::query_as!(
         SelectOption,
-        "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, client_id AS value 
+        "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, id AS value 
         FROM clients ORDER BY key"
     )
     .fetch_all(&state.db)
@@ -196,7 +195,7 @@ async fn create_consult(
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
                     match sqlx::query_as::<_, ConsultResponse>(
-                        "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING consult_id",
+                        "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
                     )
                     .bind(body.consultant_id)
                     .bind(body.client_id)
@@ -403,6 +402,7 @@ async fn sort_query(
     dbg!(&opts);
     let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT 
+        consults.id,
         consults.slug, 
         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
         location_name, 
@@ -411,9 +411,9 @@ async fn sort_query(
         consult_end, 
         notes 
     FROM consults
-    INNER JOIN clients ON consults.client_id = clients.client_id
-    INNER JOIN locations ON consults.location_id = locations.location_id
-    INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id",
+    INNER JOIN clients ON consults.client_id = clients.id
+    INNER JOIN locations ON consults.location_id = locations.id
+    INNER JOIN consultants ON consults.consultant_id = consultants.id",
     );
 
     if let Some(search) = &opts.search {
@@ -460,6 +460,7 @@ async fn sort_query(
 // Had to remove conflicting FromRow in the derive list
 impl<'r> FromRow<'r, PgRow> for ConsultList {
     fn from_row(row: &'r PgRow) -> Result<Self, Error> {
+        let id = row.try_get("id")?;
         let slug = row.try_get("slug")?;
         let consultant_name = row.try_get("consultant_name")?;
         let location_name = row.try_get("location_name")?;
@@ -469,6 +470,7 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
         let notes = row.try_get("notes")?;
 
         Ok(ConsultList {
+            id,
             slug,
             consultant_name,
             location_name,
@@ -532,6 +534,7 @@ pub async fn get_consults_handler(
         lookup_url: "/consult/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: consults,
+        subscriptions: test_subs(),
     };
 
     // Only return whole Table if brand new

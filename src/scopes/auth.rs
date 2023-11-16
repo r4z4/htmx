@@ -71,7 +71,7 @@ pub struct LoginUser {
 
 #[derive(FromRow, Serialize, Deserialize)]
 pub struct AuthUser {
-    user_id: i32,
+    id: i32,
     username: String,
     password: String,
     user_type_id: i32,
@@ -198,9 +198,9 @@ async fn basic_auth(
     let password = &body.password;
 
     match sqlx::query_as::<_, AuthUser>(
-        "SELECT users.user_id, username, password, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
+        "SELECT users.id, username, password, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
         FROM users 
-        INNER JOIN user_settings ON user_settings.user_id = users.user_id
+        INNER JOIN user_settings ON user_settings.user_id = users.id
         WHERE username = $1",
     )
     .bind(username.to_string())
@@ -229,7 +229,7 @@ async fn basic_auth(
                     RETURNING session_id",
                 )
                 .bind(cookie_token)
-                .bind(user.user_id)
+                .bind(user.id)
                 .bind(expires)
                 .fetch_one(&state.db)
                 .await

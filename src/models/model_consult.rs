@@ -34,6 +34,7 @@ pub struct ConsultFormRequest {
 #[derive(Debug, Validate, Serialize, Clone, Deserialize)]
 pub struct ConsultList {
     // pub consult_id: i32,
+    pub id: i32,
     pub slug: String,
     // If using CONCAT or COALSCE likely need to make them Option<_>
     pub client_name: Option<String>,

@@ -5,7 +5,7 @@ use crate::{
     config::{
         self, get_validation_response, validate_and_get_user, FilterOptions, FormErrorResponse,
         ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES,
+        ACCEPTED_SECONDARIES, test_subs,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
@@ -49,7 +49,7 @@ async fn search_location(
     let query_result = sqlx::query_as!(
         LocationList,
         "SELECT 
-            location_id, 
+            id, 
             slug,
             location_name,
             location_address_one,
@@ -82,6 +82,7 @@ async fn search_location(
         lookup_url: "/location/list?page=".to_string(),
         page: opts.page.unwrap_or(1),
         entities: locations,
+        subscriptions: test_subs(),
     };
 
     dbg!(&locations_table_data);
@@ -120,7 +121,7 @@ pub async fn get_locations_handler(
         let query_result = sqlx::query_as!(
             LocationList,
             "SELECT 
-                location_id, 
+                id, 
                 slug,
                 location_name,
                 location_address_one,
@@ -156,6 +157,7 @@ pub async fn get_locations_handler(
             lookup_url: "/location/list?page=".to_string(),
             page: opts.page.unwrap_or(1),
             entities: locations,
+            subscriptions: test_subs(),
         };
 
         dbg!(&locations_table_data);
@@ -168,7 +170,7 @@ pub async fn get_locations_handler(
         let query_result = sqlx::query_as!(
             LocationList,
             "SELECT 
-                location_id, 
+                id, 
                 slug,
                 location_name,
                 location_address_one,
@@ -209,6 +211,7 @@ pub async fn get_locations_handler(
             lookup_url: "/location/list?page=".to_string(),
             page: opts.page.unwrap_or(1),
             entities: locations,
+            subscriptions: test_subs(),
         };
 
         dbg!(&locations_table_data);
@@ -230,7 +233,7 @@ async fn location_form(
 
     let account_result = sqlx::query_as!(
         SelectOption,
-        "SELECT account_id AS value, account_name AS key 
+        "SELECT id AS value, account_name AS key 
         FROM accounts 
         ORDER by account_name"
     )
@@ -383,9 +386,9 @@ async fn create_location(
                         .await
                         {
                             Ok(loc) => {
-                                dbg!(loc.location_id);
+                                dbg!(loc.id);
                                 let user_alert = UserAlert {
-                                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                                    msg: format!("Location added successfully: ID #{:?}", loc.id),
                                     alert_class: "alert_success".to_owned(),
                                 };
                                 let template_data = json!({
@@ -548,9 +551,9 @@ async fn patch_location(
         .await
         {
             Ok(loc) => {
-                dbg!(loc.location_id);
+                dbg!(loc.id);
                 let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", loc.location_id),
+                    msg: format!("Location added successfully: ID #{:?}", loc.id),
                     alert_class: "alert_success".to_owned(),
                 };
                 let full_page_data = FullPageTemplateData {

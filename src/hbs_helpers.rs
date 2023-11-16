@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use handlebars::handlebars_helper;
 
-use crate::{models::model_location::LocationList, Entity};
+use crate::{models::model_location::LocationList, Entity, config::UserSubscriptions};
 handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));
 handlebars_helper!(str_eq: |s_1: String, s_2: String| {
     if s_1 == s_2 {
@@ -60,11 +60,20 @@ handlebars_helper!(subscribe_rte: |slug: String, entity_type_id: i32| {
     String::from("/user/subscribe/") + &entity_type_id.to_string().as_str() + "/" + &slug
 });
 
-handlebars_helper!(subscribe_icon: |slug: String, entity_type_id: i32| {
-    if true {
-        "🔔"
-    } else {
+handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubscriptions| {
+    let subscribed = 
+        match entity_type_id {
+            1 | 2 | 3 => subs.user_subs.contains(&id),
+            4 => subs.consultant_subs.contains(&id),
+            5 => subs.location_subs.contains(&id),
+            6 => subs.consult_subs.contains(&id),
+            7 => subs.client_subs.contains(&id),
+            _ => subs.user_subs.contains(&id),
+        };
+    if subscribed {
         "🔕"
+    } else {
+        "🔔"
     }
 });
 

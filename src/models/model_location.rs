@@ -18,7 +18,7 @@ pub struct LocationListResponse {
 
 #[derive(Debug, Validate, Serialize, Clone, FromRow, Deserialize)]
 pub struct LocationList {
-    pub location_id: i32,
+    pub id: i32,
     // FIXME Make Uuid
     pub slug: String,
     pub location_name: String,
@@ -107,5 +107,5 @@ pub struct LocationPatchRequest {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct LocationPostResponse {
-    pub location_id: i32,
+    pub id: i32,
 }

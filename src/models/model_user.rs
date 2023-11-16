@@ -16,7 +16,7 @@ use crate::config::SelectOption;
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 // #[serde(rename_all = "camelCase")]
 pub struct UserModel {
-    pub user_id: i32,
+    pub id: i32,
     pub username: String,
     // pub first_name: Option<String>,
     // pub last_name: Option<String>,
@@ -29,7 +29,7 @@ pub struct UserModel {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeQuery {
-    pub user_id: i32,
+    pub id: i32,
     pub user_type_id: i32,
     pub username: String,
     pub avatar_path: Option<String>,
@@ -56,7 +56,7 @@ pub struct UserHomeQuery {
 #[derive(Serialize, FromRow, Deserialize, Debug, Default, Clone)]
 // #[serde(rename_all = "camelCase")]
 pub struct UserHomeModel {
-    pub user_id: i32,
+    pub id: i32,
     pub user_type_id: i32,
     pub username: String,
     pub avatar_path: Option<String>,
