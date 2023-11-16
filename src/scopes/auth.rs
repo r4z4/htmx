@@ -42,7 +42,7 @@ pub struct CryptoService {
 }
 #[derive(FromRow, Serialize, Deserialize)]
 pub struct UserNoPassword {
-    user_id: i32,
+    id: i32,
     username: String,
 }
 
@@ -160,9 +160,9 @@ async fn register_user(
         .unwrap();
 
     match sqlx::query_as::<_, UserNoPassword>(
-        "INSERT INTO users (user_id, username, email, password)
+        "INSERT INTO users (id, username, email, password)
         VALUES (DEFAULT, $1, $2, $3)
-        RETURNING user_id, username",
+        RETURNING id, username",
     )
     .bind(user.username)
     .bind(user.email)
@@ -547,7 +547,7 @@ async fn reset_password(
     match sqlx::query_as::<_, UserNoPassword>(
         "UPDATE users SET password = $1, updated_at = now()
         WHERE username = $3
-        RETURNING user_id, username",
+        RETURNING id, username",
     )
     .bind(hash)
     .bind(user.username)

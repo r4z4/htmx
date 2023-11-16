@@ -67,8 +67,8 @@ async fn settings(
         match sqlx::query_as::<_, UserSettingsQuery>(
             "SELECT users.user_id, username, email, users.created_at, users.updated_at AS user_updated, user_settings.updated_at AS settings_updated
             FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
-            LEFT JOIN user_settings on user_settings.user_id = users.user_id
+            LEFT JOIN user_sessions on user_sessions.user_id = users.id 
+            LEFT JOIN user_settings on user_settings.user_id = users.id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -331,7 +331,7 @@ async fn edit_settings(
             "UPDATE user_settings SET theme_id = $1 WHERE user_id = $2 RETURNING (
                 SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
                 FROM users
-                LEFT JOIN user_settings on user_settings.user_id = users.user_id
+                LEFT JOIN user_settings on user_settings.user_id = users.id
                 WHERE user_id = $2
             )",
         )
@@ -396,7 +396,7 @@ async fn edit_settings(
 //             TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt,
 //             TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
 //             FROM users
-//             LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+//             LEFT JOIN user_sessions on user_sessions.user_id = users.id
 //             WHERE session_id = $1
 //             AND expires > NOW()",
 //         )
@@ -439,8 +439,8 @@ async fn home(
                 -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
                 -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt
             FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
-            LEFT JOIN user_settings on user_settings.user_id = users.user_id
+            LEFT JOIN user_sessions on user_sessions.user_id = users.id
+            LEFT JOIN user_settings on user_settings.user_id = users.id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -502,7 +502,7 @@ async fn home(
 //     match sqlx::query_as::<_, ValidatedUser>(
 //         "SELECT username, email, created_at, updated_at
 //         FROM users
-//         LEFT JOIN user_sessions on user_sessions.user_id = users.user_id
+//         LEFT JOIN user_sessions on user_sessions.user_id = users.id
 //         WHERE session_id = $1
 //         AND expires > NOW()",
 //     )

@@ -506,9 +506,9 @@ pub async fn get_consults_handler(
     //         consult_end,
     //         notes
     //     FROM consults
-    //     INNER JOIN clients ON consults.client_id = clients.client_id
-    //     INNER JOIN locations ON consults.location_id = locations.location_id
-    //     INNER JOIN consultants ON consults.consultant_id = consultants.consultant_id
+    //     INNER JOIN clients ON consults.client_id = clients.id
+    //     INNER JOIN locations ON consults.location_id = locations.id
+    //     INNER JOIN consultants ON consults.consultant_id = consultants.id
     //     ORDER BY consults.updated_at DESC, consults.created_at DESC
     //     LIMIT $1 OFFSET $2",
     //     limit as i32,

@@ -63,8 +63,8 @@ async fn admin_home(
         match sqlx::query_as::<_, ValidatedUser>(
             "SELECT username, email, user_type_id, user_settings.list_view
             FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.user_id 
-            LEFT JOIN user_settings on user_settings.user_id = users.user_id
+            LEFT JOIN user_sessions on user_sessions.user_id = users.id 
+            LEFT JOIN user_settings on user_settings.user_id = users.id
             WHERE session_id = $1
             AND expires > NOW()",
         )
@@ -523,7 +523,7 @@ async fn edit_subadmin(
         let user_slug = path.into_inner();
         match sqlx::query_as::<_, AdminUserPostResponse>(
             "UPDATE user_details 
-                INNER JOIN users ON users.user_id = user_details.user_id
+                INNER JOIN users ON users.id = user_details.user_id
                 SET address_one = $1, 
                     address_two = $2, 
                     city = $3, 
