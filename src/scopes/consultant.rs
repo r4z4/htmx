@@ -64,8 +64,8 @@ async fn sort_query(
         consultant_f_name,
         consultant_l_name
     FROM consultants
-    INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-    INNER JOIN territories ON territories.territory_id = consultants.territory_id",
+    INNER JOIN specialties ON specialties.id = consultants.specialty_id
+    INNER JOIN territories ON territories.id = consultants.territory_id",
     );
 
     if let Some(search) = &opts.search {
@@ -191,8 +191,8 @@ pub async fn get_consultants_handler(
     //             consultant_f_name,
     //             consultant_l_name
     //         FROM consultants
-    //         INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-    //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
+    //         INNER JOIN specialties ON specialties.id = consultants.specialty_id
+    //         INNER JOIN territories ON territories.id = consultants.territory_id
     //         WHERE consultant_f_name LIKE $3
     //         OR consultant_l_name LIKE $3
     //         ORDER by consultant_id
@@ -239,8 +239,8 @@ pub async fn get_consultants_handler(
     //             consultant_f_name,
     //             consultant_l_name
     //         FROM consultants
-    //         INNER JOIN specialties ON specialties.specialty_id = consultants.specialty_id
-    //         INNER JOIN territories ON territories.territory_id = consultants.territory_id
+    //         INNER JOIN specialties ON specialties.id = consultants.specialty_id
+    //         INNER JOIN territories ON territories.id = consultants.territory_id
     //         ORDER by consultant_id
     //         LIMIT $1 OFFSET $2",
     //         limit as i32,

@@ -760,6 +760,9 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Using GlitchTip. Works with the Rust Sentry SDK
+    let _guard = sentry::init("https://ec778decf4e94595b5a48520185298c3@app.glitchtip.com/5073");
+
     let mut handlebars = Handlebars::new();
 
     handlebars
