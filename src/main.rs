@@ -19,6 +19,7 @@ use hbs_helpers::{
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
+use redis::{redis_connect, redis_test_data};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -35,6 +36,7 @@ use scopes::{
 mod config;
 mod hbs_helpers;
 mod models;
+mod redis;
 mod scopes;
 #[cfg(test)]
 mod test_common;
@@ -759,6 +761,9 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }
     };
+
+    let mut con = redis_connect();
+    redis_test_data(con);
 
     // Using GlitchTip. Works with the Rust Sentry SDK
     let _guard = sentry::init("https://ec778decf4e94595b5a48520185298c3@app.glitchtip.com/5073");
