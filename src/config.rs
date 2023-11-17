@@ -1,3 +1,5 @@
+use actix_session::Session;
+use actix_web::HttpResponse;
 use actix_web::{web::Data, HttpRequest};
 use chrono::{DateTime, Duration, Utc};
 use futures_util::{stream, Stream, StreamExt};
@@ -746,31 +748,79 @@ pub fn get_validation_response(is_valid: Result<(), ValidationErrors>) -> FormEr
     validation_response
 }
 
+pub fn validate_session(session: &Session) -> Result<u8, HttpResponse> {
+    let user_id: Option<u8> = session.get("user_id").unwrap_or_else(|err| { println!("Error getting user_id from session: {}", err); None });
+
+    dbg!(session.entries()); //This will be empty :(
+
+    dbg!(&user_id);
+    match user_id {
+        Some(id) => {
+            // keep the user's session alive
+            session.renew();
+            Ok(id)
+        }
+        None => Err(HttpResponse::Unauthorized().json("Unauthorized")),
+    }
+}
+
+fn is_expired(expires: i32) -> bool {
+    true
+}
+
 pub async fn validate_and_get_user(
     cookie: &actix_web::http::header::HeaderValue,
     state: &Data<AppState>,
+    redis_session: &Session,
 ) -> Result<Option<ValidatedUser>, crate::ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
-    match sqlx::query_as::<_, ValidatedUser>(
-        "SELECT username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
-        FROM users
-        LEFT JOIN user_sessions ON user_sessions.user_id = users.id
-        LEFT JOIN user_settings ON user_settings.user_id = users.id
-        WHERE session_id = $1
-        AND expires > NOW()",
-    )
-    .bind(cookie.to_string())
-    .fetch_optional(&state.db)
-    .await
-    {
-        Ok(user_option) => Ok(user_option),
-        Err(err) => {
-            dbg!(&err);
+    let subs = redis_session.get::<UserSubscriptions>("subs").unwrap().unwrap_or(test_subs());
+    let username = redis_session.get::<String>("username").unwrap().unwrap_or("Hey".to_string());
+    let email = redis_session.get::<String>("email").unwrap().unwrap_or("Hey".to_string());
+    let list_view = redis_session.get::<String>("list_view").unwrap().unwrap_or("Hey".to_string());
+    let user_id = redis_session.get::<i32>("user_id").unwrap().unwrap_or(8);
+    let expires = redis_session.get::<i32>("expires").unwrap().unwrap_or(4);
+    match is_expired(expires) {
+        false => {
+            let user = ValidatedUser {
+                username: username,
+                email: email,
+                user_type_id: 2,
+                list_view: list_view,
+                user_subs: subs.user_subs,
+                client_subs: subs.client_subs,
+                consult_subs: subs.consult_subs,
+                location_subs: subs.location_subs,
+                consultant_subs: subs.consultant_subs,
+            };
+            Ok(Some(user))
+        },
+        true => {
             Err(crate::ValError {
-                error: format!("You must not be verified: {}", err),
+                error: format!("You must not be verified"),
             })
         }
     }
+    // match sqlx::query_as::<_, ValidatedUser>(
+    //     "SELECT username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
+    //     FROM users
+    //     LEFT JOIN user_sessions ON user_sessions.user_id = users.id
+    //     LEFT JOIN user_settings ON user_settings.user_id = users.id
+    //     WHERE session_id = $1
+    //     AND expires > NOW()",
+    // )
+    // .bind(cookie.to_string())
+    // .fetch_optional(&state.db)
+    // .await
+    // {
+    //     Ok(user_option) => Ok(user_option),
+    //     Err(err) => {
+    //         dbg!(&err);
+    //         Err(crate::ValError {
+    //             error: format!("You must not be verified: {}", err),
+    //         })
+    //     }
+    // }
 }
 
 pub struct SendEmailInput {

@@ -1,3 +1,4 @@
+use actix_session::Session;
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
 use serde_json::json;
 
@@ -332,6 +333,7 @@ async fn create_location(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    redis_session: Session,
 ) -> impl Responder {
     dbg!(&body);
     let headers = req.headers();
@@ -340,7 +342,7 @@ async fn create_location(
     // }
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state).await {
+        match validate_and_get_user(cookie, &state, &redis_session).await {
             Ok(user_option) => {
                 dbg!(&user_option);
 
@@ -426,7 +428,7 @@ async fn create_location(
                     }
                 } else {
                     let index_data = IndexData {
-                        message: "Your session seems to have expired. Please login again."
+                        message: "Your session seems to have expired (loc). Please login again."
                             .to_owned(),
                     };
                     let body = hb.render("index", &index_data).unwrap();

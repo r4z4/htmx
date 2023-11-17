@@ -9,6 +9,7 @@ use crate::{
     scopes::location::IndexData,
     AppState, HeaderValueExt, ValidatedUser,
 };
+use actix_session::Session;
 use actix_web::{
     get, put,
     web::{self},
@@ -108,7 +109,7 @@ async fn settings(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let message = "Your session seems to have expired (settings). Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -240,12 +241,13 @@ async fn subscribe(
     req: HttpRequest,
     state: web::Data<AppState>,
     path: web::Path<(i32, String)>,
+    redis_session: Session,
 ) -> impl Responder {
     let (entity_type_id, slug) = path.into_inner();
     let headers = req.headers();
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state).await {
+        match validate_and_get_user(cookie, &state, &redis_session).await {
             Ok(user_option) => {
                 dbg!(&user_option);
                 let user = user_option.clone().unwrap();
@@ -325,6 +327,7 @@ async fn edit_settings(
     body: web::Form<UserSettingsPost>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    redis_session: Session,
 ) -> impl Responder {
     if validate_user_settings_input(&body) {
         match sqlx::query_as::<_, UserHomeQuery>(
@@ -490,7 +493,7 @@ async fn home(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let message = "Your session seems to have expired (home). Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }

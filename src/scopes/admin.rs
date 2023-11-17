@@ -91,7 +91,7 @@ async fn admin_home(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let message = "Your session seems to have expired (admin). Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
