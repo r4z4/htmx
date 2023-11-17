@@ -1,13 +1,12 @@
 use std::env;
 
 use actix_files::Files;
-use actix_session::{SessionMiddleware, storage::RedisSessionStore, config::PersistentSession, Session};
 use actix_web::{
     get,
     http::header::HeaderValue,
     post,
     web::{self, Data},
-    App, HttpRequest, HttpResponse, HttpServer, Responder, cookie::time,
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use config::{is_dirty, read_yaml, Post, UserFeedData, UserPost};
 use dotenv::dotenv;
@@ -26,9 +25,9 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::config::{
-    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, SelectOption,
+    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse,
 };
-use actix_web::cookie::Key;
+
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
     consultant::consultant_scope, location::location_scope, user::user_scope,
@@ -94,7 +93,6 @@ async fn index(
     state: Data<AppState>,
     req: HttpRequest,
     config: web::Data<config::Config>,
-    redis_session: Session,
 ) -> impl Responder {
     let headers = req.headers();
     // for (pos, e) in headers.iter().enumerate() {
@@ -102,7 +100,7 @@ async fn index(
     // }
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let user = ValidatedUser {
@@ -231,7 +229,6 @@ async fn about_us(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: Data<AppState>,
-    redis_session: Session,
 ) -> impl Responder {
     let headers = req.headers();
     let data = json!({
@@ -242,7 +239,7 @@ async fn about_us(
     });
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let user = ValidatedUser {
@@ -311,10 +308,9 @@ async fn crud_api(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: Data<AppState>,
-    redis_session: Session,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
                     let template_data = json! {{
@@ -338,7 +334,7 @@ async fn crud_api(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired (crud). Please login again.".to_owned();
+        let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -349,10 +345,9 @@ async fn list_api(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: Data<AppState>,
-    redis_session: Session,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
                     let template_data = json! {{
@@ -376,7 +371,7 @@ async fn list_api(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired (list). Please login again.".to_owned();
+        let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -394,7 +389,6 @@ async fn homepage(
     hb: web::Data<Handlebars<'_>>,
     state: Data<AppState>,
     req: HttpRequest,
-    redis_session: Session,
 ) -> impl Responder {
     dbg!(&req);
     // FIXME unwrap()
@@ -402,9 +396,8 @@ async fn homepage(
     dbg!(&headers);
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(&cookie);
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
-                dbg!(&user_option);
                 if let Some(user) = user_option {
                     let feed_data = user_feed(
                         &user.user_subs,
@@ -424,7 +417,7 @@ async fn homepage(
                     HttpResponse::Ok().body(body)
                 } else {
                     let template_data = HomepageTemplate {
-                        err: Some("Seems your session has expired (8). Please login again".to_owned()),
+                        err: Some("Seems your session has expired. Please login again".to_owned()),
                         user: None,
                         feed_data: UserFeedData {
                             posts: None,
@@ -479,7 +472,6 @@ async fn detail(
     config: web::Data<config::Config>,
     state: Data<AppState>,
     req: HttpRequest,
-    redis_session: Session,
 ) -> impl Responder {
     println!("Articles");
     let headers = req.headers();
@@ -493,7 +485,7 @@ async fn detail(
     };
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state, &redis_session).await {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let user = ValidatedUser {
@@ -798,19 +790,6 @@ async fn main() -> std::io::Result<()> {
 
     handlebars.set_dev_mode(true);
 
-    fn get_secret_key() -> Key {
-        Key::generate()
-    }
-
-    let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(env!("REDIS_HOSTNAME").to_owned());
-    let redis_password = env::var("REDIS_PASSWORD").unwrap_or(env!("REDIS_PASSWORD").to_owned());
-    let redis_conn_url = format!("redis://:{}@{}:6379", redis_password, redis_host_name);
-
-    // let secret_key = env::var("REDIS_SECRET").unwrap_or("NoSecret".to_string());
-    let secret_key = get_secret_key();
-    // let redis_connection_string = "redis://127.0.0.1:6379";
-    let store = RedisSessionStore::new(redis_conn_url).await.unwrap();
-
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
@@ -818,17 +797,6 @@ async fn main() -> std::io::Result<()> {
                 secret: secret.to_string(),
                 token: "".to_string().clone(),
             }))
-            .wrap(
-                SessionMiddleware::builder(
-                    store.clone(),
-                    secret_key.clone()
-                )
-                .session_lifecycle(
-                    PersistentSession::default()
-                        .session_ttl(time::Duration::days(5))
-                )
-                .build(),
-            )
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(handlebars.clone()))
             .service(auth_scope())

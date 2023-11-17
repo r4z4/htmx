@@ -11,9 +11,8 @@ use sqlx::FromRow;
 use std::{ops::Deref, sync::Arc};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
-use actix_session::Session;
 
-use crate::{config::{ValidationResponse, UserSubscriptions}, AppState, HeaderValueExt};
+use crate::{config::ValidationResponse, AppState, HeaderValueExt};
 use crate::{
     config::{
         get_ip, send_email, user_feed, SendEmailInput, RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME,
@@ -188,7 +187,6 @@ async fn basic_auth(
     state: Data<AppState>,
     body: web::Form<LoginRequest>,
     hb: web::Data<Handlebars<'_>>,
-    redis_session: Session,
 ) -> impl Responder {
     // let jwt_secret: Hmac<Sha256> = Hmac::new_from_slice(
     //     std::env::var("JWT_SECRET")
@@ -221,55 +219,21 @@ async fn basic_auth(
                 .unwrap();
 
             if is_valid {
-
                 let cookie_token = Uuid::new_v4().to_string();
                 let cookie = format!("{}; Path=/; HttpOnly; Max-Age=1209600", cookie_token);
                 // FIXME: Sync these expires
                 let expires = Utc::now() + Duration::days(137);
-
-                dbg!(expires);
-
-                let _ = redis_session
-                    .insert("session_id", &cookie_token)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("cookie", &cookie)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("expires", &expires)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("user_id", &user.id)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("username", &user.username)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("list_view", &user.list_view)
-                    .map_err(|e| println!("{}", e));
-
-                let _ = redis_session
-                    .insert("email", &user.email)
-                    .map_err(|e| println!("{}", e));
-
-                let subs = UserSubscriptions {
-                    user_subs: user.user_subs.clone(),
-                    client_subs: user.client_subs.clone(),
-                    consult_subs: user.consult_subs.clone(),
-                    location_subs: user.location_subs.clone(),
-                    consultant_subs: user.consultant_subs.clone(),
-                };
-
-                let _ = redis_session
-                    .insert("subs", &subs)
-                    .map_err(|e| println!("{}", e));
-
-                match redis_session.insert("subs", &subs) {
+                match sqlx::query_as::<_, SessionUpdate>(
+                    "INSERT INTO user_sessions (user_session_id, session_id, user_id, expires)
+                    VALUES (DEFAULT, $1, $2, $3)
+                    RETURNING session_id",
+                )
+                .bind(cookie_token)
+                .bind(user.id)
+                .bind(expires)
+                .fetch_one(&state.db)
+                .await
+                {
                     Ok(session) => {
                         let user = ValidatedUser {
                             username: user.username,
@@ -303,51 +267,6 @@ async fn basic_auth(
                         return HttpResponse::Ok().body(body);
                     }
                 }
-
-                // match sqlx::query_as::<_, SessionUpdate>(
-                //     "INSERT INTO user_sessions (user_session_id, session_id, user_id, expires)
-                //     VALUES (DEFAULT, $1, $2, $3)
-                //     RETURNING session_id",
-                // )
-                // .bind(cookie_token)
-                // .bind(user.id)
-                // .bind(expires)
-                // .fetch_one(&state.db)
-                // .await
-                // {
-                //     Ok(session) => {
-                //         let user = ValidatedUser {
-                //             username: user.username,
-                //             email: user.email,
-                //             user_type_id: user.user_type_id,
-                //             list_view: user.list_view,
-                //             user_subs: user.user_subs,
-                //             client_subs: user.client_subs,
-                //             consult_subs: user.consult_subs,
-                //             location_subs: user.location_subs,
-                //             consultant_subs: user.consultant_subs,
-                //         };
-                //         let feed_data = user_feed(&user.user_subs, &user.consultant_subs, &user.client_subs, &user.location_subs, &state.db).await;
-                //         let template_data = HomepageTemplate {
-                //             err: None,
-                //             user: Some(user),
-                //             feed_data: feed_data,
-                //         };
-                //         let body = hb.render("homepage", &template_data).unwrap();
-
-                //         return HttpResponse::Ok()
-                //             .header("HX-Redirect", "/homepage")
-                //             .header("Set-Cookie", cookie)
-                //             .body(body);
-                //     }
-                //     Err(err) => {
-                //         dbg!(&err);
-                //         let error_msg = "Invalid Login Request".to_owned() + format!("{}", err).as_str();
-                //         let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
-                //         let body = hb.render("validation", &validation_response).unwrap();
-                //         return HttpResponse::Ok().body(body);
-                //     }
-                // }
             } else {
                 let error_msg = "Invalid Login Request";
                 let validation_response = ValidationResponse::from((error_msg, "validation_error"));
@@ -399,43 +318,34 @@ async fn logout(
     state: Data<AppState>,
     req: HttpRequest,
     hb: web::Data<Handlebars<'_>>,
-    redis_session: Session,
 ) -> impl Responder {
     let headers = req.headers();
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         // Do I need to alter DB at all?
-        // match sqlx::query_as::<_, LogoutResult>(
-        //     "UPDATE user_sessions SET expires = NOW(), updated_at = NOW(), logout = TRUE WHERE session_id = $1 RETURNING expires",
-        // )
-        // .bind(cookie.to_string())
-        // .fetch_one(&state.db)
-        // .await
-        // {
-        //     Ok(expires) => {
-        //         dbg!(&expires);
-        //         let body = hb.render("index", &expires).unwrap();
-        //         return HttpResponse::Ok()
-        //         .header("HX-Redirect", "/")
-        //         .header("Set-Cookie", "")
-        //         .body(body);
-        //     }
-        //     Err(err) => {
-        //         dbg!(&err);
-        //         // let static_err = "Error occurred while logging in (DB).";
-        //         let body = hb.render("index", &format!("{:?}", err)).unwrap();
-        //         // Notify someone
-        //         return HttpResponse::Ok().body(body);
-        //         // HttpResponse::InternalServerError().json(format!("{:?}", err))
-        //     }
-        // }
-        redis_session.purge();
-        let expires = "now";
-        let body = hb.render("index", &expires).unwrap();
-        return HttpResponse::Ok()
-        .header("HX-Redirect", "/")
-        .header("Set-Cookie", "")
-        .body(body);
-
+        match sqlx::query_as::<_, LogoutResult>(
+            "UPDATE user_sessions SET expires = NOW(), updated_at = NOW(), logout = TRUE WHERE session_id = $1 RETURNING expires",
+        )
+        .bind(cookie.to_string())
+        .fetch_one(&state.db)
+        .await
+        {
+            Ok(expires) => {
+                dbg!(&expires);
+                let body = hb.render("index", &expires).unwrap();
+                return HttpResponse::Ok()
+                .header("HX-Redirect", "/")
+                .header("Set-Cookie", "")
+                .body(body);
+            }
+            Err(err) => {
+                dbg!(&err);
+                // let static_err = "Error occurred while logging in (DB).";
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                // Notify someone
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
     } else {
         let error_msg = "No cookie present at logout";
         let validation_response = ValidationResponse::from((error_msg, "validation_error"));
