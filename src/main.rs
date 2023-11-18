@@ -26,7 +26,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::config::{
-    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse,
+    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, subs_from_user,
 };
 
 use scopes::{
@@ -54,6 +54,7 @@ pub struct AppState {
     secret: String,
     pub token: String,
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TodoRequest {
     pub todo: String,
@@ -105,22 +106,19 @@ async fn index(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let user = ValidatedUser {
-                        username: user.username,
-                        email: user.email,
-                        user_type_id: user.user_type_id,
-                        list_view: user.list_view,
-                        user_subs: user.user_subs,
-                        client_subs: user.client_subs,
-                        consult_subs: user.consult_subs,
-                        location_subs: user.location_subs,
-                        consultant_subs: user.consultant_subs,
-                    };
+                    // let user = ValidatedUser {
+                    //     username: user.username,
+                    //     email: user.email,
+                    //     user_type_id: user.user_type_id,
+                    //     list_view: user.list_view,
+                    //     user_subs: user.user_subs,
+                    //     client_subs: user.client_subs,
+                    //     consult_subs: user.consult_subs,
+                    //     location_subs: user.location_subs,
+                    //     consultant_subs: user.consultant_subs,
+                    // };
                     let feed_data = user_feed(
-                        &user.user_subs,
-                        &user.consultant_subs,
-                        &user.client_subs,
-                        &user.location_subs,
+                        &user,
                         &state.db,
                     )
                     .await;
@@ -135,7 +133,7 @@ async fn index(
                         .body(body);
                 } else {
                     let message =
-                        "Your session seems to have expired. Please login again.".to_owned();
+                        "Your session seems to have expired. Please login again (1).".to_owned();
                     let body = hb.render("index", &message).unwrap();
 
                     HttpResponse::Ok().body(body)
@@ -283,6 +281,7 @@ async fn about_us(
                     feed_data: UserFeedData {
                         posts: None,
                         consults: None,
+                        subs: None,
                     },
                 };
                 // let data = HbError {
@@ -336,7 +335,7 @@ async fn crud_api(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let message = "Your session seems to have expired. Please login again (2).".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -373,7 +372,7 @@ async fn list_api(
         }
         // FIXME: Is this else right? Redirect?
     } else {
-        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let message = "Your session seems to have expired. Please login again (3).".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok().body(body)
     }
@@ -402,10 +401,7 @@ async fn homepage(
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let feed_data = user_feed(
-                        &user.user_subs,
-                        &user.consultant_subs,
-                        &user.client_subs,
-                        &user.location_subs,
+                        &user,
                         &state.db,
                     )
                     .await;
@@ -419,11 +415,12 @@ async fn homepage(
                     HttpResponse::Ok().body(body)
                 } else {
                     let template_data = HomepageTemplate {
-                        err: Some("Seems your session has expired. Please login again".to_owned()),
+                        err: Some("Seems your session has expired. Please login again (4)".to_owned()),
                         user: None,
                         feed_data: UserFeedData {
                             posts: None,
                             consults: None,
+                            subs: None,
                         },
                     };
                     let body = hb.render("homepage", &template_data).unwrap();
@@ -442,6 +439,7 @@ async fn homepage(
                     feed_data: UserFeedData {
                         posts: None,
                         consults: None,
+                        subs: None,
                     },
                 };
                 let body = hb.render("homepage", &template_data).unwrap();
@@ -455,6 +453,7 @@ async fn homepage(
             feed_data: UserFeedData {
                 posts: None,
                 consults: None,
+                subs: None,
             },
         };
         let body = hb.render("homepage", &template_data).unwrap();
@@ -529,6 +528,7 @@ async fn detail(
                     feed_data: UserFeedData {
                         posts: None,
                         consults: None,
+                        subs: None,
                     },
                 };
                 let body = hb.render("homepage", &template_data).unwrap();
@@ -869,6 +869,7 @@ mod tests {
             feed_data: UserFeedData {
                 posts: None,
                 consults: None,
+                subs: None,
             },
         };
         let mut hb = Handlebars::new();

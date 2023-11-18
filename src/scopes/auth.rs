@@ -246,7 +246,7 @@ async fn basic_auth(
                             location_subs: user.location_subs,
                             consultant_subs: user.consultant_subs,
                         };
-                        let feed_data = user_feed(&user.user_subs, &user.consultant_subs, &user.client_subs, &user.location_subs, &state.db).await;
+                        let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,
                             user: Some(user),

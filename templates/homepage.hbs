@@ -30,12 +30,7 @@
             <h6>No Recent Posts</h6>
         {{/if}}
         {{#if feed_data.consults}}
-            {{#each feed_data.consults}}
-                <div id="user_post_div">
-                    <p>{{this.notes}}</p>
-                    <p>Location ID: {{this.location_id}}</p>
-                </div>
-            {{/each}}
+            {{> consult-feed-item consults=feed_data.consults subs=feed_data.subs}}
         {{else}}
             <h6>No Recent Activity</h6>
         {{/if}}

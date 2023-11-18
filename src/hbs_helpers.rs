@@ -61,6 +61,8 @@ handlebars_helper!(subscribe_rte: |slug: String, entity_type_id: i32| {
 });
 
 handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubscriptions| {
+    dbg!(&id);
+    dbg!(&subs.client_subs);
     let subscribed = 
         match entity_type_id {
             1 | 2 | 3 => subs.user_subs.contains(&id),

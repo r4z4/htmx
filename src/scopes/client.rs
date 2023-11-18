@@ -1,14 +1,14 @@
 use actix_web::{
     get, patch, post,
     web::{self, Data, Json},
-    HttpResponse, Responder, Scope,
+    HttpResponse, Responder, Scope, HttpRequest,
 };
 
 use crate::{
     config::{
         self, get_n_pages, get_validation_response, FilterOptions, FormErrorResponse,
         ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES, test_subs,
+        ACCEPTED_SECONDARIES, test_subs, subs_from_user, validate_and_get_user,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -34,65 +34,81 @@ pub fn client_scope() -> Scope {
 pub async fn get_clients_handler(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
-    data: web::Data<AppState>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
 ) -> impl Responder {
-    println!("get_clients_handler firing");
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await 
+        {
+            Ok(user_opt) => {
+                if let Some(user) = user_opt {
+                    println!("get_clients_handler firing");
+                    let limit = opts.limit.unwrap_or(10);
+                    let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    let query_result = sqlx::query_as!(
-        ClientList,
-        "SELECT 
-            clients.id, 
-            slug,
-            specialty_name,
-            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
-            client_email,
-            client_address_one AS address,
-            client_city,
-            client_zip,
-            client_primary_phone AS phone
-        FROM clients
-        INNER JOIN specialties ON specialties.id = clients.specialty_id
-        ORDER by id
-        LIMIT $1 OFFSET $2",
-        limit as i32,
-        offset as i32
-    )
-    .fetch_all(&data.db)
-    .await;
+                    let query_result = sqlx::query_as!(
+                        ClientList,
+                        "SELECT 
+                            clients.id, 
+                            slug,
+                            specialty_name,
+                            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
+                            client_email,
+                            client_address_one AS address,
+                            client_city,
+                            client_zip,
+                            client_primary_phone AS phone
+                        FROM clients
+                        INNER JOIN specialties ON specialties.id = clients.specialty_id
+                        ORDER by id
+                        LIMIT $1 OFFSET $2",
+                        limit as i32,
+                        offset as i32
+                    )
+                    .fetch_all(&state.db)
+                    .await;
 
-    dbg!(&query_result);
+                    dbg!(&query_result);
 
-    if query_result.is_err() {
-        let error_msg = "Error occurred while fetching all client records";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+                    if query_result.is_err() {
+                        let error_msg = "Error occurred while fetching all client records";
+                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let body = hb.render("validation", &validation_response).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+
+                    let clients = query_result.unwrap();
+
+                    let clients_table_data = ResponsiveTableData {
+                        entity_type_id: 7,
+                        vec_len: clients.len(),
+                        lookup_url: "/client/list?page=".to_string(),
+                        page: opts.page.unwrap_or(1),
+                        entities: clients,
+                        subscriptions: subs_from_user(&user),
+                    };
+
+                    dbg!(&clients_table_data);
+
+                    let body = hb.render("responsive-table", &clients_table_data).unwrap();
+                    return HttpResponse::Ok().body(body);
+                } else {
+                    let message = "User Option is a None".to_owned();
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body)
+                };
+            },
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
+    } else {
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
-
-    let clients = query_result.unwrap();
-
-    //     let consultants_response = ConsultantListResponse {
-    //         consultants: consultants,
-    //         name: "Hello".to_owned()
-    // ,    };
-
-    // let table_headers = ["client_id".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-    // let load_more_url_base = "/client/list?page=".to_owned();
-    let clients_table_data = ResponsiveTableData {
-        entity_type_id: 7,
-        vec_len: clients.len(),
-        lookup_url: "/client/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
-        entities: clients,
-        subscriptions: test_subs(),
-    };
-
-    dbg!(&clients_table_data);
-
-    let body = hb.render("responsive-table", &clients_table_data).unwrap();
-    return HttpResponse::Ok().body(body);
 }
 
 #[get("/form")]

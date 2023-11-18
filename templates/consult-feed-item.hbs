@@ -1,0 +1,13 @@
+<div id="consult_feed">
+    {{#each consults}}
+        {{#if (int_in this.client_id ../subs.client_subs)}}
+            <p class="client_sub">Id: {{this.client_id}} - {{this.notes}}. Attachments: {{this.attachment_count}}. Updated: {{this.updated_at_fmt}}</p>
+        {{/if}}
+        {{#if (int_in this.location_id ../subs.location_subs)}}
+            <p class="location_sub">Location Id: {{this.location_id}} - {{this.notes}}. Attachments: {{this.attachment_count}}. Updated: {{this.updated_at_fmt}}</p>
+        {{/if}}
+        {{#if (int_in this.consultant_id ../subs.consultant_subs)}}
+            <p class="consultant_sub">Consultant Id: {{this.consultant_id}} - {{this.notes}}. Attachments: {{this.attachment_count}}. Updated: {{this.updated_at_fmt}}</p>
+        {{/if}}
+    {{/each}}
+</div>

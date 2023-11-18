@@ -5,13 +5,13 @@ use crate::{
     config::{
         self, get_validation_response, validate_and_get_user, FilterOptions, FormErrorResponse,
         ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES, test_subs,
+        ACCEPTED_SECONDARIES, test_subs, subs_from_user,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, ValidatedUser,
+    AppState, ValidatedUser, HeaderValueExt,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -97,131 +97,144 @@ async fn search_location(
 pub async fn get_locations_handler(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
-    data: web::Data<AppState>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
 ) -> impl Responder {
-    println!("get_locations_handler firing");
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
-
-    // let search_sql =
-    // if opts.search.is_some() {
-    //     let search = opts.search.as_ref().unwrap();
-    //     format!(
-    //         r#"
-    //         WHERE location_name LIKE %{}%
-    //         "#,
-    //         search,
-    //     )
-    // } else {
-    //     "".to_string()
-    // };
-
-    if let Some(like) = &opts.search {
-        let search_sql = format!("%{}%", like);
-        let query_result = sqlx::query_as!(
-            LocationList,
-            "SELECT 
-                id, 
-                slug,
-                location_name,
-                location_address_one,
-                location_address_two,
-                location_city,
-                location_zip,
-                location_phone
-            FROM locations
-            WHERE location_name LIKE $3
-            ORDER by location_name
-            LIMIT $1 OFFSET $2",
-            limit as i32,
-            offset as i32,
-            search_sql
-        )
-        .fetch_all(&data.db)
-        .await;
-
-        dbg!(&query_result);
-
-        if query_result.is_err() {
-            let error_msg = "Error occurred while fetching searched location records";
-            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-            let body = hb.render("validation", &validation_response).unwrap();
-            return HttpResponse::Ok().body(body);
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await 
+        {
+            Ok(user_opt) => {
+                if let Some(user) = user_opt {
+                    println!("get_locations_handler firing");
+                    let limit = opts.limit.unwrap_or(10);
+                    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+                
+                    if let Some(like) = &opts.search {
+                        let search_sql = format!("%{}%", like);
+                        let query_result = sqlx::query_as!(
+                            LocationList,
+                            "SELECT 
+                                id, 
+                                slug,
+                                location_name,
+                                location_address_one,
+                                location_address_two,
+                                location_city,
+                                location_zip,
+                                location_phone
+                            FROM locations
+                            WHERE location_name LIKE $3
+                            ORDER by location_name
+                            LIMIT $1 OFFSET $2",
+                            limit as i32,
+                            offset as i32,
+                            search_sql
+                        )
+                        .fetch_all(&state.db)
+                        .await;
+                
+                        dbg!(&query_result);
+                
+                        if query_result.is_err() {
+                            let error_msg = "Error occurred while fetching searched location records";
+                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let body = hb.render("validation", &validation_response).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                
+                        let locations = query_result.unwrap();
+                
+                        let locations_table_data = ResponsiveTableData {
+                            entity_type_id: 5,
+                            vec_len: locations.len(),
+                            lookup_url: "/location/list?page=".to_string(),
+                            page: opts.page.unwrap_or(1),
+                            entities: locations,
+                            subscriptions: subs_from_user(&user),
+                        };
+                
+                        dbg!(&locations_table_data);
+                
+                        let body = hb
+                            .render("responsive-table-inner", &locations_table_data)
+                            .unwrap();
+                        return HttpResponse::Ok().body(body);
+                    } else {
+                        let query_result = sqlx::query_as!(
+                            LocationList,
+                            "SELECT 
+                                id, 
+                                slug,
+                                location_name,
+                                location_address_one,
+                                location_address_two,
+                                location_city,
+                                location_zip,
+                                location_phone
+                            FROM locations
+                            ORDER by location_name
+                            LIMIT $1 OFFSET $2",
+                            limit as i32,
+                            offset as i32
+                        )
+                        .fetch_all(&state.db)
+                        .await;
+                
+                        dbg!(&query_result);
+                
+                        if query_result.is_err() {
+                            let error_msg = "Error occurred while fetching all location records";
+                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let body = hb.render("validation", &validation_response).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                
+                        let locations = query_result.unwrap();
+                
+                        //     let consultants_response = ConsultantListResponse {
+                        //         consultants: consultants,
+                        //         name: "Hello".to_owned()
+                        // ,    };
+                
+                        // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
+                        // let load_more_url_base = "/location/list?page=".to_owned();
+                        let locations_table_data = ResponsiveTableData {
+                            entity_type_id: 5,
+                            vec_len: locations.len(),
+                            lookup_url: "/location/list?page=".to_string(),
+                            page: opts.page.unwrap_or(1),
+                            entities: locations,
+                            subscriptions: subs_from_user(&user),
+                        };
+                
+                        dbg!(&locations_table_data);
+                
+                        let body = hb
+                            .render("responsive-table", &locations_table_data)
+                            .unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
         }
-
-        let locations = query_result.unwrap();
-
-        let locations_table_data = ResponsiveTableData {
-            entity_type_id: 5,
-            vec_len: locations.len(),
-            lookup_url: "/location/list?page=".to_string(),
-            page: opts.page.unwrap_or(1),
-            entities: locations,
-            subscriptions: test_subs(),
-        };
-
-        dbg!(&locations_table_data);
-
-        let body = hb
-            .render("responsive-table-inner", &locations_table_data)
-            .unwrap();
-        return HttpResponse::Ok().body(body);
+        // FIXME: Is this else right? Redirect?
     } else {
-        let query_result = sqlx::query_as!(
-            LocationList,
-            "SELECT 
-                id, 
-                slug,
-                location_name,
-                location_address_one,
-                location_address_two,
-                location_city,
-                location_zip,
-                location_phone
-            FROM locations
-            ORDER by location_name
-            LIMIT $1 OFFSET $2",
-            limit as i32,
-            offset as i32
-        )
-        .fetch_all(&data.db)
-        .await;
-
-        dbg!(&query_result);
-
-        if query_result.is_err() {
-            let error_msg = "Error occurred while fetching all location records";
-            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-            let body = hb.render("validation", &validation_response).unwrap();
-            return HttpResponse::Ok().body(body);
-        }
-
-        let locations = query_result.unwrap();
-
-        //     let consultants_response = ConsultantListResponse {
-        //         consultants: consultants,
-        //         name: "Hello".to_owned()
-        // ,    };
-
-        // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-        // let load_more_url_base = "/location/list?page=".to_owned();
-        let locations_table_data = ResponsiveTableData {
-            entity_type_id: 5,
-            vec_len: locations.len(),
-            lookup_url: "/location/list?page=".to_string(),
-            page: opts.page.unwrap_or(1),
-            entities: locations,
-            subscriptions: test_subs(),
-        };
-
-        dbg!(&locations_table_data);
-
-        let body = hb
-            .render("responsive-table", &locations_table_data)
-            .unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
 }
+
 
 #[get("/form")]
 async fn location_form(

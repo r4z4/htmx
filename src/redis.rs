@@ -3,6 +3,8 @@ use std::{env, sync::Arc, collections::BTreeMap};
 use dotenv::dotenv;
 use redis::{Commands, ControlFlow, Client, PubSubCommands};
 
+use crate::{ValidatedUser, config::UserSubscriptions};
+
 pub trait RedisState {
     fn client(&self) -> &Arc<Client>;
 }
@@ -111,7 +113,43 @@ pub fn redis_connect() -> redis::Connection {
         .expect("failed to connect to Redis")
 }
 
-pub fn redis_test_data(mut con: redis::Connection ) -> () {
+// pub fn insert_validated_user(mut con: redis::Connection, cookie_token: String, user: ValidatedUser) -> () {
+//     let mut user_session: BTreeMap<String, String> = BTreeMap::new();
+//     let prefix = "sessionId";
+//     user_session.insert(String::from("username"), user.username);
+//     user_session.insert(String::from("email"), user.email);
+
+//     let subs = UserSubscriptions {
+//         user_subs: user.user_subs,
+//         client_subs: user.client_subs,
+//         consult_subs: user.consult_subs,
+//         location_subs: user.location_subs,
+//         consultant_subs: user.consultant_subs,
+//     };
+
+//     let mut user_subs: BTreeMap<String, UserSubscriptions> = BTreeMap::new();
+//     user_subs.insert(String::from("user_subs"), subs);
+//     // Set it in Redis
+//     let _: () = redis::cmd("HSET")
+//         .arg(format!("{}:{}", prefix, cookie_token))
+//         .arg(user_session)
+//         .query(&mut con)
+//         .expect("failed to execute HSET");
+
+//     let _: () = redis::cmd("HSET")
+//         .arg(format!("{}:{}", prefix, cookie_token))
+//         .arg(user_subs)
+//         .query(&mut con)
+//         .expect("failed to execute HSET");
+
+//     let info: BTreeMap<String, String> = redis::cmd("HGETALL")
+//         .arg(format!("{}:{}", prefix, "location"))
+//         .query(&mut con)
+//         .expect("failed to execute HGETALL");
+//     println!("info for rust redis driver: {:?}", info);
+// }
+
+pub fn redis_test_data(mut con: redis::Connection) -> () {
     let mut option: BTreeMap<String, i32> = BTreeMap::new();
         let prefix = "select-option";
         option.insert(String::from("location_one"), 1);

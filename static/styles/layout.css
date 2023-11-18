@@ -248,6 +248,11 @@ fieldset {
     resize:none;
 }
 
+.metal_purple {
+    color: rgba(128, 0, 128, 0.579);
+    background-color: rgba(128, 0, 128, 0.579);
+}
+
 .contact_container, .compose_container button[type="submit"] {
     display: inline-block;
     outline: 0;
@@ -842,8 +847,31 @@ p,ul,ol {
   }
 
 .validation_success {
-    color: #0aec24;
+    color: #2f6636;
   }
+
+/**************
+**** Feed ****
+**************/
+
+#consult_feed {
+    width: 90%;
+    margin: auto;
+    border: 1px solid black;
+    text-indent: 10px;
+}
+
+.client_sub {
+    color: green;
+}
+
+.location_sub {
+    color: blue;
+}
+
+.consultant_sub {
+    color: pink;
+}
 
 /**************
 **** Alert ****
@@ -852,16 +880,24 @@ p,ul,ol {
 
 .alert_error {
     padding: 10px;
-    background-color: #d23f35; 
-    color: white;
+    background-color: #97443e; 
+    color: rgba(255, 255, 255, 0.819);
     margin-bottom: 10px;
+    width: 60%;
+    text-align: center;
+    margin: auto;
+    border-radius: 10px;
   }
 
 .alert_success {
     padding: 10px;
-    background-color: #0aec24;
-    color: white;
+    background-color: #305f36;
+    color: rgba(255, 255, 255, 0.752);
     margin-bottom: 10px;
+    width: 60%;
+    text-align: center;
+    margin: auto;
+    border-radius: 10px;
   }
   
 

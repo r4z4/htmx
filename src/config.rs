@@ -165,6 +165,16 @@ pub fn test_subs() -> UserSubscriptions {
     }
 }
 
+pub fn subs_from_user(user: &ValidatedUser) -> UserSubscriptions {
+    UserSubscriptions {
+        user_subs: user.user_subs.clone(),
+        client_subs: user.client_subs.clone(),
+        consult_subs: user.consult_subs.clone(),
+        location_subs: user.location_subs.clone(),
+        consultant_subs: user.consultant_subs.clone(),
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct UserSubscriptions {
     pub user_subs: Vec<i32>,
@@ -293,10 +303,24 @@ pub async fn category_options(pool: &Pool<Postgres>) -> Vec<SelectOption> {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserFeedData {
     pub posts: Option<Vec<UserPost>>,
-    pub consults: Option<Vec<UserFeedResponse>>,
+    pub consults: Option<Vec<UserFeedDisplay>>,
+    pub subs: Option<UserSubscriptions>,
 }
 
 #[derive(Serialize, Validate, FromRow, Deserialize, Debug, Clone)]
+pub struct UserFeedDisplay {
+    slug: String,
+    consultant_id: i32,
+    client_id: i32,
+    location_id: i32,
+    consult_start: String,
+    notes: Option<String>,
+    attachment_count: i32,
+    created_at_fmt: String,
+    updated_at_fmt: String,
+}
+
+#[derive(Serialize, Validate, FromRow, Deserialize, Debug, Iterable, Clone)]
 pub struct UserFeedResponse {
     slug: String,
     consultant_id: i32,
@@ -310,10 +334,7 @@ pub struct UserFeedResponse {
 }
 // = ANY($1) is a workaround for SQLx & IN operator
 pub async fn user_feed(
-    user_subs: &Vec<i32>,
-    consultant_subs: &Vec<i32>,
-    client_subs: &Vec<i32>,
-    location_subs: &Vec<i32>,
+    user: &ValidatedUser,
     pool: &Pool<Postgres>,
 ) -> UserFeedData {
     match sqlx::query_as::<_, UserFeedResponse>(
@@ -321,21 +342,24 @@ pub async fn user_feed(
         WHERE (client_id = ANY($1) OR location_id = ANY($2) OR consultant_id = ANY($3))
         AND created_at >= NOW() - INTERVAL '7 DAYS' OR updated_at >= NOW() - INTERVAL '7 DAYS'",
     )
-    .bind(client_subs)
-    .bind(location_subs)
-    .bind(consultant_subs)
+    .bind(user.client_subs.clone())
+    .bind(user.location_subs.clone())
+    .bind(user.consultant_subs.clone())
     .fetch_all(pool)
     .await
     {
         Ok(resp) => {
             let post_file = read_yaml();
             let sub_posts =  post_file.posts.into_iter().filter(|post: &UserPost| {
-                user_subs.contains(&post.author)
+                user.user_subs.contains(&post.author)
             }).collect::<Vec<UserPost>>();
+
+            let user_feed_display = feed_display_from_resp(resp);
 
             let feed_data = UserFeedData {
                 posts: Some(sub_posts),
-                consults: Some(resp),
+                consults: Some(user_feed_display),
+                subs: Some(subs_from_user(&user)),
             };
             feed_data
         },
@@ -344,9 +368,26 @@ pub async fn user_feed(
             UserFeedData {
                 posts: None,
                 consults: None,
+                subs: None,
             }
         }
     }
+}
+
+fn feed_display_from_resp(resp_arr: Vec<UserFeedResponse>) -> Vec<UserFeedDisplay> {
+    resp_arr.iter().map(|resp| 
+        UserFeedDisplay {
+            slug: resp.slug.clone(),
+            consultant_id: resp.consultant_id,
+            client_id: resp.client_id,
+            location_id: resp.location_id,
+            consult_start: resp.consult_start.format("%b %-d, %-I:%M").to_string(),
+            notes: resp.notes.clone(),
+            attachment_count: if resp.consult_attachments.is_some() {resp.consult_attachments.clone().unwrap().len().try_into().unwrap_or(99)} else {0},
+            created_at_fmt: resp.created_at.format("%b %-d, %-I:%M").to_string(),
+            updated_at_fmt: resp.created_at.format("%b %-d, %-I:%M").to_string(),
+        }
+    ).collect::<Vec<UserFeedDisplay>>()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -751,6 +792,8 @@ pub async fn validate_and_get_user(
     state: &Data<AppState>,
 ) -> Result<Option<ValidatedUser>, crate::ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
+    let session_id = cookie.to_string().split(" ").collect::<Vec<&str>>()[1].to_string();
+    dbg!(&session_id);
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view
         FROM users
@@ -759,7 +802,7 @@ pub async fn validate_and_get_user(
         WHERE session_id = $1
         AND expires > NOW()",
     )
-    .bind(cookie.to_string())
+    .bind(session_id)
     .fetch_optional(&state.db)
     .await
     {
