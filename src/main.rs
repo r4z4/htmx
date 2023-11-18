@@ -25,15 +25,16 @@ use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
-use crate::config::{
+use crate::{config::{
     get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, subs_from_user,
-};
+}, linfa::linfa_pred};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
     consultant::consultant_scope, location::location_scope, user::user_scope,
 };
 mod config;
+mod linfa;
 mod hbs_helpers;
 mod models;
 mod redis;
@@ -239,6 +240,7 @@ async fn about_us(
     });
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
+        let _ = linfa_pred();
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
