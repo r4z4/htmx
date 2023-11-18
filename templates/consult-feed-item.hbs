@@ -1,4 +1,4 @@
-<div id="consult_feed">
+{{!-- <div id="consult_feed">
     {{#each consults}}
         {{#if (int_in this.client_id ../subs.client_subs)}}
             <p class="client_sub">Id: {{this.client_id}} - {{this.notes}}. Attachments: {{this.attachment_count}}. Updated: {{this.updated_at_fmt}}</p>
@@ -10,4 +10,25 @@
             <p class="consultant_sub">Consultant Id: {{this.consultant_id}} - {{this.notes}}. Attachments: {{this.attachment_count}}. Updated: {{this.updated_at_fmt}}</p>
         {{/if}}
     {{/each}}
-</div>
+</div> --}}
+
+
+<table id="consult_feed">
+  <tr>
+    <th>Id</th>
+    <th>Att. Ct.</th>
+    <th>Notes</th>
+    <th>Updated</th>
+  </tr>
+  {{#each consults}}
+    {{#if (int_in this.client_id ../subs.client_subs)}}
+        <tr class="client_sub"><td>{{this.client_id}}</td><td>{{this.attachment_count}}</td><td>{{this.notes}}</td><td>{{this.updated_at_fmt}}</td></tr>
+    {{/if}}
+    {{#if (int_in this.location_id ../subs.location_subs)}}
+        <tr class="location_sub"><td>{{this.client_id}}</td><td>{{this.attachment_count}}</td><td>{{this.notes}}</td><td>{{this.updated_at_fmt}}</td></tr>
+    {{/if}}
+    {{#if (int_in this.consultant_id ../subs.consultant_subs)}}
+        <tr class="consultant_sub"><td>{{this.client_id}}</td><td>{{this.attachment_count}}</td><td>{{this.notes}}</td><td>{{this.updated_at_fmt}}</td></tr>
+    {{/if}}
+  {{/each}}
+</table>

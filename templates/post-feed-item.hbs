@@ -1,0 +1,10 @@
+<div id="post_feed">
+    {{#each posts}}
+        <ul id="user_post_ul">
+            <li>
+                <h5>{{this.date}}: {{this.title}}</h5>
+                <p>{{preview_text this.body}}</p>
+            </li>
+        </ul>
+    {{/each}}
+</div>

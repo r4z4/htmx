@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES, UserSubscriptions, test_subs,
+        ACCEPTED_SECONDARIES, UserSubscriptions, test_subs, validate_and_get_user, subs_from_user,
     },
     models::{
         model_admin::{
@@ -101,6 +101,7 @@ async fn admin_home(
 pub struct PgStat {
     schemaname: Option<String>,
     relname: Option<String>,
+    id: Option<i32>,
     slug: Option<Uuid>,
     heap_blks_read: Option<i64>,
     heap_blks_hit: Option<i64>,
@@ -122,45 +123,68 @@ pub struct TableQuery {
 async fn recent_activity(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
 ) -> impl Responder {
-    let recent = sqlx::query_as!(
-        PgStat,
-        "SELECT schemaname, relname, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
-        ",
-    )
-    .fetch_all(&state.db)
-    .await;
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await 
+        {
+            Ok(user_opt) => {
+                if let Some(user) = user_opt {
+                    let recent = sqlx::query_as!(
+                        PgStat,
+                        "SELECT schemaname, relname, relid::integer AS id, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
+                        ",
+                    )
+                    .fetch_all(&state.db)
+                    .await;
 
-    if recent.is_err() {
-        let error_msg = "Error occurred while fetching from pg_stat";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
-    }
+                    if recent.is_err() {
+                        let error_msg = "Error occurred while fetching from pg_stat";
+                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let body = hb.render("validation", &validation_response).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
 
-    let recent_queries = recent.unwrap();
+                    let recent_queries = recent.unwrap();
 
-    let recent_queries_table_data = ResponsiveTableData {
-        entity_type_id: 8,
-        vec_len: recent_queries.len(),
-        lookup_url: "/consultant/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
-        entities: recent_queries,
-        subscriptions: test_subs(),
-    };
+                    let recent_queries_table_data = ResponsiveTableData {
+                        entity_type_id: 8,
+                        vec_len: recent_queries.len(),
+                        lookup_url: "/consultant/list?page=".to_string(),
+                        page: opts.page.unwrap_or(1),
+                        entities: recent_queries,
+                        subscriptions: subs_from_user(&user),
+                    };
 
-    // Only return whole Table if brand new
-    if opts.key.is_none() && opts.search.is_none() {
-        let body = hb
-            .render("responsive-table", &recent_queries_table_data)
-            .unwrap();
-        return HttpResponse::Ok().body(body);
+                    // Only return whole Table if brand new
+                    if opts.key.is_none() && opts.search.is_none() {
+                        let body = hb
+                            .render("responsive-table", &recent_queries_table_data)
+                            .unwrap();
+                        return HttpResponse::Ok().body(body);
+                    } else {
+                        let body = hb
+                            .render("responsive-table-inner", &recent_queries_table_data)
+                            .unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            },
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
     } else {
-        let body = hb
-            .render("responsive-table-inner", &recent_queries_table_data)
-            .unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
 }
 

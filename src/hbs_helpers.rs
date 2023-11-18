@@ -11,6 +11,11 @@ handlebars_helper!(str_eq: |s_1: String, s_2: String| {
     }
 });
 
+handlebars_helper!(preview_text: |str: String| {
+    let prev = &str[0..50];
+    prev
+});
+
 handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
     match entity_type_id {
         1 => String::from("form/user/") + &slug,
@@ -63,19 +68,24 @@ handlebars_helper!(subscribe_rte: |slug: String, entity_type_id: i32| {
 handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubscriptions| {
     dbg!(&id);
     dbg!(&subs.client_subs);
-    let subscribed = 
-        match entity_type_id {
-            1 | 2 | 3 => subs.user_subs.contains(&id),
-            4 => subs.consultant_subs.contains(&id),
-            5 => subs.location_subs.contains(&id),
-            6 => subs.consult_subs.contains(&id),
-            7 => subs.client_subs.contains(&id),
-            _ => subs.user_subs.contains(&id),
-        };
-    if subscribed {
-        "🔕"
+    // No icon for Query entity type
+    if entity_type_id == 8 {
+        ""
     } else {
-        "🔔"
+        let subscribed = 
+            match entity_type_id {
+                1 | 2 | 3 => subs.user_subs.contains(&id),
+                4 => subs.consultant_subs.contains(&id),
+                5 => subs.location_subs.contains(&id),
+                6 => subs.consult_subs.contains(&id),
+                7 => subs.client_subs.contains(&id),
+                _ => subs.user_subs.contains(&id),
+            };
+        if subscribed {
+            "🔕"
+        } else {
+            "🔔"
+        }
     }
 });
 

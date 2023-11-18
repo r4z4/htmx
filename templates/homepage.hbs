@@ -20,12 +20,7 @@
     <div id="news_container">
         <h4>Recent News / Feed</h4>
         {{#if feed_data.posts}}
-            {{#each feed_data.posts}}
-                <div id="user_post_div">
-                    <p>{{this.title}}</p>
-                    <p>{{this.date}}</p>
-                </div>
-            {{/each}}
+            {{> post-feed-item posts=feed_data.posts}}
         {{else}}
             <h6>No Recent Posts</h6>
         {{/if}}

@@ -224,10 +224,8 @@ pub async fn get_locations_handler(
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
                 return HttpResponse::Ok().body(body);
-                // HttpResponse::InternalServerError().json(format!("{:?}", err))
             }
         }
-        // FIXME: Is this else right? Redirect?
     } else {
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
