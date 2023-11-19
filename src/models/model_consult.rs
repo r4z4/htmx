@@ -40,12 +40,12 @@ pub struct ConsultList {
     // pub consult_id: i32,
     pub id: i32,
     pub slug: String,
-    pub consult_purpose_id: i32,
+    pub purpose: i32,
     // If using CONCAT or COALSCE likely need to make them Option<_>
     pub client_name: Option<String>,
     pub consultant_name: Option<String>,
     pub location_name: String,
-    pub consult_result_id: i32,
+    pub result: i32,
     pub consult_start: DateTime<Utc>,
     pub consult_end: Option<DateTime<Utc>>,
     #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]

@@ -49,7 +49,8 @@ pub async fn get_clients_handler(
                     let query_result = sqlx::query_as!(
                         ClientList,
                         "SELECT 
-                            clients.id, 
+                            clients.id,
+                            clients.client_type_id,
                             slug,
                             specialty_name,
                             COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,

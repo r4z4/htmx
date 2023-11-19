@@ -26,7 +26,11 @@
     {{#each entities}}
       <tr>
         {{#each this}}
-          <td class="entity_cell" id={{@key}}>{{this}}</td>
+          {{#if (is_icon_col @key)}}
+            <td class="entity_cell" id={{@key}}>{{get_icon @key this}}</td>
+          {{else}}
+            <td class="entity_cell" id={{@key}}>{{this}}</td>
+          {{/if}}
         {{/each}}
           <td class="action_cell" id="td_action">
             <button 

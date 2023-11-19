@@ -2,7 +2,27 @@ use convert_case::{Case, Casing};
 use handlebars::handlebars_helper;
 
 use crate::{models::model_location::LocationList, Entity, config::UserSubscriptions};
-handlebars_helper!(to_title_case: |s: String| s.to_case(Case::Title));
+
+handlebars_helper!(to_title_case: |s: String| {
+    // FIXME Always just set as aliases on server? Or do I like explicit data fields?
+    match s.as_str() {
+        "client_type_id" => "Type".to_string(),
+        "consult_start" => "Start".to_string(),
+        "consult_end" => "End".to_string(),
+        "consultant_name" => "Consultant".to_string(),
+        "location_name" => "Location".to_string(),
+        "location_phone" => "Phone".to_string(),
+        "location_address_one" => "Addr".to_string(),
+        "location_address_two" => "Addr 2".to_string(),
+        "specialty_name" => "Specialty".to_string(),
+        "client_email" => "Email".to_string(),
+        "client_city" | "location_city" => "City".to_string(),
+        "client_name" => "Name".to_string(),
+        "client_zip" => "Zip".to_string(),
+        _ => s.to_case(Case::Title),
+    }
+});
+
 handlebars_helper!(str_eq: |s_1: String, s_2: String| {
     if s_1 == s_2 {
         true
@@ -86,6 +106,49 @@ handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubs
         } else {
             "🔔"
         }
+    }
+});
+
+handlebars_helper!(is_icon_col: |key: String| {
+    if vec!["purpose".to_string(), "result".to_string(), "client_type_id".to_string()].contains(&key) {
+        true
+    } else {
+        false
+    }
+});
+
+handlebars_helper!(get_icon: |key: String, id: i32| {
+    if key == "result" {
+        match id {
+            0 => "∅",
+            1 => "🟢📅",
+            2 => "🟢",
+            3 => "🟡📅",
+            4 => "🟡",
+            5 => "🔴📅",
+            6 => "🔴",
+            _ => "🤷",
+        }
+    } else if key == "purpose" {
+        match id {
+            1 => "ℹ",
+            2 => "🔼",
+            3 => "🔄",
+            4 => "🔽",
+            5 => "💬",
+            _ => "🤷",
+        }
+    } else if key == "client_type_id" {
+        match id {
+            1 => "👤",
+            2 => "👥",
+            3 => "🏢",
+            4 => "🌎",
+            5 => "🏛",
+            _ => "🤷",
+        }
+    } else {
+        "🤷"
     }
 });
 

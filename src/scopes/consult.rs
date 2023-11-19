@@ -24,7 +24,7 @@ use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs, consult_result_options, consult_purpose_options, mime_type_id_from_path},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs, consult_result_options, consult_purpose_options, mime_type_id_from_path, validate_and_get_user, subs_from_user},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -372,8 +372,8 @@ async fn sort_query(
         "SELECT 
         consults.id,
         consults.slug, 
-        consults.consult_purpose_id,
-        consults.consult_result_id,
+        consults.consult_purpose_id AS purpose,
+        consults.consult_result_id AS result,
         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
         location_name, 
         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
@@ -432,11 +432,11 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
     fn from_row(row: &'r PgRow) -> Result<Self, Error> {
         let id = row.try_get("id")?;
         let slug = row.try_get("slug")?;
-        let consult_purpose_id = row.try_get("consultant_purpose_id")?;
+        let purpose = row.try_get("purpose")?;
         let consultant_name = row.try_get("consultant_name")?;
         let location_name = row.try_get("location_name")?;
         let client_name = row.try_get("client_name")?;
-        let consult_result_id = row.try_get("consultant_result_id")?;
+        let result = row.try_get("result")?;
         let consult_start = row.try_get("consult_start")?;
         let consult_end = row.try_get("consult_end")?;
         let notes = row.try_get("notes")?;
@@ -444,11 +444,11 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
         Ok(ConsultList {
             id,
             slug,
-            consult_purpose_id,
+            purpose,
             consultant_name,
             location_name,
             client_name,
-            consult_result_id,
+            result,
             consult_start,
             consult_end,
             notes,
@@ -460,66 +460,67 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
 pub async fn get_consults_handler(
     opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
-    data: web::Data<AppState>,
+    req: HttpRequest,
+    state: web::Data<AppState>,
 ) -> impl Responder {
-    println!("get_consultants_handler firing");
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await 
+        {
+            Ok(user_opt) => {
+                if let Some(user) = user_opt {
+                    println!("get_consultants_handler firing");
+                    let limit = opts.limit.unwrap_or(10);
+                    let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-    // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
-    let query_result = sort_query(&opts, &data.db).await;
+                    // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
+                    let query_result = sort_query(&opts, &state.db).await;
 
-    // let query_result = sqlx::query_as!(
-    //     ConsultList,
-    //     "SELECT
-    //         consults.slug,
-    //         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name,
-    //         location_name,
-    //         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
-    //         consult_start,
-    //         consult_end,
-    //         notes
-    //     FROM consults
-    //     INNER JOIN clients ON consults.client_id = clients.id
-    //     INNER JOIN locations ON consults.location_id = locations.id
-    //     INNER JOIN consultants ON consults.consultant_id = consultants.id
-    //     ORDER BY consults.updated_at DESC, consults.created_at DESC
-    //     LIMIT $1 OFFSET $2",
-    //     limit as i32,
-    //     offset as i32
-    // )
-    // .fetch_all(&data.db)
-    // .await;
+                    dbg!(&query_result);
 
-    dbg!(&query_result);
+                    if query_result.is_err() {
+                        let error_msg = "Error occurred while fetching all consultant records";
+                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let body = hb.render("validation", &validation_response).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
 
-    if query_result.is_err() {
-        let error_msg = "Error occurred while fetching all consultant records";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
-    }
+                    let consults = query_result.unwrap();
 
-    let consults = query_result.unwrap();
+                    let consults_table_data = ResponsiveTableData {
+                        entity_type_id: 6,
+                        vec_len: consults.len(),
+                        lookup_url: "/consult/list?page=".to_string(),
+                        page: opts.page.unwrap_or(1),
+                        entities: consults,
+                        subscriptions: subs_from_user(&user),
+                    };
 
-    let consults_table_data = ResponsiveTableData {
-        entity_type_id: 6,
-        vec_len: consults.len(),
-        lookup_url: "/consult/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
-        entities: consults,
-        subscriptions: test_subs(),
-    };
-
-    // Only return whole Table if brand new
-    if opts.key.is_none() && opts.search.is_none() {
-        let body = hb.render("responsive-table", &consults_table_data).unwrap();
-        return HttpResponse::Ok().body(body);
+                    // Only return whole Table if brand new
+                    if opts.key.is_none() && opts.search.is_none() {
+                        let body = hb.render("responsive-table", &consults_table_data).unwrap();
+                        return HttpResponse::Ok().body(body);
+                    } else {
+                        let body = hb
+                            .render("responsive-table-inner", &consults_table_data)
+                            .unwrap();
+                        return HttpResponse::Ok().body(body);
+                    }
+                } else {
+                    let message = "User Option is a None".to_owned();
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body)
+                };
+            },
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+            }
+        }
     } else {
-        let body = hb
-            .render("responsive-table-inner", &consults_table_data)
-            .unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
 }
 

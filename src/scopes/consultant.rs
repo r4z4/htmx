@@ -57,7 +57,7 @@ async fn sort_query(
     dbg!(&opts);
     let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT 
-        consultant_id,
+        consultants.id,
         slug,
         specialty_name,
         territory_name,

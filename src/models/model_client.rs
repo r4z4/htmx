@@ -21,6 +21,7 @@ pub struct ClientListResponse {
 pub struct ClientList {
     pub id: i32,
     pub slug: String,
+    pub client_type_id: i32,
     pub specialty_name: String,
     // pub client_company_name: Option<String>,
     // pub client_f_name: Option<String>,
