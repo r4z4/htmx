@@ -18,6 +18,11 @@
 {{
 #>
  modal-layout }}
+  <button onclick="window.dialog.show();">Check Availability</button>
+  <dialog id="dialog">
+    {{> consult-availability}}
+    <button onclick="window.dialog.close();">Cancel</button>
+  </dialog>
 <div class="form-style">
   {{#if entity}}
     <h2 id="consult_form_header" class="text-center">Edit Consult</h2>

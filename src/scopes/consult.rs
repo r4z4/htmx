@@ -41,6 +41,7 @@ pub fn consult_scope() -> Scope {
         .service(get_consults_handler)
         .service(get_attachments)
         .service(upload)
+        .service(availability)
 }
 
 async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
@@ -571,6 +572,27 @@ async fn get_attachments(
     };
 
     let body = hb.render("attachments-view", &view_data).unwrap();
+    dbg!(&body);
+    return HttpResponse::Ok().body(body);
+}
+
+#[derive(Debug, Serialize, FromRow, Deserialize)]
+pub struct ConsultAvailability {
+    scheduled: String
+}
+
+#[get("/availability")]
+async fn availability(
+    hb: web::Data<Handlebars<'_>>,
+    state: web::Data<AppState>,
+) -> impl Responder {
+    println!("Availability firing");
+
+    let view_data = ConsultAvailability {
+        scheduled: "Hey".to_string(),
+    };
+
+    let body = hb.render("consult-availability", &view_data).unwrap();
     dbg!(&body);
     return HttpResponse::Ok().body(body);
 }
