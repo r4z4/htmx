@@ -11,8 +11,10 @@ use serde_yaml::{self};
 use sqlx::{FromRow, Pool, Postgres};
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddr};
+use std::path::Path;
 use std::thread::sleep;
 use std::time::{self, Instant};
 use std::{fmt::Debug, net::IpAddr};
@@ -390,6 +392,33 @@ fn feed_display_from_resp(resp_arr: Vec<UserFeedResponse>) -> Vec<UserFeedDispla
     ).collect::<Vec<UserFeedDisplay>>()
 }
 
+pub fn mime_type_id_from_path(path: &str) -> i32 {
+    let extension = Path::new(path)
+        .extension()
+        .and_then(OsStr::to_str)
+        .unwrap_or("none");
+    match extension {
+        ".png" => 1,
+        ".jpeg" => 2,
+        ".gif" => 3,
+        ".webp" => 4,
+        ".svg+xml" => 5,
+        ".wav" => 6,
+        ".mpeg" => 7,
+        ".webm" => 8,
+        ".webm" => 9,
+        ".mpeg" => 10,
+        ".mp4" => 11,
+        ".json" => 12,
+        ".pdf" => 13,
+        ".csv" => 14,
+        ".html" => 15,
+        ".ics" => 16,
+        "none" => 0,
+        _ => 0,
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserPostFile {
     pub default: String,
@@ -469,6 +498,27 @@ pub fn territory_options() -> Vec<SelectOption> {
         SelectOption::from((3, Some("West".to_string()))),
         SelectOption::from((4, Some("Southeast".to_string()))),
         SelectOption::from((5, Some("Midwest".to_string()))),
+    ]
+}
+
+pub fn consult_result_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption::from((1, Some("services fully rendered. next meeting scheduled".to_string()))),
+        SelectOption::from((2, Some("services fully rendered. no follow up requested".to_string()))),
+        SelectOption::from((3, Some("services partially rendered. next meeting scheduled".to_string()))),
+        SelectOption::from((4, Some("services partially rendered. no follow up requested".to_string()))),
+        SelectOption::from((5, Some("no services rendered. next meeting scheduled".to_string()))),
+        SelectOption::from((6, Some("no services rendered. no follow up requested".to_string()))),
+    ]
+}
+
+pub fn consult_purpose_options() -> Vec<SelectOption> {
+    vec![
+        SelectOption::from((1, Some("Informational".to_string()))),
+        SelectOption::from((2, Some("Initial Service".to_string()))),
+        SelectOption::from((3, Some("Continued Service".to_string()))),
+        SelectOption::from((4, Some("Final Service".to_string()))),
+        SelectOption::from((5, Some("Audit".to_string()))),
     ]
 }
 

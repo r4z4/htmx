@@ -119,7 +119,7 @@ async fn client_form(
 ) -> impl Responder {
     println!("client_form firing");
 
-    let _ = get_n_pages(8).await;
+    // let _ = get_n_pages(8).await;
 
     let account_options = account_options(&state).await;
     let template_data = ClientFormTemplate {

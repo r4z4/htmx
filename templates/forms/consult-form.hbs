@@ -48,6 +48,44 @@
   >
     <ul>
       <li>
+        <select class="field-style field-split align-left" id="consult_purpose_id" name="consult_purpose_id" value="{{entity.consult_purpose_id}}" >
+            {{!-- Only display default option if new form (or no value, but specialty is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
+            {{#each consult_purpose_options}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.consult_purpose_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
+            {{/each}}
+        </select>
+        <select class="field-style field-split align-right" id="consult_result_id" name="consult_result_id" value="{{entity.consult_result_id}}" >
+            {{!-- Only display default option if new form (or no value, but specialty is required) --}}
+            {{#unless @root.entity}}
+              <option value="" selected disabled hidden>Select One</option>
+            {{/unless}}
+            {{#each consult_result_options}}
+              {{!-- Only check for the match if have an entity. Else get an error. --}}
+              {{#if @root.entity}}
+                {{#if (int_eq this.value @root.entity.consult_result_id)}}
+                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
+                {{else}} 
+                  <option value="{{this.value}}">{{this.key}}</option>
+                {{/if}}
+              {{else}}
+                <option value="{{this.value}}">{{this.key}}</option>
+              {{/if}}
+            {{/each}}
+        </select>
+      </li>
+      <li>
         <div>
           <label for="location_id">Location</label>
           <select class="field-style field-full align-none" id="location_id" name="location_id">

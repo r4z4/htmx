@@ -380,6 +380,43 @@ async fn list_api(
     }
 }
 
+#[get("/schedule")]
+async fn schedule_api(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    state: Data<AppState>,
+) -> impl Responder {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user) => {
+                if let Some(usr) = user {
+                    let template_data = json! {{
+                        "user": &usr,
+                        //"data": &data,
+                    }};
+                    let body = hb.render("schedule-api", &template_data).unwrap();
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+        // FIXME: Is this else right? Redirect?
+    } else {
+        let message = "Your session seems to have expired. Please login again (3).".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
+    }
+}
+
 #[get("/fixed")]
 async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let fixed_table_data = mock_fixed_table_data();
@@ -824,6 +861,7 @@ async fn main() -> std::io::Result<()> {
             .service(homepage)
             .service(crud_api)
             .service(list_api)
+            .service(schedule_api)
             .service(detail)
             .service(content)
             .service(create_todo)

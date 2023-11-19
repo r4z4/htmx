@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT schemaname, relname, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;\n        ",
+  "query": "SELECT schemaname, relname, relid::integer AS id, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;\n                        ",
   "describe": {
     "columns": [
       {
@@ -15,46 +15,51 @@
       },
       {
         "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
         "name": "slug",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "heap_blks_read",
         "type_info": "Int8"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "heap_blks_hit",
         "type_info": "Int8"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "idx_blks_read",
         "type_info": "Int8"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "idx_blks_hit",
         "type_info": "Int8"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "toast_blks_read",
         "type_info": "Int8"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "toast_blks_hit",
         "type_info": "Int8"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "tidx_blks_read",
         "type_info": "Int8"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "tidx_blks_hit",
         "type_info": "Int8"
       }
@@ -66,6 +71,7 @@
       true,
       true,
       null,
+      null,
       true,
       true,
       true,
@@ -76,5 +82,5 @@
       true
     ]
   },
-  "hash": "f7f27f4520426260b38c34af11a39ac1fc80dc1b792198a487a95044a1acfc7c"
+  "hash": "0e38c072022bbfcfe4161fb881d7d917a8f3bf8e6d30de1b70a95f21d65317c7"
 }

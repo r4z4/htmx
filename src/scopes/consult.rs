@@ -17,14 +17,14 @@ use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use mime::{
-    Mime, APPLICATION_JSON, APPLICATION_PDF, CSV, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV,
+    Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs, consult_result_options, consult_purpose_options, mime_type_id_from_path},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
@@ -113,35 +113,8 @@ async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     client_options
 }
 
-fn validate_consultant_input(body: &ConsultPost) -> bool {
+fn validate_consult_input(body: &ConsultPost) -> bool {
     true
-}
-
-fn get_mime_type_id(path: &str) -> i32 {
-    let extension = Path::new(path)
-        .extension()
-        .and_then(OsStr::to_str)
-        .unwrap_or("none");
-    match extension {
-        ".png" => 1,
-        ".jpeg" => 2,
-        ".gif" => 3,
-        ".webp" => 4,
-        ".svg+xml" => 5,
-        ".wav" => 6,
-        ".mpeg" => 7,
-        ".webm" => 8,
-        ".webm" => 9,
-        ".mpeg" => 10,
-        ".mp4" => 11,
-        ".json" => 12,
-        ".pdf" => 13,
-        ".csv" => 14,
-        ".html" => 15,
-        ".ics" => 16,
-        "none" => 0,
-        _ => 0,
-    }
 }
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
@@ -160,7 +133,8 @@ async fn create_consult(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
 ) -> impl Responder {
-    if validate_consultant_input(&body) {
+    if validate_consult_input(&body) {
+        // FIXME Make Optional
         let consult_start_string =
             body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
         dbg!(&consult_start_string);
@@ -177,7 +151,7 @@ async fn create_consult(
         let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
         // Get Current User
         if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
-            let mime_type_id = get_mime_type_id(&body.attachment_path.as_ref().unwrap());
+            let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
             let channel = "upload".to_string();
             let short_desc = "Replace me with genuine desc".to_string();
             match sqlx::query_as::<_, AttachmentResponse>(
@@ -287,6 +261,8 @@ async fn consult_form(
         location_options: location_options,
         consultant_options: consultant_options,
         client_options: client_options,
+        consult_purpose_options: consult_purpose_options(),
+        consult_result_options: consult_result_options(),
     };
 
     let body = hb.render("forms/consult-form", &template_data).unwrap();
@@ -294,7 +270,7 @@ async fn consult_form(
     return HttpResponse::Ok().body(body);
 }
 
-fn get_consult_end_date(dt: Option<DateTime<Utc>>) -> Option<String> {
+fn get_consult_date(dt: Option<DateTime<Utc>>) -> Option<String> {
     if let Some(date) = dt {
         let end_dt_str = date.format("%Y-%m-%d %H:%M:%S.%f").to_string();
         let end_date = end_dt_str.split(" ").collect::<Vec<&str>>();
@@ -304,7 +280,7 @@ fn get_consult_end_date(dt: Option<DateTime<Utc>>) -> Option<String> {
     }
 }
 
-fn get_consult_end_time(dt: Option<DateTime<Utc>>) -> Option<String> {
+fn get_consult_time(dt: Option<DateTime<Utc>>) -> Option<String> {
     if let Some(date) = dt {
         let end_dt_str = date.format("%Y-%m-%d %H:%M:%S.%f").to_string();
         let end_date = end_dt_str.split(" ").collect::<Vec<&str>>();
@@ -332,7 +308,7 @@ async fn consult_edit_form(
 
     let query_result = sqlx::query_as!(
         ConsultFormRequest,
-        "SELECT consultant_id, slug, location_id, client_id, consult_start, consult_end, notes 
+        "SELECT consultant_id, slug, consult_purpose_id, location_id, client_id, consult_result_id, consult_start, consult_end, notes 
             FROM consults 
             WHERE slug = $1
             ORDER by consult_start",
@@ -351,29 +327,19 @@ async fn consult_edit_form(
     }
 
     let consult = query_result.unwrap();
-    let start_dt_str = consult
-        .consult_start
-        .format("%Y-%m-%d %H:%M:%S.%f")
-        .to_string();
-    let start_date = start_dt_str.split(" ").collect::<Vec<&str>>();
-    let start_str = start_date[1].to_string();
-    let time_extract = start_str.split(":").collect::<Vec<&str>>();
-    let start_time = format!(
-        "{}:{}",
-        time_extract[0].to_string(),
-        time_extract[1].to_string()
-    );
 
     let consult_with_dates = ConsultWithDates {
         notes: consult.notes,
         slug: consult.slug,
+        consult_purpose_id: consult.consult_purpose_id,
         location_id: consult.location_id,
         consultant_id: consult.consultant_id,
         client_id: consult.client_id,
-        consult_start_date: start_date[0].to_string(),
-        consult_start_time: start_time,
-        consult_end_date: get_consult_end_date(consult.consult_end),
-        consult_end_time: get_consult_end_time(consult.consult_end),
+        consult_result_id: consult.consult_result_id,
+        consult_start_date: get_consult_date(consult.consult_start),
+        consult_start_time: get_consult_time(consult.consult_start),
+        consult_end_date: get_consult_date(consult.consult_end),
+        consult_end_time: get_consult_time(consult.consult_end),
     };
 
     let location_options = location_options(&state).await;
@@ -385,6 +351,8 @@ async fn consult_edit_form(
         location_options: location_options,
         client_options: client_options,
         consultant_options: consultant_options,
+        consult_purpose_options: consult_purpose_options(),
+        consult_result_options: consult_result_options(),
     };
 
     let body = hb
@@ -404,6 +372,8 @@ async fn sort_query(
         "SELECT 
         consults.id,
         consults.slug, 
+        consults.consult_purpose_id,
+        consults.consult_result_id,
         CONCAT(consultant_f_name, ' ', consultant_l_name) AS consultant_name, 
         location_name, 
         COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name, 
@@ -462,9 +432,11 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
     fn from_row(row: &'r PgRow) -> Result<Self, Error> {
         let id = row.try_get("id")?;
         let slug = row.try_get("slug")?;
+        let consult_purpose_id = row.try_get("consultant_purpose_id")?;
         let consultant_name = row.try_get("consultant_name")?;
         let location_name = row.try_get("location_name")?;
         let client_name = row.try_get("client_name")?;
+        let consult_result_id = row.try_get("consultant_result_id")?;
         let consult_start = row.try_get("consult_start")?;
         let consult_end = row.try_get("consult_end")?;
         let notes = row.try_get("notes")?;
@@ -472,9 +444,11 @@ impl<'r> FromRow<'r, PgRow> for ConsultList {
         Ok(ConsultList {
             id,
             slug,
+            consult_purpose_id,
             consultant_name,
             location_name,
             client_name,
+            consult_result_id,
             consult_start,
             consult_end,
             notes,
@@ -780,6 +754,8 @@ mod tests {
             location_options: mock_locations(),
             client_options: mock_clients(),
             consultant_options: mock_consultants(),
+            consult_purpose_options: consult_purpose_options(),
+            consult_result_options: consult_result_options(),
         };
         let mut hb = Handlebars::new();
         hb.register_templates_directory(".hbs", "./templates")
@@ -804,13 +780,15 @@ mod tests {
     #[test]
     fn edit_form_renders_edit_header(ctx: &mut Context) {
         let mock_consult_with_dates = ConsultWithDates {
-            consultant_id: 1,
+            consultant_id: Some(1),
             location_id: 1,
             client_id: 1,
+            consult_purpose_id: 1,
             slug: "d574a28d-909f-4b44-99c3-43a30f618185".to_string(),
             notes: Some("Good meeting".to_string()),
-            consult_start_date: "2023-09-10".to_string(),
-            consult_start_time: "14:30".to_string(),
+            consult_result_id: 2,
+            consult_start_date: Some("2023-09-10".to_string()),
+            consult_start_time: Some("14:30".to_string()),
             consult_end_date: Some("2023-09-10".to_string()),
             consult_end_time: Some("15:30".to_string()),
         };
@@ -819,6 +797,8 @@ mod tests {
             location_options: mock_locations(),
             client_options: mock_clients(),
             consultant_options: mock_consultants(),
+            consult_purpose_options: consult_purpose_options(),
+            consult_result_options: consult_result_options(),
         };
         let mut hb = Handlebars::new();
         hb.register_templates_directory(".hbs", "./templates")

@@ -9,9 +9,12 @@ use std::error::Error;
 
 // Which consultant should we send?
 // What hour should we hold the meeting?
+// If what hour - labels will be the hour_of_day and set received_follow_up to 1 (true)
 
 pub struct LinfaConsultScheduler {
+    pub consult_purpose_id: f32,
     pub client_id: f32,
+    pub client_type: f32,
     pub consultant_id: f32,
     pub location_id: f32,
     pub hour_of_day: f32,
@@ -24,21 +27,21 @@ pub struct LinfaConsultScheduler {
 
 pub fn linfa_pred() {
     let original_data: Array2<f32> = array!(
-        [6.,    1.,     12.,    13.,     30.,      33.,      1.,     1.],
-        [3.,    2.,     3.,     8.,      122.,     44.,      2.,     1.],
-        [1.,    5.,     1.,     9.,      34.,      32.,      2.,     1.],
-        [5.,    1.,     6.,     9.,      13.,      123.,     1.,     0.],
-        [2.,    8.,     6.,     10.,     35.,      744.,     0.,     1.],
-        [8.,    2.,     6.,     16.,     66.,      0.,       2.,     1.],
-        [9.,    4.,     12.,    13.,     43.,      32.,      1.,     1.],
-        [4.,    6.,     3.,     11.,     15.,      0.,       3.,     0.],
-        [3.,    5.,     1.,     7.,      77.,      44.,      4.,     1.],
-        [5.,    7.,     4.,     8.,      111.,     122.,     0.,     0.],
-        [12.,   8.,     4.,     16.,     31.,      522.,     1.,     0.],
-        [3.,    3.,     3.,     15.,     52.,      0.,       0.,     1.]
+        [1.,    6.,    3.,    1.,     12.,    13.,     30.,      33.,      1.,     1.],
+        [1.,    3.,    1.,    2.,     3.,     8.,      122.,     44.,      2.,     1.],
+        [1.,    1.,    1.,    5.,     1.,     9.,      34.,      32.,      2.,     1.],
+        [1.,    5.,    3.,    1.,     6.,     9.,      13.,      123.,     1.,     0.],
+        [1.,    2.,    2.,    8.,     6.,     10.,     35.,      744.,     0.,     1.],
+        [1.,    8.,    1.,    2.,     6.,     16.,     66.,      0.,       2.,     1.],
+        [1.,    7.,    2.,    4.,     12.,    13.,     43.,      32.,      1.,     1.],
+        [1.,    4.,    1.,    6.,     3.,     11.,     15.,      0.,       3.,     0.],
+        [1.,    3.,    1.,    5.,     1.,     7.,      77.,      44.,      4.,     1.],
+        [1.,    5.,    3.,    7.,     4.,     8.,      111.,     122.,     0.,     0.],
+        [1.,    12.,   5.,    8.,     4.,     16.,     31.,      522.,     1.,     0.],
+        [1.,    13.,   4.,    3.,     3.,     15.,     52.,      0.,       0.,     1.]
     );
 
-    let feature_names = vec!["client_id", "consultant_id", "location_id", "hour_of_day", "length_of_meeting", "notes_length", "num_attachments", "received_follow_up"];
+    let feature_names = vec!["consult_purpose_id", "client_id", "client_type", "consultant_id", "location_id", "hour_of_day", "length_of_meeting", "notes_length", "num_attachments", "received_follow_up"];
     let num_features = original_data.len_of(Axis(1)) - 1;
     let features = original_data.slice(s![.., 0..num_features]).to_owned();
     let labels = original_data.column(num_features).to_owned();
@@ -57,7 +60,9 @@ pub fn linfa_pred() {
         .unwrap();
 
     let test: Array2<f32> = array!(
-        [3.,    3.,     3.,     15.,     52.,      0.,       0.]
+        [1.,    7.,    3.,    3.,     3.,     15.,     52.,      0.,       0.],
+        [1.,    8.,    4.,    6.,     3.,     11.,     15.,      0.,       3.],
+        [1.,    2.,    6.,    1.,     12.,    13.,     30.,      33.,      1.]
 
     );
     let predictions = model.predict(&test);

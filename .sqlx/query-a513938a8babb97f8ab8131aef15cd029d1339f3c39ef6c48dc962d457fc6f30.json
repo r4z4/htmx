@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT consultant_id, slug, location_id, client_id, consult_start, consult_end, notes \n            FROM consults \n            WHERE slug = $1\n            ORDER by consult_start",
+  "query": "SELECT consultant_id, slug, consult_purpose_id, location_id, client_id, consult_result_id, consult_start, consult_end, notes \n            FROM consults \n            WHERE slug = $1\n            ORDER by consult_start",
   "describe": {
     "columns": [
       {
@@ -15,26 +15,36 @@
       },
       {
         "ordinal": 2,
-        "name": "location_id",
+        "name": "consult_purpose_id",
         "type_info": "Int4"
       },
       {
         "ordinal": 3,
-        "name": "client_id",
+        "name": "location_id",
         "type_info": "Int4"
       },
       {
         "ordinal": 4,
+        "name": "client_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "consult_result_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
         "name": "consult_start",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 7,
         "name": "consult_end",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 8,
         "name": "notes",
         "type_info": "Text"
       }
@@ -45,6 +55,8 @@
       ]
     },
     "nullable": [
+      true,
+      false,
       false,
       false,
       false,
@@ -54,5 +66,5 @@
       true
     ]
   },
-  "hash": "d134bff8b008e98ae129038df39ec2506d3a99a8e05c7376d11c8538499c3592"
+  "hash": "a513938a8babb97f8ab8131aef15cd029d1339f3c39ef6c48dc962d457fc6f30"
 }
