@@ -7,7 +7,7 @@ use crate::config::SelectOption;
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultPost {
-    pub consult_purpose_id: i32,
+    pub consult_purpose_id: i8,
     pub client_id: i32,
     pub consultant_id: i32,
     pub location_id: i32,

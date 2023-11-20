@@ -1,10 +1,13 @@
-use actix_web::web::Data;
+use actix_web::web::{Data, Form};
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
-use chrono::{NaiveDate, Duration, Utc, Datelike};
+use chrono::{NaiveDate, Duration, Utc, Datelike, DateTime};
 use ics::properties::{Categories, Description, DtEnd, DtStart, Organizer, Status, Summary};
 use ics::{escape_text, Event, ICalendar};
 use serde_json::json;
+use sqlx::FromRow;
+use uuid::Uuid;
 
+use crate::models::model_consult::ConsultPost;
 use crate::{
     config::{
         self, get_validation_response, validate_and_get_user, FilterOptions,
@@ -26,7 +29,7 @@ pub fn event_scope() -> Scope {
         // .route("/users", web::get().to(get_users_handler))
         .service(location_form)
         .service(location_edit_form)
-        .service(create_location)
+        .service(create_consult_event)
         .service(get_locations_handler)
         .service(search_location)
         .service(home)
@@ -43,7 +46,22 @@ pub struct CalError {
     err: String,
 }
 
-fn create_calendar_event() -> ICalendar<'static> {
+fn date_to_cal_date(date: &DateTime<Utc>) -> String {
+    date.format("%Y%m%dT%H%M%SZ").to_string()
+}
+
+fn category_from_purpose(id: i8) -> &'static str {
+    match id {
+        1 => "INTRODUCTION",
+        2 => "WALKTHROUGH/INIT",
+        3 => "CONTINUED",
+        4 => "FINAL SERVICE",
+        5 => "AUDIT",
+        _ => "Oops",
+    }
+}
+
+fn create_calendar_event(start: &DateTime<Utc>, end: &DateTime<Utc>, purpose_id: i8) -> ICalendar<'static> {
 // fn create_calendar_event() -> Result<(), CalError> {
     // create new iCalendar object
     let dt = NaiveDate::from_ymd_opt(2023, 12, 1).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
@@ -52,24 +70,40 @@ fn create_calendar_event() -> ICalendar<'static> {
     let weekday_int = weekday.number_from_sunday();
     dbg!(weekday);
 
-    let mut calendar = ICalendar::new("2.0", "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN");
+    let cal_now = date_to_cal_date(&Utc::now());
+    let dt_start = date_to_cal_date(start);
+    let dt_end = date_to_cal_date(end);
 
+    let mut calendar = ICalendar::new("2.0", "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN");
     // create event which contains the information regarding the conference
-    let mut event = Event::new("b68378cf-872d-44f1-9703-5e3725c56e71", "19960704T120000Z");
+    let uuid_str = Uuid::new_v4().to_string();
+    let mut event = Event::new(uuid_str, cal_now);
     // add properties
-    event.push(Organizer::new("mailto:jsmith@example.com"));
-    event.push(DtStart::new("19960918T143000Z"));
-    event.push(DtEnd::new("19960920T220000Z"));
-    event.push(Status::confirmed());
-    event.push(Categories::new("CONFERENCE"));
-    event.push(Summary::new("Networld+Interop Conference"));
+    let organizer = "mailto:jsmith@example.com";
+    // let dt_start = "19960918T143000Z";
+    // let dt_end = "19960920T220000Z";
+    let status = 
+        if true {
+            Status::confirmed()
+        } else {
+            Status::tentative()
+        };
+    let categories = category_from_purpose(purpose_id);
+    let summary = "Networld+Interop Conference";
     // Values that are "TEXT" must be escaped (only if the text contains a comma,
     // semicolon, backslash or newline).
-    event.push(Description::new(escape_text(
+    let description = escape_text(
         "Networld+Interop Conference and Exhibit\n\
          Atlanta World Congress Center\n\
          Atlanta, Georgia"
-    )));
+    );
+    event.push(Organizer::new(organizer));
+    event.push(DtStart::new(dt_start));
+    event.push(DtEnd::new(dt_end));
+    event.push(status);
+    event.push(Categories::new(categories));
+    event.push(Summary::new(summary));
+    event.push(Description::new(description));
     // add event to calendar
     calendar.add_event(event);
 
@@ -196,7 +230,7 @@ async fn home(
                     let day_one_weekday = day_one.weekday();
                     // Sunday is 1, Saturday is 7
                     let day_one_int = day_one_weekday.number_from_sunday();
-                    let cal = create_calendar_event();
+                    let cal = create_calendar_event(&Utc::now(), &Utc::now(), 1);
                     dbg!(cal);
                     let cal_data = CalendarData {
                         month: this_month,
@@ -531,9 +565,25 @@ pub struct IndexData {
     pub message: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EventPostRequest {
+    pub month: u32,
+    pub year: u32,
+    pub day: u32,
+    pub message: String,
+}
+
+fn validate_event_input(body: &Form<ConsultPost>) -> bool {
+    true
+}
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
+pub struct ConsultResponse {
+    id: i32,
+}
+
 #[post("/form")]
-async fn create_location(
-    body: web::Form<LocationPostRequest>,
+async fn create_consult_event(
+    body: web::Form<ConsultPost>,
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
@@ -554,41 +604,53 @@ async fn create_location(
                         .header("HX-Retarget", "#location_errors")
                         .body(body);
                 }
+
+                let consult_start_string =
+                body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
+                dbg!(&consult_start_string);
+                let consult_end_string =
+                    body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
+                dbg!(&consult_end_string);
+                let consult_end_datetime =
+                    DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+                dbg!(&consult_end_datetime);
+                dbg!(&consult_start_string);
+                let consult_start_datetime =
+                    DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+                dbg!(&consult_start_datetime);
+                let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
+                let consult_end_datetime_utc = consult_end_datetime.with_timezone(&Utc);
+
+                // Create ICS calendar to send out
+                let cal = create_calendar_event(&consult_start_datetime_utc,&consult_end_datetime_utc, body.consult_purpose_id);
+                
                 if let Some(user) = user_option {
                     // let user_body = hb.render("homepage", &user).unwrap();
-                    if validate_location_input(&body) {
-                        match sqlx::query_as::<_, LocationPostResponse>(
-                            "INSERT INTO locations (location_name, location_address_one, location_address_two, location_city, location_state, location_zip, location_phone, location_contact_id, territory_id) 
-                                    VALUES ($1, $2, NULLIF($3, ''), $4, $5, $6, NULLIF($7, ''), $8, DEFAULT) RETURNING location_id",
+                    if validate_event_input(&body) {
+                        match sqlx::query_as::<_, ConsultResponse>(
+                            "INSERT INTO consults (consult_purpose_id, client_id, location_id, consult_start, consult_end, notes) VALUES ($1, $2, $3, $4, $5) RETURNING id",
                         )
-                        .bind(&body.location_name)
-                        .bind(&body.location_address_one)
-                        .bind(&body.location_address_two)
-                        .bind(&body.location_city)
-                        .bind(&body.location_state)
-                        .bind(&body.location_zip)
-                        .bind(&body.location_phone)
-                        .bind(&body.location_contact_id)
+                        .bind(body.consult_purpose_id)
+                        .bind(body.client_id)
+                        .bind(body.location_id)
+                        .bind(consult_start_datetime)
+                        .bind(consult_end_datetime)
+                        .bind(body.notes.clone())
                         .fetch_one(&state.db)
                         .await
                         {
-                            Ok(loc) => {
-                                dbg!(loc.id);
+                            Ok(consult_response) => {
                                 let user_alert = UserAlert {
-                                    msg: format!("Location added successfully: ID #{:?}", loc.id),
+                                    msg: format!("Consult added successfully: ID #{:?}", consult_response.id),
                                     alert_class: "alert_success".to_owned(),
                                 };
-                                let template_data = json!({
-                                    "user_alert": user_alert,
-                                    "user": user,
-                                });
-                                let template_body = hb.render("crud-api", &template_data).unwrap();
-                                return HttpResponse::Ok().body(template_body);
+                                let body = hb.render("crud-api", &user_alert).unwrap();
+                                return HttpResponse::Ok().body(body);
                             }
                             Err(err) => {
                                 dbg!(&err);
                                 let user_alert = UserAlert {
-                                    msg: format!("Error adding location: {:?}", err),
+                                    msg: format!("Error Updating User After Adding Them As Consult: {:?}", err),
                                     alert_class: "alert_error".to_owned(),
                                 };
                                 let body = hb.render("crud-api", &user_alert).unwrap();
@@ -602,14 +664,6 @@ async fn create_location(
                             ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
-
-                        // // To test the alert more easily
-                        // let user_alert = UserAlert {
-                        //     msg: "Error adding location:".to_owned(),
-                        //     alert_class: "alert_error".to_owned(),
-                        // };
-                        // let body = hb.render("crud-api", &user_alert).unwrap();
-                        // return HttpResponse::Ok().body(body);
                     }
                 } else {
                     let index_data = IndexData {
