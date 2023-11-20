@@ -143,10 +143,39 @@ async fn search_location(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CalendarData {
     pub month: u32,
+    pub year: u32,
     pub first_day_of_month: u32,
     pub num_days: u32,
     pub weekday_range: Vec<u32>,
-    // pub holidays: Vec<i32>
+    pub holidays: Vec<(u32, String)>
+}
+
+fn get_month_holidays(month: u32) -> Vec<(u32, String)> {
+    match month {
+        1 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
+        2 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
+        3 => vec![(21, "Spring".to_string())],
+        4 => vec![(1, "April Fools".to_string()),(14, "Valentine's Day".to_string())],
+        5 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
+        6 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
+        7 => vec![(4, "Independence Day".to_string()),(11, "Veteran's Day".to_string())],
+        8 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
+        9 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
+        10 => vec![(31, "Halloween".to_string()),(14, "Valentine's Day".to_string())],
+        11 => vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())],
+        12 => vec![(25, "Christmas".to_string()),(31, "New Year's Eve".to_string())],
+        _ => vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())],
+    }
+}
+
+fn get_num_days(month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        // FIXME leap year
+        2 => 28,
+        _ => 0,
+    }
 }
 
 #[get("/")]
@@ -159,13 +188,24 @@ async fn home(
         match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
+                    // Homepage displays current Mo/Yr
+                    let this_month = Utc::now().month();
+                    let this_year = Utc::now().year();
+
+                    let day_one: NaiveDate = NaiveDate::from_ymd_opt(this_year, this_month, 1).unwrap();
+                    let day_one_weekday = day_one.weekday();
+                    // Sunday is 1, Saturday is 7
+                    let day_one_int = day_one_weekday.number_from_sunday();
                     let cal = create_calendar_event();
                     dbg!(cal);
                     let cal_data = CalendarData {
-                        month: 12,
-                        first_day_of_month: 5,
-                        num_days: 31,
+                        month: this_month,
+                        year: this_year as u32,
+                        first_day_of_month: day_one_int,
+                        num_days: get_num_days(this_month),
                         weekday_range: vec![1,2,3,4,5,6,7],
+                        // holidays: vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())]
+                        holidays: get_month_holidays(this_month),
                     };
                     let data = json! {{
                         "cal_data": cal_data,
@@ -193,23 +233,33 @@ async fn home(
     }
 }
 
-#[get("/calendar/next/{cur_month}")]
+#[get("/calendar/next/{cur_year}/{cur_month}")]
 async fn next_month(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
-    path: web::Path<u32>,
+    path: web::Path<(u32, u32)>,
     state: Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match validate_and_get_user(cookie, &state).await {
             Ok(user) => {
                 if let Some(usr) = user {
-                    let cur_month = path.into_inner();
+                    let (input_year, input_month) = path.into_inner();
+                    
+                    let cal_month = if input_month == 12 {1} else {input_month + 1};
+                    let cal_year = if input_month == 12 {input_year + 1} else {input_year};
+
+                    let day_one: NaiveDate = NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();
+                    let day_one_weekday = day_one.weekday();
+                    // Sunday is 1, Saturday is 7
+                    let day_one_int = day_one_weekday.number_from_sunday();
                     let cal_data = CalendarData {
-                        month: if cur_month == 12 {1} else {cur_month + 1},
-                        first_day_of_month: 5,
-                        num_days: 31,
+                        month: cal_month,
+                        year: cal_year,
+                        first_day_of_month: day_one_int,
+                        num_days: get_num_days(cal_month),
                         weekday_range: vec![1,2,3,4,5,6,7],
+                        holidays: get_month_holidays(cal_month),
                     };
                     let month_data = json! {{
                         "cal_data": cal_data,

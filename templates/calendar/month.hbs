@@ -1,20 +1,24 @@
 <div class="month" id="calendar_month">
     <table bgcolor="lightgrey" align="center" 
         cellspacing="21" cellpadding="21"> 
-        {{get_month_name cal_data.month}}
+        <h4 class="calendar_month">{{get_month_name cal_data.month}} - {{cal_data.year}}</h4>
         <caption align="top"> 
             Monthly Events for McGillicuddy Llc. Consultancy
         </caption> 
-        <button
-            hx-get="/event/calendar/prev/{{cal_data.month}}"
-            hx-target="#calendar_month"
-            hx-swap="outerHtml"
-        >Prev</button>
-        <button
-            hx-get="/event/calendar/next/{{cal_data.month}}"
-            hx-target="#calendar_month"
-            hx-swap="outerHtml"
-        >Next</button>
+        <div class="calendar_nav">
+            <button
+                class="left"
+                hx-get="/event/calendar/prev/{{cal_data.year}}/{{cal_data.month}}"
+                hx-target="#calendar_month"
+                hx-swap="outerHtml"
+            >Prev</button>
+            <button
+                class="right"
+                hx-get="/event/calendar/next/{{cal_data.year}}/{{cal_data.month}}"
+                hx-target="#calendar_month"
+                hx-swap="outerHtml"
+            >Next</button>
+        </div>
         <thead> 
             <tr> 
                 <th>Sun</th> 

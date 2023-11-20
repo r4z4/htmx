@@ -1300,6 +1300,32 @@ select::-webkit-scrollbar-thumb {
     border: 3px solid rgb(238, 201, 132);  
 }
 
+/*************
+** Calendar **
+**************/
+
+.calendar_nav {
+    width: 100%;
+}
+
+.calendar_month {
+    font-weight: bold;
+    color: blue;
+    text-align: center;
+}
+
+.calendar_nav button {
+    border: 1px solid black;
+}
+
+.calendar_nav .right {
+    float: right;
+}
+
+.calendar_nav .left {
+    float: left;
+}
+
 
 /*********************
 ** Responsive Table **

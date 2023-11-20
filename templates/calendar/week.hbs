@@ -1,7 +1,8 @@
 {{#if (int_eq week_no 1)}}
     <tr class="cal_week">
         {{#each cal_data.weekday_range}}
-            <td>{{first_week this cal_data}}</td> 
+            {{!-- <td>{{first_week this cal_data}}</td> --}}
+            {{> calendar/day day=(first_week this @root.cal_data) cal_data=@root.cal_data}}
         {{/each}}
         {{!-- e.g. Dec 1st is a Friday. Use an offset. --}}
     </tr> 
