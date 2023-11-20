@@ -263,12 +263,30 @@ handlebars_helper!(fourth_week: |day: u32, cal_data: CalendarData| {
 
 handlebars_helper!(fifth_week: |day: u32, cal_data: CalendarData| {
     // + 1 + 28
-    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 1 as i32;
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 28 as i32;
     // FIXME Account for Feb & 30 day months
     if offset_int < 31 {
         offset_int.to_string()
     } else {
         "".to_string()
+    }
+});
+
+handlebars_helper!(get_month_name: |month: u32| {
+    match month {
+        1 => "January",
+        2 => "February",
+        3 => "March",
+        4 => "April",
+        5 => "May",
+        6 => "June",
+        7 => "July",
+        8 => "August",
+        9 => "September",
+        10 => "October",
+        11 => "November",
+        12 => "December",
+        _ => "Oops",
     }
 });
 

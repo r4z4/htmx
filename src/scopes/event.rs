@@ -30,6 +30,8 @@ pub fn event_scope() -> Scope {
         .service(get_locations_handler)
         .service(search_location)
         .service(home)
+        .service(next_month)
+        //.service(prev_month)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -140,6 +142,7 @@ async fn search_location(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CalendarData {
+    pub month: u32,
     pub first_day_of_month: u32,
     pub num_days: u32,
     pub weekday_range: Vec<u32>,
@@ -159,6 +162,7 @@ async fn home(
                     let cal = create_calendar_event();
                     dbg!(cal);
                     let cal_data = CalendarData {
+                        month: 12,
                         first_day_of_month: 5,
                         num_days: 31,
                         weekday_range: vec![1,2,3,4,5,6,7],
@@ -167,6 +171,50 @@ async fn home(
                         "cal_data": cal_data,
                     }};
                     let body = hb.render("event-api", &data).unwrap();
+                    HttpResponse::Ok().body(body)
+                } else {
+                    let message = "Cannot find you";
+                    let body = hb.render("index", &message).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
+            }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok().body(body);
+                // HttpResponse::InternalServerError().json(format!("{:?}", err))
+            }
+        }
+        // FIXME: Is this else right? Redirect?
+    } else {
+        let message = "Your session seems to have expired. Please login again (3).".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
+    }
+}
+
+#[get("/calendar/next/{cur_month}")]
+async fn next_month(
+    hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
+    path: web::Path<u32>,
+    state: Data<AppState>,
+) -> impl Responder {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match validate_and_get_user(cookie, &state).await {
+            Ok(user) => {
+                if let Some(usr) = user {
+                    let cur_month = path.into_inner();
+                    let cal_data = CalendarData {
+                        month: if cur_month == 12 {1} else {cur_month + 1},
+                        first_day_of_month: 5,
+                        num_days: 31,
+                        weekday_range: vec![1,2,3,4,5,6,7],
+                    };
+                    let month_data = json! {{
+                        "cal_data": cal_data,
+                    }};
+                    let body = hb.render("calendar/month", &month_data).unwrap();
                     HttpResponse::Ok().body(body)
                 } else {
                     let message = "Cannot find you";

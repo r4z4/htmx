@@ -1,16 +1,9 @@
 {{#if (int_eq week_no 1)}}
     <tr class="cal_week">
-        {{!-- {{#for 1 7 1]}}
+        {{#each cal_data.weekday_range}}
             <td>{{first_week this cal_data}}</td> 
-        {{/for}} --}}
+        {{/each}}
         {{!-- e.g. Dec 1st is a Friday. Use an offset. --}}
-        <td>{{first_week 1 cal_data}}</td> 
-        <td>{{first_week 2 cal_data}}</td> 
-        <td>{{first_week 3 cal_data}}</td> 
-        <td>{{first_week 4 cal_data}}</td> 
-        <td>{{first_week 5 cal_data}}</td> 
-        <td>{{first_week 6 cal_data}}</td> 
-        <td>{{first_week 7 cal_data}}</td> 
     </tr> 
 {{else}}
     {{#if (int_eq week_no 2)}}

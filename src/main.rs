@@ -14,7 +14,7 @@ use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_list_view, get_search_rte,
     get_table_title, int_eq, int_in, loc_vec_len_ten, lower_and_single, sort_rte, str_eq,
-    subscribe_rte, to_title_case, subscribe_icon, preview_text, is_icon_col, get_icon, first_week, second_week, third_week, fourth_week, fifth_week,
+    subscribe_rte, to_title_case, subscribe_icon, preview_text, is_icon_col, get_icon, first_week, second_week, third_week, fourth_week, fifth_week, get_month_name,
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -806,6 +806,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("str_eq", Box::new(str_eq));
     handlebars.register_helper("int_eq", Box::new(int_eq));
     handlebars.register_helper("int_in", Box::new(int_in));
+    handlebars.register_helper("get_month_name", Box::new(get_month_name));
     handlebars.register_helper("first_week", Box::new(first_week));
     handlebars.register_helper("second_week", Box::new(second_week));
     handlebars.register_helper("third_week", Box::new(third_week));
