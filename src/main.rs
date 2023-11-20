@@ -14,7 +14,7 @@ use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, concat_args, concat_str_args, form_rte, get_list_view, get_search_rte,
     get_table_title, int_eq, int_in, loc_vec_len_ten, lower_and_single, sort_rte, str_eq,
-    subscribe_rte, to_title_case, subscribe_icon, preview_text, is_icon_col, get_icon,
+    subscribe_rte, to_title_case, subscribe_icon, preview_text, is_icon_col, get_icon, first_week, second_week, third_week, fourth_week, fifth_week,
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -31,7 +31,7 @@ use crate::{config::{
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
-    consultant::consultant_scope, location::location_scope, user::user_scope,
+    consultant::consultant_scope, location::location_scope, user::user_scope, event::event_scope
 };
 mod config;
 mod linfa;
@@ -107,17 +107,6 @@ async fn index(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    // let user = ValidatedUser {
-                    //     username: user.username,
-                    //     email: user.email,
-                    //     user_type_id: user.user_type_id,
-                    //     list_view: user.list_view,
-                    //     user_subs: user.user_subs,
-                    //     client_subs: user.client_subs,
-                    //     consult_subs: user.consult_subs,
-                    //     location_subs: user.location_subs,
-                    //     consultant_subs: user.consultant_subs,
-                    // };
                     let feed_data = user_feed(
                         &user,
                         &state.db,
@@ -817,6 +806,11 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("str_eq", Box::new(str_eq));
     handlebars.register_helper("int_eq", Box::new(int_eq));
     handlebars.register_helper("int_in", Box::new(int_in));
+    handlebars.register_helper("first_week", Box::new(first_week));
+    handlebars.register_helper("second_week", Box::new(second_week));
+    handlebars.register_helper("third_week", Box::new(third_week));
+    handlebars.register_helper("fourth_week", Box::new(fourth_week));
+    handlebars.register_helper("fifth_week", Box::new(fifth_week));
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
     handlebars.register_helper("concat_args", Box::new(concat_args));
     handlebars.register_helper("concat_str_args", Box::new(concat_str_args));
@@ -853,6 +847,7 @@ async fn main() -> std::io::Result<()> {
             .service(consultant_scope())
             .service(location_scope())
             .service(client_scope())
+            .service(event_scope())
             .service(send_email)
             .service(contact_us)
             .service(contact_us_submission)

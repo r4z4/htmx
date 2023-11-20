@@ -1,0 +1,26 @@
+<div class="month">
+    <table bgcolor="lightgrey" align="center" 
+        cellspacing="21" cellpadding="21"> 
+        <caption align="top"> 
+            I have no idea what this renders as
+        </caption> 
+        <thead> 
+            <tr> 
+                <th>Sun</th> 
+                <th>Mon</th> 
+                <th>Tue</th> 
+                <th>Wed</th> 
+                <th>Thu</th> 
+                <th>Fri</th> 
+                <th>Sat</th> 
+            </tr> 
+        </thead> 
+        <tbody> 
+            {{> calendar/week week_no=1 cal_data=cal_data}}
+            {{> calendar/week week_no=2 cal_data=cal_data}}
+            {{> calendar/week week_no=3 cal_data=cal_data}}
+            {{> calendar/week week_no=4 cal_data=cal_data}}
+            {{> calendar/week week_no=5 cal_data=cal_data}}
+        </tbody> 
+    </table>
+</div>

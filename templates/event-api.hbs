@@ -1,0 +1,24 @@
+{{
+#>
+ main-layout }}
+ <div class="event_api" id="event_api">
+    <h1>Events</h1>
+    <div class="btn_div">
+        <button
+            _="on hover toggle .metal_purple on me"
+            hx-get="/consult/list" 
+            hx-target="#event_op_container" 
+        >
+            Consults
+        </button>
+    </div>
+
+    <div id="event_response">
+    </div>
+
+    <div class="op_container" id="event_op_container">
+        {{!-- <p hx-get={{get_list_view user.list_view}} hx-trigger="load" hx-swap="innerHTML" hx-target="#event_op_container">Default View</p> --}}
+        {{> calendar/month cal_data=cal_data}}
+    </div>
+</div>
+{{/main-layout}}

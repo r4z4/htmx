@@ -1,7 +1,8 @@
 use convert_case::{Case, Casing};
 use handlebars::handlebars_helper;
+use serde::{Deserialize, Serialize};
 
-use crate::{models::model_location::LocationList, Entity, config::UserSubscriptions};
+use crate::{models::model_location::LocationList, Entity, config::UserSubscriptions, scopes::event::CalendarData};
 
 handlebars_helper!(to_title_case: |s: String| {
     // FIXME Always just set as aliases on server? Or do I like explicit data fields?
@@ -226,6 +227,48 @@ handlebars_helper!(get_table_title: |entity_type_id: i32| {
         7 => String::from("Clients"),
         8 => String::from("Query"),
         _ => String::from("Unknown Entity"),
+    }
+});
+
+// Calendar Helpers
+
+handlebars_helper!(first_week: |day: u32, cal_data: CalendarData| {
+    // n - first_d_o_m + 1 (Thurs = 5. Tues = 3.)
+    // i32 for negative
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 1 as i32;
+    if offset_int > 0 {
+        offset_int.to_string()
+    } else {
+        "".to_string()
+    }
+});
+
+handlebars_helper!(second_week: |day: u32, cal_data: CalendarData| {
+    // + 1 + 7
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 8 as i32;
+    offset_int.to_string()
+});
+
+handlebars_helper!(third_week: |day: u32, cal_data: CalendarData| {
+    // + 1 + 14
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 15 as i32;
+    offset_int.to_string()
+});
+
+handlebars_helper!(fourth_week: |day: u32, cal_data: CalendarData| {
+    // + 1 + 21
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 22 as i32;
+    offset_int.to_string()
+});
+
+handlebars_helper!(fifth_week: |day: u32, cal_data: CalendarData| {
+    // + 1 + 28
+    let offset_int: i32 = day as i32 - cal_data.first_day_of_month as i32 + 1 as i32;
+    // FIXME Account for Feb & 30 day months
+    if offset_int < 31 {
+        offset_int.to_string()
+    } else {
+        "".to_string()
     }
 });
 
