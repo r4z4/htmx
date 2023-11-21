@@ -115,6 +115,9 @@ async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 }
 
 fn validate_consult_input(body: &ConsultPost) -> bool {
+    // if body.consultant_id && body.linfa_assign {
+    //     false
+    // }
     true
 }
 
@@ -169,6 +172,12 @@ async fn create_consult(
             {
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
+                    // let consultant_id =
+                    //     if body.linfa_assign {
+                    //         linfa_pred()
+                    //     } else {
+                    //         body.consultant_id
+                    //     };
                     match sqlx::query_as::<_, ConsultResponse>(
                         "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
                     )

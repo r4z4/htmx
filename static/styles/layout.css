@@ -768,7 +768,7 @@ p,ul,ol {
     position: relative;
     text-align: left;
     text-indent: 25px;
-    padding-left: 35px;
+    /* padding-left: 35px; */
     margin-bottom: 12px;
     cursor: pointer;
     font-size: 22px;
@@ -776,6 +776,10 @@ p,ul,ol {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+
+  .align-right {
+    float: right;
   }
   
   /* Hide the browser's default checkbox */

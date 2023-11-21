@@ -14,6 +14,11 @@
       document.getElementById('upload_btn').disabled = true
     }
   });
+ document.getElementById('consultant_id').addEventListener('change', function(e) {
+    if (e) {
+      document.getElementById('linfa_assign').checked = false
+    }
+  });
 </script>
 {{
 #>
@@ -56,7 +61,7 @@
         <select class="field-style field-split align-left" id="consult_purpose_id" name="consult_purpose_id" value="{{entity.consult_purpose_id}}" >
             {{!-- Only display default option if new form (or no value, but specialty is required) --}}
             {{#unless @root.entity}}
-              <option value="" selected disabled hidden>Select One</option>
+              <option value="" selected disabled hidden>Select Purpose</option>
             {{/unless}}
             {{#each consult_purpose_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
@@ -74,7 +79,7 @@
         <select class="field-style field-split align-right" id="consult_result_id" name="consult_result_id" value="{{entity.consult_result_id}}" >
             {{!-- Only display default option if new form (or no value, but specialty is required) --}}
             {{#unless @root.entity}}
-              <option value="" selected disabled hidden>Select One</option>
+              <option value="" selected disabled hidden>Select Result</option>
             {{/unless}}
             {{#each consult_result_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
@@ -96,7 +101,7 @@
           <select class="field-style field-full align-none" id="location_id" name="location_id">
             {{!-- Only display default option if new form (or no value, but location is required) --}}
             {{#unless @root.entity}}
-              <option value="" selected disabled hidden>Select One</option>
+              <option value="" selected disabled hidden>Select Location</option>
             {{/unless}}
             {{#each location_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
@@ -119,7 +124,7 @@
           <select class="field-style field-full align-none" id="client_id" name="client_id">
             {{!-- Only display default option if new form (or no value, but client is required) --}}
             {{#unless @root.entity}}
-              <option value="" selected disabled hidden>Select One</option>
+              <option value="" selected disabled hidden>Select Client</option>
             {{/unless}}
             {{#each client_options}}
               {{!-- Only check for the match if have an entity. Else get an error. --}}
@@ -137,27 +142,39 @@
         </div>
       </li>
       <li>
-        <div>
-          <label for="consultant_id">Consultant</label>
-          <select class="field-style field-full align-none" id="consultant_id" name="consultant_id">
-            {{!-- Only display default option if new form (or no value, but consultant is required) --}}
-            {{#unless @root.entity}}
-              <option value="" selected disabled hidden>Select One</option>
-            {{/unless}}
-            {{#each consultant_options}}
-              {{!-- Only check for the match if have an entity. Else get an error. --}}
-              {{#if @root.entity}}
-                {{#if (int_eq this.value @root.entity.consultant_id)}}
-                  <option value="{{this.value}}" selected="true">{{this.key}}</option>
-                {{else}} 
-                  <option value="{{this.value}}">{{this.key}}</option>
-                {{/if}}
-              {{else}}
+        <select 
+          class="field-style field-split align-left" 
+          id="consultant_id" 
+          name="consultant_id"
+          {{!-- Need to choose JS or HS --}}
+          {{!-- _="on select set #linfa_assign.checked to false" --}}
+          >
+          {{!-- Only display default option if new form (or no value, but consultant is required) --}}
+          {{#unless @root.entity}}
+            <option value="" selected disabled hidden>Select Consultant</option>
+          {{/unless}}
+          {{#each consultant_options}}
+            {{!-- Only check for the match if have an entity. Else get an error. --}}
+            {{#if @root.entity}}
+              {{#if (int_eq this.value @root.entity.consultant_id)}}
+                <option value="{{this.value}}" selected="true">{{this.key}}</option>
+              {{else}} 
                 <option value="{{this.value}}">{{this.key}}</option>
               {{/if}}
-            {{/each}}
-          </select>
-        </div>
+            {{else}}
+              <option value="{{this.value}}">{{this.key}}</option>
+            {{/if}}
+          {{/each}}
+        </select>
+        <label class="field-split align-right container">Linfa Assign
+          <input 
+            type="checkbox" 
+            name="linfa_assign" 
+            id="linfa_assign"
+            _="on click set #consultant_id.value to ''"
+            >
+          <span class="checkmark"></span>
+        </label>
       </li>
 
       <li>
