@@ -5,7 +5,6 @@ use linfa_trees::{DecisionTree, SplitQuality};
 use ndarray::{Array2, Axis, array, s};
 // use csv::{ReaderBuilder, WriterBuilder};
 // use ndarray_csv::{Array2Reader, Array2Writer};
-use std::error::Error;
 
 // Which consultant should we send?
 // What hour should we hold the meeting?

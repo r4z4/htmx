@@ -10,7 +10,7 @@ use actix_web::{
     get,
     http::header::CONTENT_LENGTH,
     post,
-    web::{self, Data, Json},
+    web,
     HttpRequest, HttpResponse, Responder, Scope,
 };
 use chrono::{DateTime, Utc};
@@ -24,7 +24,7 @@ use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, test_subs, consult_result_options, consult_purpose_options, mime_type_id_from_path, validate_and_get_user, subs_from_user},
+    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, consult_result_options, consult_purpose_options, mime_type_id_from_path, validate_and_get_user, subs_from_user},
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,

@@ -26,6 +26,10 @@ DROP TABLE IF EXISTS user_sessions;
 DROP TABLE IF EXISTS user_types;
 DROP TABLE IF EXISTS user_settings;
 DROP TABLE IF EXISTS user_details;
+
+DROP TABLE IF EXISTS consult_purposes;
+DROP TABLE IF EXISTS consult_results;
+DROP TABLE IF EXISTS client_types;
 DROP TABLE IF EXISTS users;
 -- This needs to be last
 DROP TABLE IF EXISTS accounts;
@@ -34,10 +38,6 @@ DROP TRIGGER IF EXISTS user_settings_insert_trigger ON users;
 
 
 DROP TYPE IF EXISTS consultant_specialty;
-
-DROP TYPE IF EXISTS consult_purposes;
-DROP TYPE IF EXISTS consult_results;
-DROP TYPE IF EXISTS client_types;
 DROP TYPE IF EXISTS consultant_territory;
 DROP TYPE IF EXISTS user_type;
 DROP TYPE IF EXISTS state_abbr;

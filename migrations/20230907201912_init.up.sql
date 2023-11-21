@@ -383,6 +383,7 @@ CREATE TABLE IF NOT EXISTS consults (
         -- Clients call us and book appts
         consult_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         consult_end TIMESTAMPTZ DEFAULT NULL,
+        num_attendees INTEGER NOT NULL DEFAULT 99,
         notes TEXT DEFAULT NULL,
         consult_attachments INTEGER[] DEFAULT NULL,
         consult_result_id INTEGER NOT NULL DEFAULT 0,
@@ -519,13 +520,20 @@ VALUES
 -- Consultants
 ('hulk_hogan',          2, 2, 'hulk_hogan@consultancy.com',        '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('mike_ryan',           2, 2, 'mike_ryan@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
-('zardos',              2, 2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('zardos',              2, 2, 'zardos@consultancy.com',            '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'), -- 10
 ('gregs_lobos',         2, 2, 'gregs_lobos@consultancy.com',       '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('rob_bower',           2, 2, 'rob_bower@consultancy.com',         '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('v_smith',             2, 2, 'v_smith@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 ('joe_z',               2, 2, 'joe_z@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
 
-('to_be_consultant',    3, 2, 'to_be_c@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
+('to_be_consultant',    3, 2, 'to_be_c@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+
+('jamie',               2, 2, 'jamie@consultancy.com',              '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'), -- 16
+('alexandra',           2, 2, 'alexandra@consultancy.com',          '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('jimcoats',            2, 2, 'jimcoats@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('kevink',              2, 2, 'kevink@consultancy.com',             '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('jennifer',            2, 2, 'jennifer@consultancy.com',           '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8'),
+('luke',                2, 2, 'luke@consultancy.com',               '$argon2id$v=19$m=4096,t=192,p=12$l+EgZvJ/+GM1vOg3tNFD6dzeQtfGQiRA1bZLC/MBu/k$wU8nUrHybUQr25Un9CsCDKuWK9R8lLxKCH+Xp/P79l8');
 
 INSERT INTO user_details (user_id, address_one, address_two, city, state, zip, dob, primary_phone) 
 VALUES 
@@ -586,7 +594,14 @@ VALUES
 ('Greg',    'Cote',     2, 11, NULL,                                    4),
 ('Robert',  'Bower',    1, 12, NULL,                                    5),
 ('Vanessa', 'Smith',    3, 13, NULL,                                    2),
-('Joe',     'Zagacki',  2, 14, NULL,                                    3);
+('Joe',     'Zagacki',  2, 14, NULL,                                    3),
+
+('Jamie',       'Lopez',        3, 16, NULL,                                    2),
+('Alexandra',   'Leidos',       4, 17, NULL,                                    3),
+('Jim',         'Coats',        2, 18, NULL,                                    4),  -- 10
+('Kevin',       'Kubowlski',    1, 19, NULL,                                    5),
+('Jennifer',    'Sallte',       3, 20, NULL,                                    2),
+('Luke',        'Johns',        2, 21, NULL,                                    3);
 
 INSERT INTO consultant_ties (consultant_id, specialty_id, territory_id, consultant_start, consultant_end) 
 VALUES 
@@ -639,50 +654,57 @@ VALUES
 (7, 'It was a seven.', 1),
 (3, 'I give it a 3', 2);
 
-INSERT INTO consults (consult_purpose_id, consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes, consult_result_id) 
+INSERT INTO consults (consult_purpose_id, consultant_id, client_id, location_id, consult_start, consult_end, consult_attachments, notes, consult_result_id, num_attendees) 
 VALUES 
-(1, 1, 4,  2,  '2023-03-11 19:10:25', '2023-03-11 19:30:25', ARRAY[2], NULL, 1),
-(1, 2, 1,  1,  '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks', 1),
-(1, 1, 2,  1,  '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks', 1),
-(1, 2, 2,  2,  '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL, 4),
-(1, 1, 4,  2,  '2023-04-11 19:10:25', '2023-04-11 19:30:25', ARRAY[2], NULL, 3),
-(3, 2, 1,  1,  '2022-04-19 12:10:25', '2022-04-19 13:20:11', ARRAY[5], 'Repetition is the key', 3),
-(3, 1, 2,  1,  '2022-04-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO', 3),
-(3, 2, 2,  2,  '2022-04-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL, 2),
-(3, 7, 3,  9,  '2023-05-10 08:00:25', '2023-05-10 08:50:11', NULL, 'Headed back out to the location to see the folks', 1),
-(3, 2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', ARRAY[10], 'CSV CSV CSV', 1),
-(2, 1, 3,  2,  '2022-05-19 15:10:25', '2022-05-19 15:20:11', NULL, NULL, 1),
-(3, 5, 2,  1,  '2022-05-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO', 2),
-(3, 5, 4,  12, '2022-05-22 12:10:25', '2022-04-22 12:50:51', ARRAY[10], 'CSV CSV CSV', 1),
-(3, 4, 6,  9,  '2023-05-24 08:00:25', '2023-05-24 08:50:11', NULL, 'Headed back out to the location to see the folks', 1),
-(3, 7, 7,  10, '2023-05-26 09:00:25', '2023-05-26 11:50:11', NULL, NULL, 6),
-(1, 2, 8,  2,  '2022-05-28 08:10:25', '2022-05-28 09:20:11', ARRAY[8], 'Contains Mpg Video', 1),
-(1, 7, 7,  10, '2023-05-27 14:30:25', '2023-05-27 15:50:11', ARRAY[9], 'Contains MP3', 1),
-(3, 2, 8,  2,  '2022-05-28 15:40:25', '2022-05-28 15:50:11', NULL, 'Just a quick pop but we are billing :}', 1),
-(3, 6, 2,  7,  '2023-06-11 11:00:25', '2023-06-11 11:20:18', ARRAY[6], 'Twenty minute review of things.', 1),
-(4, 3, 5,  4,  '2023-06-13 12:55:25', '2023-06-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.', 1),
-(1, 4, 4,  7,  '2023-06-20 12:00:25', '2023-06-20 13:50:11', NULL, 'TODO', 1),
-(3, 3, 5,  4,  '2023-06-23 12:10:25', '2023-06-23 13:20:11', ARRAY[5], 'Just racking them up right now', 1),
-(3, 3, 3,  2,  '2023-06-22 12:00:25', '2023-06-22 13:50:11', NULL, 'Just a routine meeting for now.', 6),
-(1, 7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat', 5),
-(1, 6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!', 1),
-(5, 1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', ARRAY[6], 'Ruby PDF', 2),
-(1, 6, 3,  7,  '2023-10-10 10:00:25', '2023-10-10 11:20:18', ARRAY[6], 'Ruby was the focus on this one.', 1),
-(1, 3, 5,  4,  '2023-10-13 12:55:25', '2023-10-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.', 1),
-(1, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 3),
-(1, 3, 5,  4,  '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one', 1),
-(2, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 3),
-(2, 4, 2,  3,  '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.', 1),
-(1, 6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[7], 'Added a PDF that explains it all. It should be in attachments.', 1),
-(1, 3, 9,  19, '2023-09-19 11:10:25', '2023-09-19 12:20:11', ARRAY[5], 'Almost met her at Xerxes ave but went to location instead.', 1),
+(1, 1, 4,  2,  '2023-03-11 19:10:25', '2023-03-11 19:30:25', ARRAY[2], NULL, 1, 1),
+(1, 2, 1,  1,  '2022-04-13 12:10:25', '2022-04-13 13:20:11', ARRAY[5], 'An early one with the original folks', 1, 1),
+(1, 1, 2,  1,  '2022-04-17 15:10:25', '2022-04-17 15:20:11', NULL, 'Another early one with the original folks', 1, 3),
+(1, 2, 2,  2,  '2022-03-17 15:10:25', '2022-03-17 15:20:11', NULL, NULL, 4, 1),
+(1, 1, 4,  2,  '2023-04-11 19:10:25', '2023-04-11 19:30:25', ARRAY[2], NULL, 3, 1),
+(3, 2, 1,  1,  '2022-04-19 12:10:25', '2022-04-19 13:20:11', ARRAY[5], 'Repetition is the key', 3, 1),
+(3, 1, 2,  1,  '2022-04-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO', 3, 2),
+(3, 2, 2,  2,  '2022-04-22 12:10:25', '2022-04-22 12:50:51', NULL, NULL, 2, 5),
+(3, 7, 3,  9,  '2023-05-10 08:00:25', '2023-05-10 08:50:11', NULL, 'Headed back out to the location to see the folks', 1, 1),
+(3, 2, 2,  5,  '2023-05-07 10:00:25', '2023-05-07 11:50:11', ARRAY[10], 'CSV CSV CSV', 1, 2),
+(2, 1, 3,  2,  '2022-05-19 15:10:25', '2022-05-19 15:20:11', NULL, NULL, 1, 2),
+(3, 5, 2,  1,  '2022-05-22 09:10:25', '2022-04-22 09:20:11', NULL, 'TODO', 2, 2),
+(3, 5, 4,  12, '2022-05-22 12:10:25', '2022-04-22 12:50:51', ARRAY[10], 'CSV CSV CSV', 1, 2),
+(3, 4, 6,  9,  '2023-05-24 08:00:25', '2023-05-24 08:50:11', NULL, 'Headed back out to the location to see the folks', 1, 4),
+(3, 7, 7,  10, '2023-05-26 09:00:25', '2023-05-26 11:50:11', NULL, NULL, 6, 2),
+(1, 2, 8,  2,  '2022-05-28 08:10:25', '2022-05-28 09:20:11', ARRAY[8], 'Contains Mpg Video', 1, 1),
+(1, 7, 7,  10, '2023-05-27 14:30:25', '2023-05-27 15:50:11', ARRAY[9], 'Contains MP3', 1, 2),
+(3, 2, 8,  2,  '2022-05-28 15:40:25', '2022-05-28 15:50:11', NULL, 'Just a quick pop but we are billing :}', 1, 2),
+(3, 6, 2,  7,  '2023-06-11 11:00:25', '2023-06-11 11:20:18', ARRAY[6], 'Twenty minute review of things.', 1, 2),
+(4, 3, 5,  4,  '2023-06-13 12:55:25', '2023-06-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.', 1, 3),
+(1, 4, 4,  7,  '2023-06-20 12:00:25', '2023-06-20 13:50:11', NULL, 'TODO', 1, 2),
+(3, 3, 5,  4,  '2023-06-23 12:10:25', '2023-06-23 13:20:11', ARRAY[5], 'Just racking them up right now', 1, 2),
+(3, 3, 3,  2,  '2023-06-22 12:00:25', '2023-06-22 13:50:11', NULL, 'Just a routine meeting for now.', 6, 2),
+(1, 7, 3,  9,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'Rapid City is neat', 5, 2),
+(1, 6, 3,  5,  '2023-07-07 12:00:25', '2023-07-07 13:50:11', NULL, 'We went to Hawaii on this one!!', 1, 2),
+(5, 1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', ARRAY[6], 'Ruby PDF', 2, 5),
+(1, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 3, 5),
+(1, 3, 5,  4,  '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one', 1, 6),
+(2, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 3, 3),
+(2, 4, 2,  3,  '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.', 1, 2),
+(1, 6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[7], 'Added a PDF that explains it all. It should be in attachments.', 1, 1),
+(1, 3, 9,  19, '2023-09-19 11:10:25', '2023-09-19 12:20:11', ARRAY[5], 'Almost met her at Xerxes ave but went to location instead.', 1, 1),
+
+(1, 6,  3,  7, '2023-10-10 10:00:25', '2023-10-10 11:20:18', ARRAY[6], 'Again here we have Ruby was the focus.', 1, 1),
+(1, 3,  5,  4, '2023-10-13 12:55:25', '2023-10-13 13:32:11', ARRAY[3,5], 'Wav & Png were uploaded here.', 1, 3),
+(1, 8,  3,  7, '2023-10-01 10:00:25', '2023-10-01 10:20:18', ARRAY[6], 'Second batch of consultants coming in here.', 1, 1),
+(2, 9,  5,  4, '2023-10-01 10:00:00', '2023-10-01 11:32:00', ARRAY[3,5], 'Alexandra is a consultants for this one.', 1, 4),
+(1, 10, 3,  7, '2023-10-01 12:00:00', '2023-10-01 01:20:18', NULL, 'Its Jim.', 1, 1),
+(2, 11, 5,  4, '2023-10-02 12:55:25', '2023-10-02 13:32:11', NULL, 'Kevin here.', 1, 1),
+(1, 12, 6,  7, '2023-10-02 10:00:25', '2023-10-02 11:20:18', ARRAY[6], 'Attachment and then a new consultant.', 1, 7),
+(1, 13, 7,  4, '2023-10-02 12:55:25', '2023-10-02 13:32:11', ARRAY[3,5], 'In this one there is a Wav & Png were uploaded.', 1, 11),
 -- Add some future consults (scheduled)
-(1, NULL, 10, 7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, NULL, 4,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, NULL, 4,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, NULL, 5,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, NULL, 6,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, NULL, 1,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0),
-(1, 2, 2,  1,  '2024-01-11 16:00:00', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.', 1);
+(1, NULL, 10, 7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, NULL, 4,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, NULL, 4,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, NULL, 5,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, NULL, 6,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, NULL, 1,  7,  '2024-01-20 14:00:00', NULL, NULL, NULL, 0, DEFAULT),
+(1, 2, 2,  1,  '2024-01-11 16:00:00', '2023-09-11 16:50:11', NULL, 'Using the Default Address. Location not persisted. Location was at the Clevelander.', 1, 4);
 
 -- audio/flac
 INSERT INTO attachments (path, mime_type_id, user_id, channel, short_desc, created_at) 

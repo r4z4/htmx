@@ -1,8 +1,8 @@
-use std::{borrow::Borrow, vec};
+use std::vec;
 
 use actix_web::{
     get, post,
-    web::{self, Data, Json},
+    web::{self, Data},
     HttpRequest, HttpResponse, Responder, Scope,
 };
 
@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES, UserSubscriptions, test_subs, validate_and_get_user, subs_from_user,
+        ACCEPTED_SECONDARIES, test_subs, validate_and_get_user, subs_from_user,
     },
     models::{
         model_admin::{

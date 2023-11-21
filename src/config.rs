@@ -1,5 +1,5 @@
 use actix_web::{web::Data, HttpRequest};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use futures_util::{stream, Stream, StreamExt};
 use lazy_static::lazy_static;
 use lettre::{message::header::ContentType, transport::stub::StubTransport, Message, Transport};

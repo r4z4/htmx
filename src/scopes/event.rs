@@ -1,6 +1,6 @@
 use actix_web::web::{Data, Form};
-use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
-use chrono::{NaiveDate, Duration, Utc, Datelike, DateTime};
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder, Scope};
+use chrono::{NaiveDate, Utc, Datelike, DateTime};
 use ics::properties::{Categories, Description, DtEnd, DtStart, Organizer, Status, Summary};
 use ics::{escape_text, Event, ICalendar};
 use serde_json::json;
@@ -16,7 +16,7 @@ use crate::{
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList,
-        LocationPostRequest, LocationPostResponse,
+        LocationPostRequest,
     },
     AppState, ValidatedUser,
 };

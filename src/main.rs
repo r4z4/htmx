@@ -8,7 +8,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use config::{is_dirty, read_yaml, Post, UserFeedData, UserPost};
+use config::{is_dirty, Post, UserFeedData};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
@@ -26,7 +26,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::{config::{
-    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, subs_from_user,
+    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse,
 }, linfa::linfa_pred};
 
 use scopes::{

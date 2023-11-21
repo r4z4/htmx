@@ -1,8 +1,6 @@
 use std::{env, sync::Arc, collections::BTreeMap};
-
 use dotenv::dotenv;
-use redis::{Commands, ControlFlow, Client, PubSubCommands};
-
+use redis::{Commands, Client};
 use crate::{ValidatedUser, config::UserSubscriptions};
 
 pub trait RedisState {

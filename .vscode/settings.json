@@ -1,8 +1,18 @@
 {
     "cSpell.words": [
+        "actix",
+        "argonautica",
+        "chrono",
+        "Datelike",
+        "dotenv",
         "Gillicuddy",
+        "Hasher",
         "Hyperscript",
+        "lettre",
         "Linfa",
-        "Retarget"
+        "ndarray",
+        "Retarget",
+        "sqlx",
+        "Subadmin"
     ]
 }
