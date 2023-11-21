@@ -342,7 +342,9 @@ async fn logout(
                 // let static_err = "Error occurred while logging in (DB).";
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
                 // Notify someone
-                return HttpResponse::Ok().body(body);
+                return HttpResponse::Ok()
+                .header("HX-Redirect", "/")
+                .body(body);
                 // HttpResponse::InternalServerError().json(format!("{:?}", err))
             }
         }

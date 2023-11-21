@@ -1308,6 +1308,10 @@ select::-webkit-scrollbar-thumb {
     width: 100%;
 }
 
+/* .calendar_day {
+    border: 0.5px solid black;
+} */
+
 .calendar_month {
     font-weight: bold;
     color: blue;
@@ -1315,17 +1319,148 @@ select::-webkit-scrollbar-thumb {
 }
 
 .calendar_nav button {
-    border: 1px solid black;
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    display: inline-block;
+    outline: 0;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 4px;
+    font-size: 13px;
+    height: 30px;
+    background-color: #0000000d;
+    color: #0e0e10;
+    padding: 0 10px;
+    :hover {
+        background-color: #0000001a;
+    }
 }
 
 .calendar_nav .right {
     float: right;
+    margin-right: 3em;
 }
 
 .calendar_nav .left {
     float: left;
+    margin-left: 3em;
 }
 
+/*******
+Responsive Cal
+*******/
+
+  .cal_table {
+    border: 1px solid #ccc;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .cal_table caption {
+    font-size: 1.5em;
+    margin: .5em 0 .75em;
+  }
+  
+  .cal_table tr {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: .35em;
+  }
+  
+  .cal_table th,
+  .cal_table td {
+    /* padding: .625em; */
+    /* padding: 3em; */
+    padding: 0;
+    min-height: 4em;
+    /* text-align: center; */
+    border: 0.5px solid black;
+  }
+  
+  .cal_table th {
+    font-size: .85em;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  
+  @media screen and (max-width: 600px) {
+    .cal_table {
+      border: 0;
+    }
+  
+    .cal_table caption {
+      font-size: 1.3em;
+    }
+    
+    .cal_table thead {
+      border: none;
+      clip: rect(0 0 0 0);
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      padding: 0;
+      position: absolute;
+      width: 1px;
+    }
+    
+    .cal_table tr {
+      border-bottom: 3px solid #ddd;
+      display: block;
+      margin-bottom: .625em;
+    }
+    
+    .cal_table td {
+      border-bottom: 1px solid #ddd;
+      display: block;
+      font-size: .8em;
+      text-align: right;
+    }
+    
+    .cal_table td::before {
+      /*
+      * aria-label has no advantage, it won't be read inside a table
+      content: attr(aria-label);
+      */
+      content: attr(data-label);
+      float: left;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .cal_table td:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  /********
+  Cal Day
+  ********/
+
+  .day_container {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 5px;
+        grid-auto-rows: 20%;
+        grid-template-areas:
+          "a b b b b b b b"
+          "c c c c c c c c"
+          "c c c c c c c c"
+          "c c c c c c c c";
+      }
+      .item1 {
+        grid-area: a;
+      }
+      .item2 {
+        grid-area: b;
+        align-self: start;
+      }
+      .item3 {
+        grid-area: c;
+        align-self: end;
+      }
 
 /*********************
 ** Responsive Table **

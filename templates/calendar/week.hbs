@@ -10,40 +10,34 @@
     {{#if (int_eq week_no 2)}}
     <tr class="cal_week">
         {{#each cal_data.weekday_range}}
-            <td>{{second_week this @root.cal_data}}</td> 
+            {{!-- <td>{{second_week this @root.cal_data}}</td>  --}}
+            {{> calendar/day day=(second_week this @root.cal_data) cal_data=@root.cal_data}}
         {{/each}}
     </tr>
     {{else}}
         {{#if (int_eq week_no 3)}}
         <tr class="cal_week">
             {{#each cal_data.weekday_range}}
-                <td>{{third_week this @root.cal_data}}</td> 
+                {{!-- <td>{{third_week this @root.cal_data}}</td>  --}}
+                {{> calendar/day day=(third_week this @root.cal_data) cal_data=@root.cal_data}}
             {{/each}}
         </tr>
         {{else}}
             {{#if (int_eq week_no 4)}}
             <tr class="cal_week">
                 {{#each cal_data.weekday_range}}
-                    <td>{{fourth_week this @root.cal_data}}</td> 
+                    {{> calendar/day day=(fourth_week this @root.cal_data) cal_data=@root.cal_data}}
                 {{/each}}
             </tr>
             {{else}}
-                {{#if (int_eq week_no 4)}}
+                {{#if (int_eq week_no 5)}}
                 <tr class="cal_week">
                     {{#each cal_data.weekday_range}}
-                        <td>{{fourth_week this @root.cal_data}}</td> 
+                        {{> calendar/day day=(fifth_week this @root.cal_data) cal_data=@root.cal_data}}
                     {{/each}}
                 </tr>
                 {{else}}
-                    {{#if (int_eq week_no 5)}}
-                    <tr class="cal_week">
-                        {{#each cal_data.weekday_range}}
-                            <td>{{fifth_week this @root.cal_data}}</td> 
-                        {{/each}}
-                    </tr>
-                    {{else}}
-                        <p>We got problems</p>
-                    {{/if}}
+                    <p>We got problems</p>
                 {{/if}}
             {{/if}}
         {{/if}}

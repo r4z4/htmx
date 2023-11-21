@@ -233,17 +233,6 @@ async fn about_us(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let user = ValidatedUser {
-                        username: user.username,
-                        email: user.email,
-                        user_type_id: user.user_type_id,
-                        list_view: user.list_view,
-                        user_subs: user.user_subs,
-                        client_subs: user.client_subs,
-                        consult_subs: user.consult_subs,
-                        location_subs: user.location_subs,
-                        consultant_subs: user.consultant_subs,
-                    };
                     let template_data = json! {{
                         "user": user,
                         "data": &data,
