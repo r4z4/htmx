@@ -1,9 +1,12 @@
 use std::{fs::File, io::Write};
+use chrono::{DateTime, Utc, Timelike};
 use linfa::{Dataset, traits::Fit};
 use linfa::prelude::Predict;
 use linfa_trees::{DecisionTree, SplitQuality};
 use ndarray::{Array2, Axis, array, s};
-use struct_iterable::Iterable;
+use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
+use sqlx::{Postgres, Pool};
 
 use crate::scopes::consult::LinfaPredictionInput;
 // use csv::{ReaderBuilder, WriterBuilder};
@@ -13,19 +16,49 @@ use crate::scopes::consult::LinfaPredictionInput;
 // What hour should we hold the meeting?
 // If what hour - labels will be the hour_of_day and set received_follow_up to 1 (true)
 
-pub struct LinfaConsultScheduler {
-    pub consult_purpose_id: f32,
-    pub client_id: f32,
-    pub client_type: f32,
-    pub location_id: f32,
-    pub hour_of_day: f32,
-    pub length_of_meeting: f32,
-    pub notes_length: f32,
-    pub num_attachments: f32,
-    // 0 no 1 yes
-    pub received_follow_up: f32,
-    pub num_attendees: f32,
-    pub consultant_id: f32,
+#[derive(Debug, Serialize, FromRow, Deserialize)]
+pub struct ModelData {
+    consult_purpose_id: i32,
+    client_type_id: i32,
+    client_id: i32,
+    specialty_id: i32,
+    territory_id: i32,
+    location_id: i32,
+    notes: Option<String>, 
+    consult_result_id: i32,
+    num_attendees: i32,
+    consult_start_date: Option<DateTime<Utc>>,
+    consult_end_date: Option<DateTime<Utc>>,
+}
+
+impl ModelData {
+    pub fn as_f32array(&self) -> [f32; 11] {
+        let diff = self.consult_end_date.unwrap() - self.consult_start_date.unwrap();
+        let duration = diff.num_minutes() as i32;
+        let notes_count = if self.notes.is_some() { self.notes.as_ref().unwrap().chars().count() } else {0};
+        [self.consult_purpose_id as f32, self.client_id as f32, self.client_type_id as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, 
+            notes_count as f32, duration as f32, self.consult_start_date.unwrap().naive_local().hour() as f32, self.consult_result_id as f32, self.num_attendees as f32]
+    }
+}
+
+async fn build_model_ndarray(db: &Pool<Postgres>) -> Result<Array2<f32>, String> {
+    match sqlx::query_as::<_, ModelData>(
+        "SELECT consult_purpose_id, client_type_id, clients.id, clients.specialty_id, clients.territory_id, location_id, notes, consult_result_id, num_attendees, consult_start, consult_end
+                FROM consults INNER JOIN clients ON consults.client_id = clients.id WHERE consult_end_date < now()",
+    )
+    .fetch_all(db)
+    // FIXME
+    .await
+    {
+        Ok(model_data) => {
+            let built_arr: Array2<f32> = model_data.iter()
+                .map(|row| row.as_f32array())
+                .collect::<Vec<_>>()
+                .into();
+            Ok(built_arr)
+        },
+        Err(e) => Err(format!("Error in DB {}", e).to_string())
+    }
 }
 
 pub struct FakeRow {
@@ -44,8 +77,8 @@ pub struct FakeRow {
 
 impl LinfaPredictionInput {
     pub fn as_ndarray(&self) -> [f32; 11] {
-        [self.client_type as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, self.client_id as f32, self.notes_length as f32, 
-            self.meeting_duration as f32, self.num_attendees as f32, self.hour_of_day as f32, self.consult_purpose_id as f32, self.received_follow_up as f32]
+        [self.consult_purpose_id as f32, self.client_id as f32, self.client_type as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, 
+            self.notes_length as f32, self.meeting_duration as f32, self.hour_of_day as f32, self.received_follow_up as f32, self.num_attendees as f32]
     }
 }
 
@@ -64,24 +97,25 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
 
     dbg!(&built_arr);
 
+    // Replace with Existing Records of Completed Consults
     let original_data: Array2<f32> = array!(
-        [1.,    6.,    3.,     12.,    13.,     30.,      33.,      1.,     1.,    7.,      1.],
-        [1.,    3.,    1.,     3.,     8.,      122.,     44.,      2.,     1.,    2.,      2.],
-        [1.,    1.,    1.,     1.,     9.,      34.,      32.,      2.,     1.,    1.,      5.],
-        [1.,    5.,    3.,     6.,     9.,      13.,      123.,     1.,     0.,    5.,      1.],
-        [1.,    2.,    2.,     6.,     10.,     35.,      744.,     0.,     1.,    3.,      7.],
-        [1.,    8.,    1.,     6.,     16.,     66.,      0.,       2.,     1.,    3.,      2.],
-        [1.,    7.,    2.,     12.,    13.,     43.,      32.,      1.,     1.,    2.,      4.],
-        [1.,    4.,    1.,     3.,     11.,     15.,      0.,       3.,     0.,    2.,      6.],
-        [1.,    3.,    1.,     1.,     7.,      77.,      44.,      4.,     1.,    1.,      5.],
-        [1.,    5.,    3.,     4.,     8.,      111.,     122.,     0.,     0.,    4.,      7.],
-        [1.,    12.,   5.,     4.,     16.,     31.,      522.,     1.,     0.,    3.,      4.],
-        [1.,    13.,   4.,     3.,     15.,     52.,      0.,       0.,     1.,    3.,      3.]
+        [1.,    6.,    3.,     2.,     1.,       3.,        30.,      33.,      7.,      1.,    7.,      1.],
+        [1.,    3.,    1.,     3.,     2.,       8.,        122.,     44.,      8.,      1.,    2.,      2.],
+        [1.,    1.,    1.,     1.,     3.,       9.,        134.,     32.,      8.,      1.,    1.,      5.],
+        [1.,    5.,    3.,     4.,     4.,       9.,        13.,      123.,     8.,      0.,    5.,      1.],
+        [1.,    2.,    2.,     4.,     2.,       10.,       135.,     54.,      10.,     1.,    3.,      7.],
+        [1.,    8.,    1.,     4.,     3.,       16.,       66.,      44.,      12.,     1.,    3.,      2.],
+        [1.,    7.,    2.,     2.,     1.,       13.,       43.,      32.,      11.,     1.,    2.,      4.],
+        [1.,    4.,    1.,     3.,     4.,       11.,       15.,      24.,      13.,     0.,    2.,      6.],
+        [1.,    3.,    1.,     1.,     4.,       7.,        77.,      44.,      7.,      1.,    1.,      5.],
+        [1.,    5.,    3.,     5.,     2.,       8.,        111.,     122.,     10.,     0.,    4.,      7.],
+        [1.,    12.,   5.,     5.,     5.,       16.,       131.,     122.,     11.,     0.,    3.,      4.],
+        [1.,    13.,   4.,     3.,     4.,       15.,       52.,      0.,       10.,     1.,    3.,      3.]
     );
 
     dbg!(&original_data);
 
-    let feature_names = vec!["consult_purpose_id", "client_id", "client_type", "location_id", "hour_of_day", "length_of_meeting", "notes_length", "num_attachments", "received_follow_up", "num_attendees", "consultant_id"];
+    let feature_names = vec!["consult_purpose_id", "client_id", "client_type", "specialty_id", "territory_id", "location_id", "notes_length", "meeting_duration", "hour_of_day", "received_follow_up", "num_attendees", "consultant_id"];
     let num_features = built_arr.len_of(Axis(1)) - 1;
     let features = built_arr.slice(s![.., 0..num_features]).to_owned();
     let labels = built_arr.column(num_features).to_owned();
@@ -104,6 +138,7 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
         .fit(&linfa_dataset)
         .unwrap();
 
+    // Replace with LinfaPredictionInput struct.as_ndarray() for pred
     // Last col as 1 for a received_follow_up. Predict consultant for the positive outcome.
     let test: Array2<f32> = array!(
         [1.,    7.,    3.,    3.,     15.,     52.,      0.,       0.,      1.],
