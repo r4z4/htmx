@@ -1,7 +1,7 @@
-use std::{env, sync::Arc, collections::BTreeMap};
+use crate::{config::UserSubscriptions, ValidatedUser};
 use dotenv::dotenv;
-use redis::{Commands, Client};
-use crate::{ValidatedUser, config::UserSubscriptions};
+use redis::{Client, Commands};
+use std::{collections::BTreeMap, env, sync::Arc};
 
 pub trait RedisState {
     fn client(&self) -> &Arc<Client>;
@@ -14,10 +14,16 @@ pub struct Ctx {
 impl Ctx {
     fn new() -> Ctx {
         dotenv().ok();
-        let redis_host_name =
-            env::var("REDIS_HOSTNAME").unwrap_or(env::var("REDIS_HOSTNAME").to_owned().unwrap_or("NoURL".to_string()));
-        let redis_password =
-            env::var("REDIS_PASSWORD").unwrap_or(env::var("REDIS_PASSWORD").to_owned().unwrap_or("NoURL".to_string()));
+        let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(
+            env::var("REDIS_HOSTNAME")
+                .to_owned()
+                .unwrap_or("NoURL".to_string()),
+        );
+        let redis_password = env::var("REDIS_PASSWORD").unwrap_or(
+            env::var("REDIS_PASSWORD")
+                .to_owned()
+                .unwrap_or("NoURL".to_string()),
+        );
         let redis_conn_url = format!("redis://:{}@{}:6379", redis_password, redis_host_name);
         let client = Client::open(redis_conn_url).unwrap();
         Ctx {
@@ -101,9 +107,17 @@ pub fn set_int(
 
 pub fn redis_connect() -> redis::Connection {
     //format - host:port
-    let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(env::var("REDIS_HOSTNAME").to_owned().unwrap_or("NoURL".to_string()));
+    let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(
+        env::var("REDIS_HOSTNAME")
+            .to_owned()
+            .unwrap_or("NoURL".to_string()),
+    );
 
-    let redis_password = env::var("REDIS_PASSWORD").unwrap_or(env::var("REDIS_PASSWORD").to_owned().unwrap_or("NoURL".to_string()));
+    let redis_password = env::var("REDIS_PASSWORD").unwrap_or(
+        env::var("REDIS_PASSWORD")
+            .to_owned()
+            .unwrap_or("NoURL".to_string()),
+    );
     let redis_conn_url = format!("redis://:{}@{}:6379", redis_password, redis_host_name);
     redis::Client::open(redis_conn_url)
         .expect("Invalid connection URL")
@@ -149,38 +163,38 @@ pub fn redis_connect() -> redis::Connection {
 
 pub fn redis_test_data(mut con: redis::Connection) -> () {
     let mut option: BTreeMap<String, i32> = BTreeMap::new();
-        let prefix = "select-option";
-        option.insert(String::from("location_one"), 1);
-        option.insert(String::from("location_two"), 2);
-        // Set it in Redis
-        let _: () = redis::cmd("HSET")
-            .arg(format!("{}:{}", prefix, "location"))
-            .arg(option)
-            .query(&mut con)
-            .expect("failed to execute HSET");
-        let _ = set_int(&mut con, "answer", 44, 60);
-        // let _: () = con.set("answer", 44).unwrap();
-        let answer: i32 = con.get("answer").unwrap();
-        println!("Answer: {}", answer);
+    let prefix = "select-option";
+    option.insert(String::from("location_one"), 1);
+    option.insert(String::from("location_two"), 2);
+    // Set it in Redis
+    let _: () = redis::cmd("HSET")
+        .arg(format!("{}:{}", prefix, "location"))
+        .arg(option)
+        .query(&mut con)
+        .expect("failed to execute HSET");
+    let _ = set_int(&mut con, "answer", 44, 60);
+    // let _: () = con.set("answer", 44).unwrap();
+    let answer: i32 = con.get("answer").unwrap();
+    println!("Answer: {}", answer);
 
-        let info: BTreeMap<String, String> = redis::cmd("HGETALL")
-            .arg(format!("{}:{}", prefix, "location"))
-            .query(&mut con)
-            .expect("failed to execute HGETALL");
-        println!("info for rust redis driver: {:?}", info);
+    let info: BTreeMap<String, String> = redis::cmd("HGETALL")
+        .arg(format!("{}:{}", prefix, "location"))
+        .query(&mut con)
+        .expect("failed to execute HGETALL");
+    println!("info for rust redis driver: {:?}", info);
 
-        // let ctx = Ctx::new();
-        // let handle = subscribe(&ctx);
-        // publish(&ctx);
-        // handle.join().unwrap();
+    // let ctx = Ctx::new();
+    // let handle = subscribe(&ctx);
+    // publish(&ctx);
+    // handle.join().unwrap();
 
-        // let mut pubsub = con.as_pubsub();
-        // pubsub.subscribe("channel_1")?;
-        // pubsub.subscribe("channel_2")?;
-        //
-        // loop {
-        //     let msg = pubsub.get_message()?;
-        //     let payload : String = msg.get_payload()?;
-        //     println!("channel '{}': {}", msg.get_channel_name(), payload);
-        // }
+    // let mut pubsub = con.as_pubsub();
+    // pubsub.subscribe("channel_1")?;
+    // pubsub.subscribe("channel_2")?;
+    //
+    // loop {
+    //     let msg = pubsub.get_message()?;
+    //     let payload : String = msg.get_payload()?;
+    //     println!("channel '{}': {}", msg.get_channel_name(), payload);
+    // }
 }

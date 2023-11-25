@@ -1,14 +1,10 @@
-use actix_web::{
-    get, patch, post,
-    web,
-    HttpResponse, Responder, Scope, HttpRequest,
-};
+use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
 
 use crate::{
     config::{
-        self, get_validation_response, FilterOptions, FormErrorResponse,
-        ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES, subs_from_user, validate_and_get_user,
+        self, get_validation_response, subs_from_user, validate_and_get_user, FilterOptions,
+        FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap,
+        ValidationResponse, ACCEPTED_SECONDARIES,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -38,8 +34,7 @@ pub async fn get_clients_handler(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await 
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_clients_handler firing");
@@ -73,7 +68,8 @@ pub async fn get_clients_handler(
 
                     if query_result.is_err() {
                         let error_msg = "Error occurred while fetching all client records";
-                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let validation_response =
+                            ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
@@ -96,9 +92,9 @@ pub async fn get_clients_handler(
                 } else {
                     let message = "User Option is a None".to_owned();
                     let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok().body(body)
+                    return HttpResponse::Ok().body(body);
                 };
-            },
+            }
             Err(err) => {
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
@@ -270,19 +266,13 @@ async fn create_client(
         {
             Ok(loc) => {
                 dbg!(loc.id);
-                let user_alert = UserAlert {
-                    msg: format!("Client added successfully: client_id #{:?}", loc.id),
-                    alert_class: "alert_success".to_owned(),
-                };
+                let user_alert = UserAlert::from((format!("Client added successfully: client_id #{:?}", loc.id).as_str(), "alert_success"));
                 let body = hb.render("crud-api-inner", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error adding client: {:?}", err),
-                    alert_class: "alert_error".to_owned(),
-                };
+                let user_alert = UserAlert::from((format!("Error adding client: {:?}", err).as_str(), "alert_error"));
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
@@ -397,19 +387,19 @@ async fn patch_client(
         {
             Ok(client) => {
                 dbg!(client.id);
-                let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", client.id),
-                    alert_class: "alert_success".to_owned(),
-                };
+                let user_alert = UserAlert::from((
+                    format!("Location added successfully: client_id #{:?}", client.id).as_str(),
+                    "alert_success",
+                ));
                 let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error patching location: {:?}", err),
-                    alert_class: "alert_error".to_owned(),
-                };
+                let user_alert = UserAlert::from((
+                    format!("Error patching location: {:?}", err).as_str(),
+                    "alert_error",
+                ));
                 let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }

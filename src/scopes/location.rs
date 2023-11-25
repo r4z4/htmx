@@ -3,15 +3,15 @@ use serde_json::json;
 
 use crate::{
     config::{
-        self, get_validation_response, validate_and_get_user, FilterOptions, FormErrorResponse,
-        ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap, ValidationResponse,
-        ACCEPTED_SECONDARIES, test_subs, subs_from_user,
+        self, get_validation_response, subs_from_user, test_subs, validate_and_get_user,
+        FilterOptions, FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert,
+        ValidationErrorMap, ValidationResponse, ACCEPTED_SECONDARIES,
     },
     models::model_location::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, ValidatedUser, HeaderValueExt,
+    AppState, HeaderValueExt, ValidatedUser,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -101,14 +101,13 @@ pub async fn get_locations_handler(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await 
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_locations_handler firing");
                     let limit = opts.limit.unwrap_or(10);
                     let offset = (opts.page.unwrap_or(1) - 1) * limit;
-                
+
                     if let Some(like) = &opts.search {
                         let search_sql = format!("%{}%", like);
                         let query_result = sqlx::query_as!(
@@ -132,18 +131,20 @@ pub async fn get_locations_handler(
                         )
                         .fetch_all(&state.db)
                         .await;
-                
+
                         dbg!(&query_result);
-                
+
                         if query_result.is_err() {
-                            let error_msg = "Error occurred while fetching searched location records";
-                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let error_msg =
+                                "Error occurred while fetching searched location records";
+                            let validation_response =
+                                ValidationResponse::from((error_msg, "validation_error"));
                             let body = hb.render("validation", &validation_response).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
-                
+
                         let locations = query_result.unwrap();
-                
+
                         let locations_table_data = ResponsiveTableData {
                             entity_type_id: 5,
                             vec_len: locations.len(),
@@ -152,9 +153,9 @@ pub async fn get_locations_handler(
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
-                
+
                         dbg!(&locations_table_data);
-                
+
                         let body = hb
                             .render("responsive-table-inner", &locations_table_data)
                             .unwrap();
@@ -179,23 +180,24 @@ pub async fn get_locations_handler(
                         )
                         .fetch_all(&state.db)
                         .await;
-                
+
                         dbg!(&query_result);
-                
+
                         if query_result.is_err() {
                             let error_msg = "Error occurred while fetching all location records";
-                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let validation_response =
+                                ValidationResponse::from((error_msg, "validation_error"));
                             let body = hb.render("validation", &validation_response).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
-                
+
                         let locations = query_result.unwrap();
-                
+
                         //     let consultants_response = ConsultantListResponse {
                         //         consultants: consultants,
                         //         name: "Hello".to_owned()
                         // ,    };
-                
+
                         // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
                         // let load_more_url_base = "/location/list?page=".to_owned();
                         let locations_table_data = ResponsiveTableData {
@@ -206,9 +208,9 @@ pub async fn get_locations_handler(
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
-                
+
                         dbg!(&locations_table_data);
-                
+
                         let body = hb
                             .render("responsive-table", &locations_table_data)
                             .unwrap();
@@ -232,7 +234,6 @@ pub async fn get_locations_handler(
         HttpResponse::Ok().body(body)
     }
 }
-
 
 #[get("/form")]
 async fn location_form(
@@ -398,10 +399,7 @@ async fn create_location(
                         {
                             Ok(loc) => {
                                 dbg!(loc.id);
-                                let user_alert = UserAlert {
-                                    msg: format!("Location added successfully: ID #{:?}", loc.id),
-                                    alert_class: "alert_success".to_owned(),
-                                };
+                                let user_alert = UserAlert::from((format!("Location added successfully: ID #{:?}", loc.id).as_str(), "alert_success"));
                                 let template_data = json!({
                                     "user_alert": user_alert,
                                     "user": user,
@@ -411,10 +409,7 @@ async fn create_location(
                             }
                             Err(err) => {
                                 dbg!(&err);
-                                let user_alert = UserAlert {
-                                    msg: format!("Error adding location: {:?}", err),
-                                    alert_class: "alert_error".to_owned(),
-                                };
+                                let user_alert = UserAlert::from((format!("Error adding location: {:?}", err).as_str(), "alert_error"));
                                 let body = hb.render("crud-api", &user_alert).unwrap();
                                 return HttpResponse::Ok().body(body);
                             }
@@ -426,14 +421,6 @@ async fn create_location(
                             ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
-
-                        // // To test the alert more easily
-                        // let user_alert = UserAlert {
-                        //     msg: "Error adding location:".to_owned(),
-                        //     alert_class: "alert_error".to_owned(),
-                        // };
-                        // let body = hb.render("crud-api", &user_alert).unwrap();
-                        // return HttpResponse::Ok().body(body);
                     }
                 } else {
                     let index_data = IndexData {
@@ -563,10 +550,10 @@ async fn patch_location(
         {
             Ok(loc) => {
                 dbg!(loc.id);
-                let user_alert = UserAlert {
-                    msg: format!("Location added successfully: ID #{:?}", loc.id),
-                    alert_class: "alert_success".to_owned(),
-                };
+                let user_alert = UserAlert::from((
+                    format!("Location added successfully: ID #{:?}", loc.id).as_str(),
+                    "alert_success",
+                ));
                 let full_page_data = FullPageTemplateData {
                     user_alert: user_alert.clone(),
                     user: None,
@@ -580,11 +567,6 @@ async fn patch_location(
                 let validation_response =
                     ValidationResponse::from((error_msg.as_str(), "validation_error"));
                 let body = hb.render("validation", &validation_response).unwrap();
-                // let user_alert = UserAlert {
-                //     msg: format!("Error patching location: {:?}", err),
-                //     alert_class: "alert_error".to_owned(),
-                // };
-                // let body = hb.render("list-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }

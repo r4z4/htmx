@@ -1,12 +1,12 @@
-use std::{fs::File, io::Write};
-use chrono::{DateTime, Utc, Timelike};
-use linfa::{Dataset, traits::Fit};
+use chrono::{DateTime, Timelike, Utc};
 use linfa::prelude::Predict;
+use linfa::{traits::Fit, Dataset};
 use linfa_trees::{DecisionTree, SplitQuality};
-use ndarray::{Array2, Axis, array, s};
+use ndarray::{array, s, Array2, Axis};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use sqlx::{Postgres, Pool};
+use sqlx::{Pool, Postgres};
+use std::{fs::File, io::Write};
 
 use crate::scopes::consult::LinfaPredictionInput;
 // use csv::{ReaderBuilder, WriterBuilder};
@@ -24,7 +24,7 @@ pub struct ModelData {
     specialty_id: i32,
     territory_id: i32,
     location_id: i32,
-    notes: Option<String>, 
+    notes: Option<String>,
     consult_result_id: i32,
     num_attendees: i32,
     consult_start_date: Option<DateTime<Utc>>,
@@ -35,9 +35,24 @@ impl ModelData {
     pub fn as_f32array(&self) -> [f32; 11] {
         let diff = self.consult_end_date.unwrap() - self.consult_start_date.unwrap();
         let duration = diff.num_minutes() as i32;
-        let notes_count = if self.notes.is_some() { self.notes.as_ref().unwrap().chars().count() } else {0};
-        [self.consult_purpose_id as f32, self.client_id as f32, self.client_type_id as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, 
-            notes_count as f32, duration as f32, self.consult_start_date.unwrap().naive_local().hour() as f32, self.consult_result_id as f32, self.num_attendees as f32]
+        let notes_count = if self.notes.is_some() {
+            self.notes.as_ref().unwrap().chars().count()
+        } else {
+            0
+        };
+        [
+            self.consult_purpose_id as f32,
+            self.client_id as f32,
+            self.client_type_id as f32,
+            self.specialty_id as f32,
+            self.territory_id as f32,
+            self.location_id as f32,
+            notes_count as f32,
+            duration as f32,
+            self.consult_start_date.unwrap().naive_local().hour() as f32,
+            self.consult_result_id as f32,
+            self.num_attendees as f32,
+        ]
     }
 }
 
@@ -77,21 +92,76 @@ pub struct FakeRow {
 
 impl LinfaPredictionInput {
     pub fn as_ndarray(&self) -> [f32; 11] {
-        [self.consult_purpose_id as f32, self.client_id as f32, self.client_type as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, 
-            self.notes_length as f32, self.meeting_duration as f32, self.hour_of_day as f32, self.received_follow_up as f32, self.num_attendees as f32]
+        [
+            self.consult_purpose_id as f32,
+            self.client_id as f32,
+            self.client_type as f32,
+            self.specialty_id as f32,
+            self.territory_id as f32,
+            self.location_id as f32,
+            self.notes_length as f32,
+            self.meeting_duration as f32,
+            self.hour_of_day as f32,
+            self.received_follow_up as f32,
+            self.num_attendees as f32,
+        ]
     }
 }
 
 pub fn linfa_pred(input: &LinfaPredictionInput) {
-
     // Convert input to ndarray
 
     let input_vec = input.as_ndarray();
 
-    let test_rows: Vec<FakeRow> = vec![FakeRow{a:1.,b:6.,c:3.,d:12.,e:13.,f:30.,g:33.,h:1.,j:1.,k:2.,l:1.}, FakeRow{a:1.,b:1.,c:1.,d:1.,e:9.,f:134.,g:312.,h:2.,j:1.,k:8.,l:5.}, FakeRow{a:1.,b:1.,c:1.,d:1.,e:9.,f:34.,g:32.,h:2.,j:1.,k:4.,l:5.}];
+    let test_rows: Vec<FakeRow> = vec![
+        FakeRow {
+            a: 1.,
+            b: 6.,
+            c: 3.,
+            d: 12.,
+            e: 13.,
+            f: 30.,
+            g: 33.,
+            h: 1.,
+            j: 1.,
+            k: 2.,
+            l: 1.,
+        },
+        FakeRow {
+            a: 1.,
+            b: 1.,
+            c: 1.,
+            d: 1.,
+            e: 9.,
+            f: 134.,
+            g: 312.,
+            h: 2.,
+            j: 1.,
+            k: 8.,
+            l: 5.,
+        },
+        FakeRow {
+            a: 1.,
+            b: 1.,
+            c: 1.,
+            d: 1.,
+            e: 9.,
+            f: 34.,
+            g: 32.,
+            h: 2.,
+            j: 1.,
+            k: 4.,
+            l: 5.,
+        },
+    ];
 
-    let built_arr: Array2<f32> = test_rows.iter()
-        .map(|row| [row.a, row.b, row.c, row.d, row.e, row.f, row.g, row.h, row.j, row.k, row.l])
+    let built_arr: Array2<f32> = test_rows
+        .iter()
+        .map(|row| {
+            [
+                row.a, row.b, row.c, row.d, row.e, row.f, row.g, row.h, row.j, row.k, row.l,
+            ]
+        })
         .collect::<Vec<_>>()
         .into();
 
@@ -99,27 +169,40 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
 
     // Replace with Existing Records of Completed Consults
     let original_data: Array2<f32> = array!(
-        [1.,    6.,    3.,     2.,     1.,       3.,        30.,      33.,      7.,      1.,    7.,      1.],
-        [1.,    3.,    1.,     3.,     2.,       8.,        122.,     44.,      8.,      1.,    2.,      2.],
-        [1.,    1.,    1.,     1.,     3.,       9.,        134.,     32.,      8.,      1.,    1.,      5.],
-        [1.,    5.,    3.,     4.,     4.,       9.,        13.,      123.,     8.,      0.,    5.,      1.],
-        [1.,    2.,    2.,     4.,     2.,       10.,       135.,     54.,      10.,     1.,    3.,      7.],
-        [1.,    8.,    1.,     4.,     3.,       16.,       66.,      44.,      12.,     1.,    3.,      2.],
-        [1.,    7.,    2.,     2.,     1.,       13.,       43.,      32.,      11.,     1.,    2.,      4.],
-        [1.,    4.,    1.,     3.,     4.,       11.,       15.,      24.,      13.,     0.,    2.,      6.],
-        [1.,    3.,    1.,     1.,     4.,       7.,        77.,      44.,      7.,      1.,    1.,      5.],
-        [1.,    5.,    3.,     5.,     2.,       8.,        111.,     122.,     10.,     0.,    4.,      7.],
-        [1.,    12.,   5.,     5.,     5.,       16.,       131.,     122.,     11.,     0.,    3.,      4.],
-        [1.,    13.,   4.,     3.,     4.,       15.,       52.,      0.,       10.,     1.,    3.,      3.]
+        [1., 6., 3., 2., 1., 3., 30., 33., 7., 1., 7., 1.],
+        [1., 3., 1., 3., 2., 8., 122., 44., 8., 1., 2., 2.],
+        [1., 1., 1., 1., 3., 9., 134., 32., 8., 1., 1., 5.],
+        [1., 5., 3., 4., 4., 9., 13., 123., 8., 0., 5., 1.],
+        [1., 2., 2., 4., 2., 10., 135., 54., 10., 1., 3., 7.],
+        [1., 8., 1., 4., 3., 16., 66., 44., 12., 1., 3., 2.],
+        [1., 7., 2., 2., 1., 13., 43., 32., 11., 1., 2., 4.],
+        [1., 4., 1., 3., 4., 11., 15., 24., 13., 0., 2., 6.],
+        [1., 3., 1., 1., 4., 7., 77., 44., 7., 1., 1., 5.],
+        [1., 5., 3., 5., 2., 8., 111., 122., 10., 0., 4., 7.],
+        [1., 12., 5., 5., 5., 16., 131., 122., 11., 0., 3., 4.],
+        [1., 13., 4., 3., 4., 15., 52., 0., 10., 1., 3., 3.]
     );
 
     dbg!(&original_data);
 
-    let feature_names = vec!["consult_purpose_id", "client_id", "client_type", "specialty_id", "territory_id", "location_id", "notes_length", "meeting_duration", "hour_of_day", "received_follow_up", "num_attendees", "consultant_id"];
+    let feature_names = vec![
+        "consult_purpose_id",
+        "client_id",
+        "client_type",
+        "specialty_id",
+        "territory_id",
+        "location_id",
+        "notes_length",
+        "meeting_duration",
+        "hour_of_day",
+        "received_follow_up",
+        "num_attendees",
+        "consultant_id",
+    ];
     let num_features = built_arr.len_of(Axis(1)) - 1;
     let features = built_arr.slice(s![.., 0..num_features]).to_owned();
     let labels = built_arr.column(num_features).to_owned();
-    
+
     let linfa_dataset = Dataset::new(features, labels)
         .map_targets(|x| match x.to_owned() as i32 {
             1 => "Hulk Hogan",
@@ -132,7 +215,7 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
             _ => "Nobody",
         })
         .with_feature_names(feature_names);
-    
+
     let model = DecisionTree::params()
         .split_quality(SplitQuality::Gini)
         .fit(&linfa_dataset)
@@ -141,16 +224,15 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
     // Replace with LinfaPredictionInput struct.as_ndarray() for pred
     // Last col as 1 for a received_follow_up. Predict consultant for the positive outcome.
     let test: Array2<f32> = array!(
-        [1.,    7.,    3.,    3.,     15.,     52.,      0.,       0.,      1.],
-        [1.,    8.,    4.,    3.,     11.,     15.,      0.,       3.,      1.],
-        [1.,    2.,    5.,    12.,    13.,     30.,      33.,      1.,      1.]
-
+        [1., 7., 3., 3., 15., 52., 0., 0., 1.],
+        [1., 8., 4., 3., 11., 15., 0., 3., 1.],
+        [1., 2., 5., 12., 13., 30., 33., 1., 1.]
     );
     let predictions = model.predict(&test);
-        
+
     println!("{:?}", predictions);
     // println!("{:?}", test.targets);
-    
+
     File::create("dt.tex")
         .unwrap()
         .write_all(model.export_to_tikz().with_legend().to_string().as_bytes())

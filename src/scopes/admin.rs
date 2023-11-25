@@ -14,8 +14,8 @@ use uuid::Uuid;
 
 use crate::{
     config::{
-        self, FilterOptions, ResponsiveTableData, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES, test_subs, validate_and_get_user, subs_from_user,
+        self, subs_from_user, test_subs, validate_and_get_user, FilterOptions, ResponsiveTableData,
+        UserAlert, ValidationResponse, ACCEPTED_SECONDARIES,
     },
     models::{
         model_admin::{
@@ -127,8 +127,7 @@ async fn recent_activity(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await 
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     let recent = sqlx::query_as!(
@@ -141,7 +140,8 @@ async fn recent_activity(
 
                     if recent.is_err() {
                         let error_msg = "Error occurred while fetching from pg_stat";
-                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let validation_response =
+                            ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
@@ -174,7 +174,7 @@ async fn recent_activity(
                     let body = hb.render("index", &message).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
-            },
+            }
             Err(err) => {
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
@@ -488,38 +488,30 @@ async fn edit_user(
                     {
                         Ok(usr) => {
                             dbg!(usr.id);
-                            let user_alert = UserAlert {
-                                msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.id),
-                                alert_class: "alert_success".to_owned(),
-                            };
+                            // let user_alert = UserAlert {
+                            //     msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.id),
+                            //     alert_class: "alert_success".to_owned(),
+                            // };
+                            let user_alert = UserAlert::from((format!("User #{:?} successfully updated & Record inserted in Details.", usr.id).as_str(), "alert_success"));
                             let body = hb.render("admin-home", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
                         Err(err) => {
                             dbg!(&err);
-                            let user_alert = UserAlert {
-                                msg: format!("Error updated user DETAILS: {:?}", err),
-                                alert_class: "alert_error".to_owned(),
-                            };
+                            let user_alert = UserAlert::from((format!("Error updated user DETAILS: {:?}", err).as_str(), "alert_error"));
                             let body = hb.render("admin-home", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
                     }
                 } else {
-                    let user_alert = UserAlert {
-                        msg: format!("User #{:?} successfully updated.", usr.id),
-                        alert_class: "alert_success".to_owned(),
-                    };
+                    let user_alert = UserAlert::from((format!("User #{:?} successfully updated.", usr.id).as_str(), "alert_success"));
                     let body = hb.render("admin-home", &user_alert).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error updated user DETAILS: {:?}", err),
-                    alert_class: "alert_error".to_owned(),
-                };
+                let user_alert = UserAlert::from((format!("Error updated user DETAILS (2): {:?}", err).as_str(), "alert_error"));
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
@@ -569,19 +561,19 @@ async fn edit_subadmin(
         {
             Ok(usr) => {
                 dbg!(usr.id);
-                let user_alert = UserAlert {
-                    msg: format!("User #{:?} successfully updated.", usr.id),
-                    alert_class: "alert_success".to_owned(),
-                };
+                let user_alert = UserAlert::from((
+                    format!("User #{:?} successfully updated.", usr.id).as_str(),
+                    "alert_success",
+                ));
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error updated user DETAILS: {:?}", err),
-                    alert_class: "alert_error".to_owned(),
-                };
+                let user_alert = UserAlert::from((
+                    format!("Error updated user DETAILS (3): {:?}", err).as_str(),
+                    "alert_error",
+                ));
                 let body = hb.render("admin-home", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }

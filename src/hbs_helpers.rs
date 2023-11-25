@@ -2,7 +2,10 @@ use convert_case::{Case, Casing};
 use handlebars::handlebars_helper;
 use serde::{Deserialize, Serialize};
 
-use crate::{models::model_location::LocationList, Entity, config::UserSubscriptions, scopes::event::CalendarData};
+use crate::{
+    config::UserSubscriptions, models::model_location::LocationList, scopes::event::CalendarData,
+    Entity,
+};
 
 handlebars_helper!(to_title_case: |s: String| {
     // FIXME Always just set as aliases on server? Or do I like explicit data fields?
@@ -93,7 +96,7 @@ handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubs
     if entity_type_id == 8 {
         ""
     } else {
-        let subscribed = 
+        let subscribed =
             match entity_type_id {
                 1 | 2 | 3 => subs.user_subs.contains(&id),
                 4 => subs.consultant_subs.contains(&id),

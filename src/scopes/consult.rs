@@ -7,30 +7,29 @@ use std::{
 
 use actix_multipart::Multipart;
 use actix_web::{
-    get,
-    http::header::CONTENT_LENGTH,
-    post,
-    web,
-    HttpRequest, HttpResponse, Responder, Scope,
+    get, http::header::CONTENT_LENGTH, post, web, HttpRequest, HttpResponse, Responder, Scope,
 };
-use chrono::{DateTime, Utc, Timelike};
+use chrono::{DateTime, Timelike, Utc};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
-use mime::{
-    Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV,
-};
+use mime::{Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use struct_iterable::Iterable;
 use uuid::Uuid;
 
 use crate::{
-    config::{FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, consult_result_options, consult_purpose_options, mime_type_id_from_path, validate_and_get_user, subs_from_user},
+    config::{
+        consult_purpose_options, consult_result_options, mime_type_id_from_path, subs_from_user,
+        validate_and_get_user, FilterOptions, ResponsiveTableData, SelectOption, UserAlert,
+        ValidationResponse,
+    },
+    linfa::linfa_pred,
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
     },
-    AppState, linfa::linfa_pred,
+    AppState,
 };
 
 pub fn consult_scope() -> Scope {
@@ -138,7 +137,7 @@ pub struct LinfaPredictionInput {
     pub client_id: i32,
     pub notes_length: i32,
     pub received_follow_up: i32,
-    pub  num_attendees: i32,
+    pub num_attendees: i32,
 }
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct ClientDetailResult {
@@ -149,7 +148,10 @@ pub struct ClientDetailResult {
 
 pub struct ClientDetails(i32, i32, i32);
 
-pub async fn get_client_details(client_id: i32, db: &Pool<Postgres>) -> Result<ClientDetails, String> {
+pub async fn get_client_details(
+    client_id: i32,
+    db: &Pool<Postgres>,
+) -> Result<ClientDetails, String> {
     match sqlx::query_as::<_, ClientDetailResult>(
         "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE client_id = $1",
     )
@@ -159,11 +161,15 @@ pub async fn get_client_details(client_id: i32, db: &Pool<Postgres>) -> Result<C
     {
         Ok(client_details) => {
             let deets = client_details.unwrap();
-            Ok(ClientDetails(deets.client_type_id, deets.specialty_id, deets.territory_id))
-        },
-        Err(_) => Err("Error in Client Details".to_string())
+            Ok(ClientDetails(
+                deets.client_type_id,
+                deets.specialty_id,
+                deets.territory_id,
+            ))
+        }
+        Err(_) => Err("Error in Client Details".to_string()),
     }
-    
+
     // ClientDetails(1,1,2)
 }
 
@@ -192,33 +198,32 @@ async fn create_consult(
             DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
         let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
         // Compute consultant_id based on Linfa assign
-        let computed_consultant_id =
-            if body.linfa_assign.is_some() {
-                let cd = get_client_details(body.client_id, &state.db).await.unwrap();
-                let diff = consult_end_dt - consult_start_dt;
-                let duration = diff.num_minutes() as i32;
-                println!("Meeting duration is {}", &duration);
-                // Build Linfa
-                let input = LinfaPredictionInput {
-                    client_type: cd.0,
-                    specialty_id: cd.1,
-                    territory_id: cd.2,
-                    meeting_duration: duration,
-                    hour_of_day: consult_start_dt.naive_local().hour() as i32,
-                    location_id: body.location_id,
-                    client_id: body.client_id,
-                    consult_purpose_id: body.consult_purpose_id,
-                    notes_length: body.notes.chars().count() as i32,
-                    // We are predicting for the optimal result, which is a follow up consult (1)
-                    received_follow_up: 1,
-                    num_attendees: body.num_attendees,
-                };
-                println!("Linfa will decide");
-                linfa_pred(&input);
-                5
-            } else {
-                body.consultant_id
+        let computed_consultant_id = if body.linfa_assign.is_some() {
+            let cd = get_client_details(body.client_id, &state.db).await.unwrap();
+            let diff = consult_end_dt - consult_start_dt;
+            let duration = diff.num_minutes() as i32;
+            println!("Meeting duration is {}", &duration);
+            // Build Linfa
+            let input = LinfaPredictionInput {
+                client_type: cd.0,
+                specialty_id: cd.1,
+                territory_id: cd.2,
+                meeting_duration: duration,
+                hour_of_day: consult_start_dt.naive_local().hour() as i32,
+                location_id: body.location_id,
+                client_id: body.client_id,
+                consult_purpose_id: body.consult_purpose_id,
+                notes_length: body.notes.chars().count() as i32,
+                // We are predicting for the optimal result, which is a follow up consult (1)
+                received_follow_up: 1,
+                num_attendees: body.num_attendees,
             };
+            println!("Linfa will decide");
+            linfa_pred(&input);
+            5
+        } else {
+            body.consultant_id
+        };
         // Get Current User
         if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
             let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
@@ -252,19 +257,13 @@ async fn create_consult(
                     .await
                     {
                         Ok(consult_response) => {
-                            let user_alert = UserAlert {
-                                msg: format!("Consult added successfully: ID #{:?}", consult_response.consult_id),
-                                alert_class: "alert_success".to_owned(),
-                            };
+                            let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_response.consult_id).as_str(), "alert_success"));
                             let body = hb.render("crud-api", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
                         Err(err) => {
                             dbg!(&err);
-                            let user_alert = UserAlert {
-                                msg: format!("Error Updating User After Adding Them As Consult: {:?}", err),
-                                alert_class: "alert_error".to_owned(),
-                            };
+                            let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consult: {:?}", err).as_str(), "alert_error"));
                             let body = hb.render("crud-api", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
@@ -272,10 +271,7 @@ async fn create_consult(
                 }
                 Err(err) => {
                     dbg!(&err);
-                    let user_alert = UserAlert {
-                        msg: format!("Error Adding the Attachment: {:?}", err),
-                        alert_class: "alert_error".to_owned(),
-                    };
+                    let user_alert = UserAlert::from((format!("Error Adding the Attachment: {:?}", err).as_str(), "alert_error"));
                     let body = hb.render("crud-api", &user_alert).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
@@ -534,8 +530,7 @@ pub async fn get_consults_handler(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await 
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_consultants_handler firing");
@@ -549,7 +544,8 @@ pub async fn get_consults_handler(
 
                     if query_result.is_err() {
                         let error_msg = "Error occurred while fetching all consultant records";
-                        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                        let validation_response =
+                            ValidationResponse::from((error_msg, "validation_error"));
                         let body = hb.render("validation", &validation_response).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
@@ -578,9 +574,9 @@ pub async fn get_consults_handler(
                 } else {
                     let message = "User Option is a None".to_owned();
                     let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok().body(body)
+                    return HttpResponse::Ok().body(body);
                 };
-            },
+            }
             Err(err) => {
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
@@ -647,14 +643,11 @@ async fn get_attachments(
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct ConsultAvailability {
-    scheduled: String
+    scheduled: String,
 }
 
 #[get("/availability")]
-async fn availability(
-    hb: web::Data<Handlebars<'_>>,
-    state: web::Data<AppState>,
-) -> impl Responder {
+async fn availability(hb: web::Data<Handlebars<'_>>, state: web::Data<AppState>) -> impl Responder {
     println!("Availability firing");
 
     let view_data = ConsultAvailability {

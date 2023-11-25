@@ -141,6 +141,16 @@ pub struct UserAlert {
     pub alert_class: String,
 }
 
+impl From<(&str, &str)> for UserAlert {
+    fn from(pair: (&str, &str)) -> Self {
+        let (msg, alert_class) = pair;
+        UserAlert {
+            msg: msg.to_string(),
+            alert_class: alert_class.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ValidationResponse {
     pub msg: String,
@@ -160,10 +170,10 @@ impl From<(&str, &str)> for ValidationResponse {
 pub fn test_subs() -> UserSubscriptions {
     UserSubscriptions {
         user_subs: vec![1],
-        client_subs: vec![2,3],
-        consult_subs: vec![3,4,5],
-        location_subs: vec![4,6,7],
-        consultant_subs: vec![3,5,6],
+        client_subs: vec![2, 3],
+        consult_subs: vec![3, 4, 5],
+        location_subs: vec![4, 6, 7],
+        consultant_subs: vec![3, 5, 6],
     }
 }
 
@@ -335,10 +345,7 @@ pub struct UserFeedResponse {
     updated_at: Option<DateTime<Utc>>,
 }
 // = ANY($1) is a workaround for SQLx & IN operator
-pub async fn user_feed(
-    user: &ValidatedUser,
-    pool: &Pool<Postgres>,
-) -> UserFeedData {
+pub async fn user_feed(user: &ValidatedUser, pool: &Pool<Postgres>) -> UserFeedData {
     match sqlx::query_as::<_, UserFeedResponse>(
         "SELECT id,slug,consultant_id,client_id,location_id,consult_start,notes,consult_attachments,created_at,updated_at FROM consults
         WHERE (client_id = ANY($1) OR location_id = ANY($2) OR consultant_id = ANY($3))
@@ -377,19 +384,29 @@ pub async fn user_feed(
 }
 
 fn feed_display_from_resp(resp_arr: Vec<UserFeedResponse>) -> Vec<UserFeedDisplay> {
-    resp_arr.iter().map(|resp| 
-        UserFeedDisplay {
+    resp_arr
+        .iter()
+        .map(|resp| UserFeedDisplay {
             slug: resp.slug.clone(),
             consultant_id: resp.consultant_id,
             client_id: resp.client_id,
             location_id: resp.location_id,
             consult_start: resp.consult_start.format("%b %-d, %-I:%M").to_string(),
             notes: resp.notes.clone(),
-            attachment_count: if resp.consult_attachments.is_some() {resp.consult_attachments.clone().unwrap().len().try_into().unwrap_or(99)} else {0},
+            attachment_count: if resp.consult_attachments.is_some() {
+                resp.consult_attachments
+                    .clone()
+                    .unwrap()
+                    .len()
+                    .try_into()
+                    .unwrap_or(99)
+            } else {
+                0
+            },
             created_at_fmt: resp.created_at.format("%b %-d, %-I:%M").to_string(),
             updated_at_fmt: resp.created_at.format("%b %-d, %-I:%M").to_string(),
-        }
-    ).collect::<Vec<UserFeedDisplay>>()
+        })
+        .collect::<Vec<UserFeedDisplay>>()
 }
 
 pub fn mime_type_id_from_path(path: &str) -> i32 {
@@ -503,12 +520,30 @@ pub fn territory_options() -> Vec<SelectOption> {
 
 pub fn consult_result_options() -> Vec<SelectOption> {
     vec![
-        SelectOption::from((1, Some("services fully rendered. next meeting scheduled".to_string()))),
-        SelectOption::from((2, Some("services fully rendered. no follow up requested".to_string()))),
-        SelectOption::from((3, Some("services partially rendered. next meeting scheduled".to_string()))),
-        SelectOption::from((4, Some("services partially rendered. no follow up requested".to_string()))),
-        SelectOption::from((5, Some("no services rendered. next meeting scheduled".to_string()))),
-        SelectOption::from((6, Some("no services rendered. no follow up requested".to_string()))),
+        SelectOption::from((
+            1,
+            Some("services fully rendered. next meeting scheduled".to_string()),
+        )),
+        SelectOption::from((
+            2,
+            Some("services fully rendered. no follow up requested".to_string()),
+        )),
+        SelectOption::from((
+            3,
+            Some("services partially rendered. next meeting scheduled".to_string()),
+        )),
+        SelectOption::from((
+            4,
+            Some("services partially rendered. no follow up requested".to_string()),
+        )),
+        SelectOption::from((
+            5,
+            Some("no services rendered. next meeting scheduled".to_string()),
+        )),
+        SelectOption::from((
+            6,
+            Some("no services rendered. no follow up requested".to_string()),
+        )),
     ]
 }
 
@@ -842,8 +877,7 @@ pub async fn validate_and_get_user(
     state: &Data<AppState>,
 ) -> Result<Option<ValidatedUser>, crate::ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
-    let session_id = 
-    if cookie.to_string().split(" ").collect::<Vec<&str>>().len() > 1 {
+    let session_id = if cookie.to_string().split(" ").collect::<Vec<&str>>().len() > 1 {
         cookie.to_string().split(" ").collect::<Vec<&str>>()[1].to_string()
     } else {
         cookie.to_string()

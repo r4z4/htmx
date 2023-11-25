@@ -1,6 +1,6 @@
 use actix_web::web::{Data, Form};
 use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder, Scope};
-use chrono::{NaiveDate, Utc, Datelike, DateTime};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use ics::properties::{Categories, Description, DtEnd, DtStart, Organizer, Status, Summary};
 use ics::{escape_text, Event, ICalendar};
 use serde_json::json;
@@ -10,13 +10,12 @@ use uuid::Uuid;
 use crate::models::model_consult::ConsultPost;
 use crate::{
     config::{
-        self, get_validation_response, validate_and_get_user, FilterOptions,
-        ResponsiveTableData, SelectOption, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES, test_subs, subs_from_user,
+        self, get_validation_response, subs_from_user, test_subs, validate_and_get_user,
+        FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse,
+        ACCEPTED_SECONDARIES,
     },
     models::model_location::{
-        LocationFormRequest, LocationFormTemplate, LocationList,
-        LocationPostRequest,
+        LocationFormRequest, LocationFormTemplate, LocationList, LocationPostRequest,
     },
     AppState, ValidatedUser,
 };
@@ -34,7 +33,7 @@ pub fn event_scope() -> Scope {
         .service(search_location)
         .service(home)
         .service(next_month)
-        //.service(prev_month)
+    //.service(prev_month)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,10 +60,19 @@ fn category_from_purpose(id: i8) -> &'static str {
     }
 }
 
-fn create_calendar_event(start: &DateTime<Utc>, end: &DateTime<Utc>, purpose_id: i8) -> ICalendar<'static> {
-// fn create_calendar_event() -> Result<(), CalError> {
+fn create_calendar_event(
+    start: &DateTime<Utc>,
+    end: &DateTime<Utc>,
+    purpose_id: i8,
+) -> ICalendar<'static> {
+    // fn create_calendar_event() -> Result<(), CalError> {
     // create new iCalendar object
-    let dt = NaiveDate::from_ymd_opt(2023, 12, 1).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
+    let dt = NaiveDate::from_ymd_opt(2023, 12, 1)
+        .unwrap()
+        .and_hms_milli_opt(9, 10, 11, 12)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap(); // `2014-07-08T09:10:11.012Z`
     let weekday = dt.weekday();
     // Sunday is 1, Saturday is 7
     let weekday_int = weekday.number_from_sunday();
@@ -82,12 +90,11 @@ fn create_calendar_event(start: &DateTime<Utc>, end: &DateTime<Utc>, purpose_id:
     let organizer = "mailto:jsmith@example.com";
     // let dt_start = "19960918T143000Z";
     // let dt_end = "19960920T220000Z";
-    let status = 
-        if true {
-            Status::confirmed()
-        } else {
-            Status::tentative()
-        };
+    let status = if true {
+        Status::confirmed()
+    } else {
+        Status::tentative()
+    };
     let categories = category_from_purpose(purpose_id);
     let summary = "Networld+Interop Conference";
     // Values that are "TEXT" must be escaped (only if the text contains a comma,
@@ -95,7 +102,7 @@ fn create_calendar_event(start: &DateTime<Utc>, end: &DateTime<Utc>, purpose_id:
     let description = escape_text(
         "Networld+Interop Conference and Exhibit\n\
          Atlanta World Congress Center\n\
-         Atlanta, Georgia"
+         Atlanta, Georgia",
     );
     event.push(Organizer::new(organizer));
     event.push(DtStart::new(dt_start));
@@ -181,24 +188,60 @@ pub struct CalendarData {
     pub first_day_of_month: u32,
     pub num_days: u32,
     pub weekday_range: Vec<u32>,
-    pub holidays: Vec<(u32, String)>
+    pub holidays: Vec<(u32, String)>,
 }
 
 fn get_month_holidays(month: u32) -> Vec<(u32, String)> {
     match month {
-        1 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
-        2 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
+        1 => vec![
+            (1, "New Year's Day".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
+        2 => vec![
+            (2, "Groundhog's Day".to_string()),
+            (14, "Valentine's Day".to_string()),
+        ],
         3 => vec![(21, "Spring".to_string())],
-        4 => vec![(1, "April Fools".to_string()),(14, "Valentine's Day".to_string())],
-        5 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
-        6 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
-        7 => vec![(4, "Independence Day".to_string()),(11, "Veteran's Day".to_string())],
-        8 => vec![(2, "Groundhog's Day".to_string()),(14, "Valentine's Day".to_string())],
-        9 => vec![(1, "New Year's Day".to_string()),(11, "Veteran's Day".to_string())],
-        10 => vec![(31, "Halloween".to_string()),(14, "Valentine's Day".to_string())],
-        11 => vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())],
-        12 => vec![(25, "Christmas".to_string()),(31, "New Year's Eve".to_string())],
-        _ => vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())],
+        4 => vec![
+            (1, "April Fools".to_string()),
+            (14, "Valentine's Day".to_string()),
+        ],
+        5 => vec![
+            (1, "New Year's Day".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
+        6 => vec![
+            (2, "Groundhog's Day".to_string()),
+            (14, "Valentine's Day".to_string()),
+        ],
+        7 => vec![
+            (4, "Independence Day".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
+        8 => vec![
+            (2, "Groundhog's Day".to_string()),
+            (14, "Valentine's Day".to_string()),
+        ],
+        9 => vec![
+            (1, "New Year's Day".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
+        10 => vec![
+            (31, "Halloween".to_string()),
+            (14, "Valentine's Day".to_string()),
+        ],
+        11 => vec![
+            (24, "Thanksgiving".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
+        12 => vec![
+            (25, "Christmas".to_string()),
+            (31, "New Year's Eve".to_string()),
+        ],
+        _ => vec![
+            (24, "Thanksgiving".to_string()),
+            (11, "Veteran's Day".to_string()),
+        ],
     }
 }
 
@@ -226,7 +269,8 @@ async fn home(
                     let this_month = Utc::now().month();
                     let this_year = Utc::now().year();
 
-                    let day_one: NaiveDate = NaiveDate::from_ymd_opt(this_year, this_month, 1).unwrap();
+                    let day_one: NaiveDate =
+                        NaiveDate::from_ymd_opt(this_year, this_month, 1).unwrap();
                     let day_one_weekday = day_one.weekday();
                     // Sunday is 1, Saturday is 7
                     let day_one_int = day_one_weekday.number_from_sunday();
@@ -237,7 +281,7 @@ async fn home(
                         year: this_year as u32,
                         first_day_of_month: day_one_int,
                         num_days: get_num_days(this_month),
-                        weekday_range: vec![1,2,3,4,5,6,7],
+                        weekday_range: vec![1, 2, 3, 4, 5, 6, 7],
                         // holidays: vec![(24, "Thanksgiving".to_string()),(11, "Veteran's Day".to_string())]
                         holidays: get_month_holidays(this_month),
                     };
@@ -279,11 +323,20 @@ async fn next_month(
             Ok(user) => {
                 if let Some(usr) = user {
                     let (input_year, input_month) = path.into_inner();
-                    
-                    let cal_month = if input_month == 12 {1} else {input_month + 1};
-                    let cal_year = if input_month == 12 {input_year + 1} else {input_year};
 
-                    let day_one: NaiveDate = NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();
+                    let cal_month = if input_month == 12 {
+                        1
+                    } else {
+                        input_month + 1
+                    };
+                    let cal_year = if input_month == 12 {
+                        input_year + 1
+                    } else {
+                        input_year
+                    };
+
+                    let day_one: NaiveDate =
+                        NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();
                     let day_one_weekday = day_one.weekday();
                     // Sunday is 1, Saturday is 7
                     let day_one_int = day_one_weekday.number_from_sunday();
@@ -292,7 +345,7 @@ async fn next_month(
                         year: cal_year,
                         first_day_of_month: day_one_int,
                         num_days: get_num_days(cal_month),
-                        weekday_range: vec![1,2,3,4,5,6,7],
+                        weekday_range: vec![1, 2, 3, 4, 5, 6, 7],
                         holidays: get_month_holidays(cal_month),
                     };
                     let month_data = json! {{
@@ -329,14 +382,13 @@ pub async fn get_locations_handler(
     state: web::Data<AppState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await 
-        {
+        match validate_and_get_user(cookie, &state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_locations_handler firing");
                     let limit = opts.limit.unwrap_or(10);
                     let offset = (opts.page.unwrap_or(1) - 1) * limit;
-                
+
                     if let Some(like) = &opts.search {
                         let search_sql = format!("%{}%", like);
                         let query_result = sqlx::query_as!(
@@ -360,18 +412,20 @@ pub async fn get_locations_handler(
                         )
                         .fetch_all(&state.db)
                         .await;
-                
+
                         dbg!(&query_result);
-                
+
                         if query_result.is_err() {
-                            let error_msg = "Error occurred while fetching searched location records";
-                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let error_msg =
+                                "Error occurred while fetching searched location records";
+                            let validation_response =
+                                ValidationResponse::from((error_msg, "validation_error"));
                             let body = hb.render("validation", &validation_response).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
-                
+
                         let locations = query_result.unwrap();
-                
+
                         let locations_table_data = ResponsiveTableData {
                             entity_type_id: 5,
                             vec_len: locations.len(),
@@ -380,9 +434,9 @@ pub async fn get_locations_handler(
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
-                
+
                         dbg!(&locations_table_data);
-                
+
                         let body = hb
                             .render("responsive-table-inner", &locations_table_data)
                             .unwrap();
@@ -407,23 +461,24 @@ pub async fn get_locations_handler(
                         )
                         .fetch_all(&state.db)
                         .await;
-                
+
                         dbg!(&query_result);
-                
+
                         if query_result.is_err() {
                             let error_msg = "Error occurred while fetching all location records";
-                            let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                            let validation_response =
+                                ValidationResponse::from((error_msg, "validation_error"));
                             let body = hb.render("validation", &validation_response).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
-                
+
                         let locations = query_result.unwrap();
-                
+
                         //     let consultants_response = ConsultantListResponse {
                         //         consultants: consultants,
                         //         name: "Hello".to_owned()
                         // ,    };
-                
+
                         // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
                         // let load_more_url_base = "/location/list?page=".to_owned();
                         let locations_table_data = ResponsiveTableData {
@@ -434,9 +489,9 @@ pub async fn get_locations_handler(
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
-                
+
                         dbg!(&locations_table_data);
-                
+
                         let body = hb
                             .render("responsive-table", &locations_table_data)
                             .unwrap();
@@ -460,7 +515,6 @@ pub async fn get_locations_handler(
         HttpResponse::Ok().body(body)
     }
 }
-
 
 #[get("/form")]
 async fn location_form(
@@ -606,7 +660,7 @@ async fn create_consult_event(
                 }
 
                 let consult_start_string =
-                body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
+                    body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
                 dbg!(&consult_start_string);
                 let consult_end_string =
                     body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
@@ -616,14 +670,19 @@ async fn create_consult_event(
                 dbg!(&consult_end_datetime);
                 dbg!(&consult_start_string);
                 let consult_start_datetime =
-                    DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+                    DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z")
+                        .unwrap();
                 dbg!(&consult_start_datetime);
                 let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
                 let consult_end_datetime_utc = consult_end_datetime.with_timezone(&Utc);
 
                 // Create ICS calendar to send out
-                let cal = create_calendar_event(&consult_start_datetime_utc,&consult_end_datetime_utc, body.consult_purpose_id);
-                
+                let cal = create_calendar_event(
+                    &consult_start_datetime_utc,
+                    &consult_end_datetime_utc,
+                    body.consult_purpose_id,
+                );
+
                 if let Some(user) = user_option {
                     // let user_body = hb.render("homepage", &user).unwrap();
                     if validate_event_input(&body) {
@@ -640,19 +699,13 @@ async fn create_consult_event(
                         .await
                         {
                             Ok(consult_response) => {
-                                let user_alert = UserAlert {
-                                    msg: format!("Consult added successfully: ID #{:?}", consult_response.id),
-                                    alert_class: "alert_success".to_owned(),
-                                };
+                                let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_response.id).as_str(), "alert_success"));
                                 let body = hb.render("crud-api", &user_alert).unwrap();
                                 return HttpResponse::Ok().body(body);
                             }
                             Err(err) => {
                                 dbg!(&err);
-                                let user_alert = UserAlert {
-                                    msg: format!("Error Updating User After Adding Them As Consult: {:?}", err),
-                                    alert_class: "alert_error".to_owned(),
-                                };
+                                let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consult: {:?}", err).as_str(), "alert_error"));
                                 let body = hb.render("crud-api", &user_alert).unwrap();
                                 return HttpResponse::Ok().body(body);
                             }
@@ -696,7 +749,6 @@ async fn create_consult_event(
         HttpResponse::Ok().body(body)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

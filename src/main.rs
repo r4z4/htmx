@@ -12,9 +12,10 @@ use config::{is_dirty, Post, UserFeedData};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
-    attachments_rte, concat_args, concat_str_args, form_rte, get_list_view, get_search_rte,
-    get_table_title, int_eq, int_in, loc_vec_len_ten, lower_and_single, sort_rte, str_eq,
-    subscribe_rte, to_title_case, subscribe_icon, preview_text, is_icon_col, get_icon, first_week, second_week, third_week, fourth_week, fifth_week, get_month_name,
+    attachments_rte, concat_args, concat_str_args, fifth_week, first_week, form_rte, fourth_week,
+    get_icon, get_list_view, get_month_name, get_search_rte, get_table_title, int_eq, int_in,
+    is_icon_col, loc_vec_len_ten, lower_and_single, preview_text, second_week, sort_rte, str_eq,
+    subscribe_icon, subscribe_rte, third_week, to_title_case,
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -25,17 +26,18 @@ use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
-use crate::{config::{
-    get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse,
-}, linfa::linfa_pred};
+use crate::{
+    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse},
+    linfa::linfa_pred,
+};
 
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
-    consultant::consultant_scope, location::location_scope, user::user_scope, event::event_scope
+    consultant::consultant_scope, event::event_scope, location::location_scope, user::user_scope,
 };
 mod config;
-mod linfa;
 mod hbs_helpers;
+mod linfa;
 mod models;
 mod redis;
 mod scopes;
@@ -107,11 +109,7 @@ async fn index(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let feed_data = user_feed(
-                        &user,
-                        &state.db,
-                    )
-                    .await;
+                    let feed_data = user_feed(&user, &state.db).await;
                     let template_data = HomepageTemplate {
                         err: None,
                         user: Some(user),
@@ -417,11 +415,7 @@ async fn homepage(
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
-                    let feed_data = user_feed(
-                        &user,
-                        &state.db,
-                    )
-                    .await;
+                    let feed_data = user_feed(&user, &state.db).await;
                     let template_data = HomepageTemplate {
                         err: None,
                         user: Some(user),
@@ -432,7 +426,9 @@ async fn homepage(
                     HttpResponse::Ok().body(body)
                 } else {
                     let template_data = HomepageTemplate {
-                        err: Some("Seems your session has expired. Please login again (4)".to_owned()),
+                        err: Some(
+                            "Seems your session has expired. Please login again (4)".to_owned(),
+                        ),
                         user: None,
                         feed_data: UserFeedData {
                             posts: None,

@@ -22,8 +22,8 @@ use uuid::Uuid;
 
 use crate::{
     config::{
-        specialty_options, territory_options, FilterOptions, ResponsiveTableData, SelectOption,
-        UserAlert, ValidationResponse, test_subs,
+        specialty_options, territory_options, test_subs, FilterOptions, ResponsiveTableData,
+        SelectOption, UserAlert, ValidationResponse,
     },
     models::model_consultant::{
         ConsultantFormRequest, ConsultantFormTemplate, ConsultantPostRequest,
@@ -421,19 +421,13 @@ async fn create_consultant(
                 .await
                 {
                     Ok(update_response) => {
-                        let user_alert = UserAlert {
-                            msg: format!("Consultant added successfully: ID #{:?}", update_response.user_id),
-                            alert_class: "alert_success".to_owned(),
-                        };
+                        let user_alert = UserAlert::from((format!("Consultant added successfully: ID #{:?}", update_response.user_id).as_str(), "alert_success"));
                         let body = hb.render("crud-api-inner", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                     Err(err) => {
                         dbg!(&err);
-                        let user_alert = UserAlert {
-                            msg: format!("Error Updating User After Adding Them As Consultant: {:?}", err),
-                            alert_class: "alert_error".to_owned(),
-                        };
+                        let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consultant: {:?}", err).as_str(), "alert_error"));
                         let body = hb.render("crud-api", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
@@ -441,10 +435,7 @@ async fn create_consultant(
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert {
-                    msg: format!("Error adding consultant: {:?}", err),
-                    alert_class: "alert_error".to_owned(),
-                };
+                let user_alert = UserAlert::from((format!("Error adding consultant: {:?}", err).as_str(), "alert_error"));
                 let body = hb.render("crud-api", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
             }

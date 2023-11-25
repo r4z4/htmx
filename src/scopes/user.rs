@@ -185,14 +185,12 @@ async fn slug_to_id(entity_type_id: i32, slug: &str, pool: &Pool<Postgres>) -> i
                 .id
         }
         4 => {
-            sqlx::query_as::<_, EntityId>(
-                "SELECT id AS id FROM consultants WHERE slug = $1",
-            )
-            .bind(&slug)
-            .fetch_one(pool)
-            .await
-            .unwrap()
-            .id
+            sqlx::query_as::<_, EntityId>("SELECT id AS id FROM consultants WHERE slug = $1")
+                .bind(&slug)
+                .fetch_one(pool)
+                .await
+                .unwrap()
+                .id
         }
         5 => {
             sqlx::query_as::<_, EntityId>("SELECT id AS id FROM locations WHERE slug = $1")
@@ -269,25 +267,23 @@ async fn subscribe(
                     .await
                 {
                     Ok(resp) => {
-                        let user_alert = UserAlert {
-                            msg: format!("Subscription {} successfully", {
+                        let msg = format!("Subscription {} successfully", {
                                 if subscribed {
                                     "removed"
                                 } else {
                                     "added"
                                 }
-                            }),
-                            alert_class: "alert_success".to_owned(),
-                        };
+                            });
+                        let user_alert = UserAlert::from((msg.as_str(), "alert_success"));
                         let template_body = hb.render("user-alert", &user_alert).unwrap();
                         return HttpResponse::Ok().body(template_body);
                     }
                     Err(err) => {
                         dbg!(&err);
-                        let user_alert = UserAlert {
-                            msg: format!("Error adding subscription: {:?}", err),
-                            alert_class: "alert_error".to_owned(),
-                        };
+                        let user_alert = UserAlert::from((
+                            format!("Error adding subscription: {:?}", err).as_str(),
+                            "alert_error",
+                        ));
                         let body = hb.render("user-alert", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
