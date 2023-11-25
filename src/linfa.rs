@@ -3,6 +3,9 @@ use linfa::{Dataset, traits::Fit};
 use linfa::prelude::Predict;
 use linfa_trees::{DecisionTree, SplitQuality};
 use ndarray::{Array2, Axis, array, s};
+use struct_iterable::Iterable;
+
+use crate::scopes::consult::LinfaPredictionInput;
 // use csv::{ReaderBuilder, WriterBuilder};
 // use ndarray_csv::{Array2Reader, Array2Writer};
 
@@ -39,7 +42,18 @@ pub struct FakeRow {
     pub l: f32,
 }
 
-pub fn linfa_pred() {
+impl LinfaPredictionInput {
+    pub fn as_ndarray(&self) -> [f32; 11] {
+        [self.client_type as f32, self.specialty_id as f32, self.territory_id as f32, self.location_id as f32, self.client_id as f32, self.notes_length as f32, 
+            self.meeting_duration as f32, self.num_attendees as f32, self.hour_of_day as f32, self.consult_purpose_id as f32, self.received_follow_up as f32]
+    }
+}
+
+pub fn linfa_pred(input: &LinfaPredictionInput) {
+
+    // Convert input to ndarray
+
+    let input_vec = input.as_ndarray();
 
     let test_rows: Vec<FakeRow> = vec![FakeRow{a:1.,b:6.,c:3.,d:12.,e:13.,f:30.,g:33.,h:1.,j:1.,k:2.,l:1.}, FakeRow{a:1.,b:1.,c:1.,d:1.,e:9.,f:134.,g:312.,h:2.,j:1.,k:8.,l:5.}, FakeRow{a:1.,b:1.,c:1.,d:1.,e:9.,f:34.,g:32.,h:2.,j:1.,k:4.,l:5.}];
 

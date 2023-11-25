@@ -842,7 +842,12 @@ pub async fn validate_and_get_user(
     state: &Data<AppState>,
 ) -> Result<Option<ValidatedUser>, crate::ValError> {
     println!("Validating {}", format!("{:?}", cookie.clone()));
-    let session_id = cookie.to_string().split(" ").collect::<Vec<&str>>()[1].to_string();
+    let session_id = 
+    if cookie.to_string().split(" ").collect::<Vec<&str>>().len() > 1 {
+        cookie.to_string().split(" ").collect::<Vec<&str>>()[1].to_string()
+    } else {
+        cookie.to_string()
+    };
     dbg!(&session_id);
     match sqlx::query_as::<_, ValidatedUser>(
         "SELECT username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, user_settings.list_view

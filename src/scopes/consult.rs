@@ -13,7 +13,7 @@ use actix_web::{
     web,
     HttpRequest, HttpResponse, Responder, Scope,
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Timelike};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use mime::{
@@ -21,6 +21,7 @@ use mime::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
+use struct_iterable::Iterable;
 use uuid::Uuid;
 
 use crate::{
@@ -29,7 +30,7 @@ use crate::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
     },
-    AppState,
+    AppState, linfa::linfa_pred,
 };
 
 pub fn consult_scope() -> Scope {
@@ -125,6 +126,46 @@ fn validate_consult_input(body: &ConsultPost) -> bool {
 pub struct AttachmentResponse {
     attachment_id: i32,
 }
+#[derive(Debug, Serialize, Iterable, Deserialize)]
+pub struct LinfaPredictionInput {
+    pub meeting_duration: i32,
+    pub consult_purpose_id: i8,
+    pub territory_id: i32,
+    pub specialty_id: i32,
+    pub client_type: i32,
+    pub hour_of_day: i32,
+    pub location_id: i32,
+    pub client_id: i32,
+    pub notes_length: i32,
+    pub received_follow_up: i32,
+    pub  num_attendees: i32,
+}
+#[derive(Debug, Serialize, FromRow, Deserialize)]
+pub struct ClientDetailResult {
+    pub client_type_id: i32,
+    pub specialty_id: i32,
+    pub territory_id: i32,
+}
+
+pub struct ClientDetails(i32, i32, i32);
+
+pub async fn get_client_details(client_id: i32, db: &Pool<Postgres>) -> Result<ClientDetails, String> {
+    match sqlx::query_as::<_, ClientDetailResult>(
+        "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE client_id = $1",
+    )
+    .bind(client_id)
+    .fetch_optional(db)
+    .await
+    {
+        Ok(client_details) => {
+            let deets = client_details.unwrap();
+            Ok(ClientDetails(deets.client_type_id, deets.specialty_id, deets.territory_id))
+        },
+        Err(_) => Err("Error in Client Details".to_string())
+    }
+    
+    // ClientDetails(1,1,2)
+}
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct ConsultResponse {
@@ -137,22 +178,47 @@ async fn create_consult(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
 ) -> impl Responder {
+    println!("What");
     if validate_consult_input(&body) {
         // FIXME Make Optional
+        dbg!(&body);
         let consult_start_string =
             body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
-        dbg!(&consult_start_string);
         let consult_end_string =
             body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
-        dbg!(&consult_end_string);
-        let consult_end_datetime =
+        let consult_end_dt =
             DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
-        dbg!(&consult_end_datetime);
-        dbg!(&consult_start_string);
-        let consult_start_datetime =
+        let consult_start_dt =
             DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
-        dbg!(&consult_start_datetime);
-        let consult_start_datetime_utc = consult_start_datetime.with_timezone(&Utc);
+        let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
+        // Compute consultant_id based on Linfa assign
+        let computed_consultant_id =
+            if body.linfa_assign.is_some() {
+                let cd = get_client_details(body.client_id, &state.db).await.unwrap();
+                let diff = consult_end_dt - consult_start_dt;
+                let duration = diff.num_minutes() as i32;
+                println!("Meeting duration is {}", &duration);
+                // Build Linfa
+                let input = LinfaPredictionInput {
+                    client_type: cd.0,
+                    specialty_id: cd.1,
+                    territory_id: cd.2,
+                    meeting_duration: duration,
+                    hour_of_day: consult_start_dt.naive_local().hour() as i32,
+                    location_id: body.location_id,
+                    client_id: body.client_id,
+                    consult_purpose_id: body.consult_purpose_id,
+                    notes_length: body.notes.chars().count() as i32,
+                    // We are predicting for the optimal result, which is a follow up consult (1)
+                    received_follow_up: 1,
+                    num_attendees: body.num_attendees,
+                };
+                println!("Linfa will decide");
+                linfa_pred(&input);
+                5
+            } else {
+                body.consultant_id
+            };
         // Get Current User
         if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
             let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
@@ -172,20 +238,14 @@ async fn create_consult(
             {
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
-                    // let consultant_id =
-                    //     if body.linfa_assign {
-                    //         linfa_pred()
-                    //     } else {
-                    //         body.consultant_id
-                    //     };
                     match sqlx::query_as::<_, ConsultResponse>(
                         "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
                     )
-                    .bind(body.consultant_id)
+                    .bind(computed_consultant_id)
                     .bind(body.client_id)
                     .bind(body.location_id)
-                    .bind(consult_start_datetime)
-                    .bind(consult_end_datetime)
+                    .bind(consult_start_dt)
+                    .bind(consult_end_dt)
                     .bind(body.notes.clone())
                     .bind(consult_attachments_array)
                     .fetch_one(&state.db)
@@ -224,11 +284,11 @@ async fn create_consult(
             match sqlx::query_as::<_, ConsultPost>(
                 "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
             )
-            .bind(body.consultant_id)
+            .bind(computed_consultant_id)
             .bind(body.client_id)
             .bind(body.location_id)
-            .bind(consult_start_datetime)
-            .bind(consult_end_datetime)
+            .bind(consult_start_dt)
+            .bind(consult_end_dt)
             .bind(body.notes.clone())
             .fetch_one(&state.db)
             .await

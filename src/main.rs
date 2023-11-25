@@ -229,7 +229,7 @@ async fn about_us(
     });
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        let _ = linfa_pred();
+        // let _ = linfa_pred();
         match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {

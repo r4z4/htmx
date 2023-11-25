@@ -9,9 +9,12 @@ use crate::config::SelectOption;
 pub struct ConsultPost {
     pub consult_purpose_id: i8,
     pub client_id: i32,
+    // Tired <Option>. Form makes it hard
     pub consultant_id: i32,
     pub location_id: i32,
     pub attachment_path: Option<String>,
+    pub linfa_assign: Option<String>,
+    pub num_attendees: i32,
     pub consult_result_id: i32,
     pub consult_start_date: String,
     pub consult_start_time: String,

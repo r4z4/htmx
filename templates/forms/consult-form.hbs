@@ -97,7 +97,7 @@
       </li>
       <li>
         <div>
-          <label for="location_id">Location</label>
+          <label for="location_id">Location, Client and # Attendees</label>
           <select class="field-style field-full align-none" id="location_id" name="location_id">
             {{!-- Only display default option if new form (or no value, but location is required) --}}
             {{#unless @root.entity}}
@@ -119,9 +119,7 @@
         </div>
       </li>
       <li>
-        <div>
-          <label for="client_id">Client</label>
-          <select class="field-style field-full align-none" id="client_id" name="client_id">
+          <select class="field-style field-addr-one" id="client_id" name="client_id">
             {{!-- Only display default option if new form (or no value, but client is required) --}}
             {{#unless @root.entity}}
               <option value="" selected disabled hidden>Select Client</option>
@@ -139,7 +137,7 @@
               {{/if}}
             {{/each}}
           </select>
-        </div>
+          <input class="field-style field-addr-two" type="number" id="num_attendees" name="num_attendees" value="1" min="1" max="20" />
       </li>
       <li>
         <select 
@@ -151,7 +149,7 @@
           >
           {{!-- Only display default option if new form (or no value, but consultant is required) --}}
           {{#unless @root.entity}}
-            <option value="" selected disabled hidden>Select Consultant</option>
+            <option value="0" selected disabled hidden>Select Consultant</option>
           {{/unless}}
           {{#each consultant_options}}
             {{!-- Only check for the match if have an entity. Else get an error. --}}
@@ -171,7 +169,8 @@
             type="checkbox" 
             name="linfa_assign" 
             id="linfa_assign"
-            _="on click set #consultant_id.value to ''"
+            value="true"
+            _="on click set #consultant_id.value to '0'"
             >
           <span class="checkmark"></span>
         </label>
