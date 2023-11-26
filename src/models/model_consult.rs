@@ -7,7 +7,7 @@ use crate::config::SelectOption;
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultPost {
-    pub consult_purpose_id: i8,
+    pub consult_purpose_id: i32,
     pub client_id: i32,
     // Tired <Option>. Form makes it hard
     pub consultant_id: i32,

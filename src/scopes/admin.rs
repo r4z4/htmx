@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::{
     config::{
         self, subs_from_user, test_subs, validate_and_get_user, FilterOptions, ResponsiveTableData,
-        UserAlert, ValidationResponse, ACCEPTED_SECONDARIES,
+        UserAlert, ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user,
     },
     models::{
         model_admin::{
@@ -26,7 +26,7 @@ use crate::{
             AdminUserPostResponse,
         },
     },
-    AppState, HeaderValueExt, ValidatedUser,
+    AppState, HeaderValueExt, ValidatedUser, RedisState,
 };
 
 pub fn admin_scope() -> Scope {
@@ -58,19 +58,12 @@ async fn admin_home(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: Data<AppState>,
+    r_state: Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match sqlx::query_as::<_, ValidatedUser>(
-            "SELECT username, email, user_type_id, user_settings.list_view
-            FROM users
-            LEFT JOIN user_sessions on user_sessions.user_id = users.id 
-            LEFT JOIN user_settings on user_settings.user_id = users.id
-            WHERE session_id = $1
-            AND expires > NOW()",
-        )
-        .bind(cookie.to_string())
-        .fetch_optional(&state.db)
-        .await
+        // FIXME: Add user_type check
+        match redis_validate_and_get_user(cookie, &r_state)
+        .await 
         {
             Ok(user) => {
                 if let Some(usr) = user {

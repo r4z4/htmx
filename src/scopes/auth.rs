@@ -352,36 +352,48 @@ async fn register_form(
 pub async fn remove_redis_keys(cookie: &HeaderValue, pool: &Pool) -> Result<(), String> {
     let mut con = pool.get().await.unwrap();
     // DEL operation
-    let deleted_serialized: RedisResult<bool> = con.del(&cookie.to_string()).await;
-    match deleted_serialized {
-        Ok(true) => println!("Key deleted"),
-        Ok(false) => println!("Key not found {}", &cookie.to_string()),
-        Err(err) => return Err(format!("Error: {}", err))
-    };
+    // let deleted_serialized: RedisResult<bool> = con.del(&cookie.to_string()).await;
+    // match deleted_serialized {
+    //     Ok(true) => println!("Key deleted"),
+    //     Ok(false) => println!("Key not found {}", &cookie.to_string()),
+    //     Err(err) => return Err(format!("Error: {}", err))
+    // };
 
-    let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
-    let deleted: RedisResult<bool> = con.del(&key).await;
+    // let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
+    // let deleted: RedisResult<bool> = con.del(&key).await;
+    // match deleted {
+    //     Ok(true) => println!("Key deleted"),
+    //     Ok(false) => println!("Key not found {}", &key),
+    //     Err(err) => return Err(format!("Error: {}", err))
+    // };
+    // let user_subs_key = format!("{}:{}", cookie.to_string(), String::from("user_subs"));
+    // let deleted_user_subs: RedisResult<bool> = con.del(&user_subs_key).await;
+    // match deleted_user_subs {
+    //     Ok(true) => println!("Key deleted"),
+    //     Ok(false) => println!("Key not found {}", &user_subs_key),
+    //     Err(err) => return Err(format!("Error: {}", err))
+    // }
+    // let client_subs_key = format!("{}:{}", cookie.to_string(), String::from("client_subs"));
+    // let deleted_client_subs: RedisResult<bool> = con.del(&client_subs_key).await;
+    // match deleted_client_subs {
+    //     Ok(true) => {
+    //         println!("Key deleted");
+    //         Ok(())
+    //     },
+    //     Ok(false) => {
+    //         println!("Key not found {}", &client_subs_key);
+    //         Ok(())
+    //     },
+    //     Err(err) => return Err(format!("Error: {}", err))
+    // }
+    let deleted: RedisResult<bool> = con.del(cookie.to_string()).await;
     match deleted {
-        Ok(true) => println!("Key deleted"),
-        Ok(false) => println!("Key not found {}", &key),
-        Err(err) => return Err(format!("Error: {}", err))
-    };
-    let user_subs_key = format!("{}:{}", cookie.to_string(), String::from("user_subs"));
-    let deleted_user_subs: RedisResult<bool> = con.del(&user_subs_key).await;
-    match deleted_user_subs {
-        Ok(true) => println!("Key deleted"),
-        Ok(false) => println!("Key not found {}", &user_subs_key),
-        Err(err) => return Err(format!("Error: {}", err))
-    }
-    let client_subs_key = format!("{}:{}", cookie.to_string(), String::from("client_subs"));
-    let deleted_client_subs: RedisResult<bool> = con.del(&client_subs_key).await;
-    match deleted_client_subs {
         Ok(true) => {
             println!("Key deleted");
             Ok(())
         },
         Ok(false) => {
-            println!("Key not found {}", &client_subs_key);
+            println!("Key not found {}", cookie.to_string());
             Ok(())
         },
         Err(err) => return Err(format!("Error: {}", err))

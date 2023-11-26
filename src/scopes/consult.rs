@@ -128,7 +128,7 @@ pub struct AttachmentResponse {
 #[derive(Debug, Serialize, Iterable, Deserialize)]
 pub struct LinfaPredictionInput {
     pub meeting_duration: i32,
-    pub consult_purpose_id: i8,
+    pub consult_purpose_id: i32,
     pub territory_id: i32,
     pub specialty_id: i32,
     pub client_type: i32,
@@ -153,7 +153,7 @@ pub async fn get_client_details(
     db: &Pool<Postgres>,
 ) -> Result<ClientDetails, String> {
     match sqlx::query_as::<_, ClientDetailResult>(
-        "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE client_id = $1",
+        "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE id = $1",
     )
     .bind(client_id)
     .fetch_optional(db)
@@ -175,7 +175,7 @@ pub async fn get_client_details(
 
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct ConsultResponse {
-    consult_id: i32,
+    id: i32,
 }
 
 #[post("/form")]
@@ -219,7 +219,7 @@ async fn create_consult(
                 num_attendees: body.num_attendees,
             };
             println!("Linfa will decide");
-            linfa_pred(&input);
+            linfa_pred(&input, &state.db).await;
             5
         } else {
             body.consultant_id
@@ -244,21 +244,24 @@ async fn create_consult(
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
                     match sqlx::query_as::<_, ConsultResponse>(
-                        "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
                     )
+                    .bind(body.consult_purpose_id as i32)
+                    .bind(body.consult_result_id)
                     .bind(computed_consultant_id)
                     .bind(body.client_id)
                     .bind(body.location_id)
                     .bind(consult_start_dt)
                     .bind(consult_end_dt)
+                    .bind(body.num_attendees)
                     .bind(body.notes.clone())
                     .bind(consult_attachments_array)
                     .fetch_one(&state.db)
                     .await
                     {
-                        Ok(consult_response) => {
-                            let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_response.consult_id).as_str(), "alert_success"));
-                            let body = hb.render("crud-api", &user_alert).unwrap();
+                        Ok(consult_resp) => {
+                            let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
+                            let body = hb.render("crud-api-inner", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
                         Err(err) => {
@@ -277,20 +280,26 @@ async fn create_consult(
                 }
             }
         } else {
-            match sqlx::query_as::<_, ConsultPost>(
-                "INSERT INTO consults (consultant_id, client_id, location_id, consult_start, consult_end, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            // FIXME: If end_date null, just add an hour to start
+            // NULLIF($2, 0) for Ints
+            match sqlx::query_as::<_, ConsultResponse>(
+                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
             )
+            .bind(body.consult_purpose_id as i32)
+            .bind(body.consult_result_id)
             .bind(computed_consultant_id)
             .bind(body.client_id)
             .bind(body.location_id)
             .bind(consult_start_dt)
             .bind(consult_end_dt)
+            .bind(body.num_attendees)
             .bind(body.notes.clone())
             .fetch_one(&state.db)
             .await
             {
-                Ok(consult) => {
-                    let body = hb.render("consult/consult-list", &{}).unwrap();
+                Ok(consult_resp) => {
+                    let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
+                    let body = hb.render("crud-api-inner", &user_alert).unwrap();
                     return HttpResponse::Ok().body(body);
                 }
                 Err(err) => {

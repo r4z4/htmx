@@ -151,7 +151,6 @@ async fn index(
 }
 
 use lettre::message::header::ContentType;
-use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::stub::StubTransport;
 use lettre::{Message, SmtpTransport, Transport};
 #[get("/send-email")]
@@ -871,6 +870,7 @@ async fn main() -> std::io::Result<()> {
             .service(location_scope())
             .service(client_scope())
             .service(event_scope())
+            .service(service_scope())
             .service(send_email)
             .service(contact_us)
             .service(contact_us_submission)

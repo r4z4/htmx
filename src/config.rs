@@ -522,27 +522,11 @@ pub fn consult_result_options() -> Vec<SelectOption> {
     vec![
         SelectOption::from((
             1,
-            Some("services fully rendered. next meeting scheduled".to_string()),
+            Some("services rendered. next meeting scheduled".to_string()),
         )),
         SelectOption::from((
             2,
-            Some("services fully rendered. no follow up requested".to_string()),
-        )),
-        SelectOption::from((
-            3,
-            Some("services partially rendered. next meeting scheduled".to_string()),
-        )),
-        SelectOption::from((
-            4,
-            Some("services partially rendered. no follow up requested".to_string()),
-        )),
-        SelectOption::from((
-            5,
-            Some("no services rendered. next meeting scheduled".to_string()),
-        )),
-        SelectOption::from((
-            6,
-            Some("no services rendered. no follow up requested".to_string()),
+            Some("services rendered. no follow up requested".to_string()),
         )),
     ]
 }

@@ -49,7 +49,7 @@ fn date_to_cal_date(date: &DateTime<Utc>) -> String {
     date.format("%Y%m%dT%H%M%SZ").to_string()
 }
 
-fn category_from_purpose(id: i8) -> &'static str {
+fn category_from_purpose(id: i32) -> &'static str {
     match id {
         1 => "INTRODUCTION",
         2 => "WALKTHROUGH/INIT",
@@ -63,7 +63,7 @@ fn category_from_purpose(id: i8) -> &'static str {
 fn create_calendar_event(
     start: &DateTime<Utc>,
     end: &DateTime<Utc>,
-    purpose_id: i8,
+    purpose_id: i32,
 ) -> ICalendar<'static> {
     // fn create_calendar_event() -> Result<(), CalError> {
     // create new iCalendar object

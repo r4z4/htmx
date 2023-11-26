@@ -2,7 +2,7 @@ use chrono::{DateTime, Timelike, Utc};
 use linfa::prelude::Predict;
 use linfa::{traits::Fit, Dataset};
 use linfa_trees::{DecisionTree, SplitQuality};
-use ndarray::{array, s, Array2, Axis};
+use ndarray::{array, s, Array2, Axis, ArrayBase, OwnedRepr, Dim};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use sqlx::{Pool, Postgres};
@@ -27,13 +27,13 @@ pub struct ModelData {
     notes: Option<String>,
     consult_result_id: i32,
     num_attendees: i32,
-    consult_start_date: Option<DateTime<Utc>>,
-    consult_end_date: Option<DateTime<Utc>>,
+    consult_start: Option<DateTime<Utc>>,
+    consult_end: Option<DateTime<Utc>>,
 }
 
 impl ModelData {
     pub fn as_f32array(&self) -> [f32; 11] {
-        let diff = self.consult_end_date.unwrap() - self.consult_start_date.unwrap();
+        let diff = self.consult_end.unwrap() - self.consult_start.unwrap();
         let duration = diff.num_minutes() as i32;
         let notes_count = if self.notes.is_some() {
             self.notes.as_ref().unwrap().chars().count()
@@ -49,17 +49,18 @@ impl ModelData {
             self.location_id as f32,
             notes_count as f32,
             duration as f32,
-            self.consult_start_date.unwrap().naive_local().hour() as f32,
+            self.consult_start.unwrap().naive_local().hour() as f32,
             self.consult_result_id as f32,
             self.num_attendees as f32,
+            // Predicting consultant_id here
         ]
     }
 }
 
 async fn build_model_ndarray(db: &Pool<Postgres>) -> Result<Array2<f32>, String> {
     match sqlx::query_as::<_, ModelData>(
-        "SELECT consult_purpose_id, client_type_id, clients.id, clients.specialty_id, clients.territory_id, location_id, notes, consult_result_id, num_attendees, consult_start, consult_end
-                FROM consults INNER JOIN clients ON consults.client_id = clients.id WHERE consult_end_date < now()",
+        "SELECT consult_purpose_id, client_type_id, consults.client_id, clients.specialty_id, clients.territory_id, location_id, notes, consult_result_id, num_attendees, consult_start, consult_end
+                FROM consults INNER JOIN clients ON consults.client_id = clients.id WHERE consult_end < now()",
     )
     .fetch_all(db)
     // FIXME
@@ -91,8 +92,8 @@ pub struct FakeRow {
 }
 
 impl LinfaPredictionInput {
-    pub fn as_ndarray(&self) -> [f32; 11] {
-        [
+    pub fn as_ndarray(&self) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+        array!([
             self.consult_purpose_id as f32,
             self.client_id as f32,
             self.client_type as f32,
@@ -101,14 +102,15 @@ impl LinfaPredictionInput {
             self.location_id as f32,
             self.notes_length as f32,
             self.meeting_duration as f32,
+            // FIXME: Fix DB Dates (Getting -17888 for diff)
             self.hour_of_day as f32,
             self.received_follow_up as f32,
             self.num_attendees as f32,
-        ]
+        ])
     }
 }
 
-pub fn linfa_pred(input: &LinfaPredictionInput) {
+pub async fn linfa_pred(input: &LinfaPredictionInput, pool: &Pool<Postgres>) {
     // Convert input to ndarray
 
     let input_vec = input.as_ndarray();
@@ -155,40 +157,43 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
         },
     ];
 
-    let built_arr: Array2<f32> = test_rows
-        .iter()
-        .map(|row| {
-            [
-                row.a, row.b, row.c, row.d, row.e, row.f, row.g, row.h, row.j, row.k, row.l,
-            ]
-        })
-        .collect::<Vec<_>>()
-        .into();
+    // let built_arr: Array2<f32> = test_rows
+    //     .iter()
+    //     .map(|row| {
+    //         [
+    //             row.a, row.b, row.c, row.d, row.e, row.f, row.g, row.h, row.j, row.k, row.l,
+    //         ]
+    //     })
+    //     .collect::<Vec<_>>()
+    //     .into();
 
+    // dbg!(&built_arr);
+
+    // // Replace with Existing Records of Completed Consults
+    // let original_data: Array2<f32> = array!(
+    //     [1., 6., 3., 2., 1., 3., 30., 33., 7., 1., 7., 1.],
+    //     [1., 3., 1., 3., 2., 8., 122., 44., 8., 1., 2., 2.],
+    //     [1., 1., 1., 1., 3., 9., 134., 32., 8., 1., 1., 5.],
+    //     [1., 5., 3., 4., 4., 9., 13., 123., 8., 0., 5., 1.],
+    //     [1., 2., 2., 4., 2., 10., 135., 54., 10., 1., 3., 7.],
+    //     [1., 8., 1., 4., 3., 16., 66., 44., 12., 1., 3., 2.],
+    //     [1., 7., 2., 2., 1., 13., 43., 32., 11., 1., 2., 4.],
+    //     [1., 4., 1., 3., 4., 11., 15., 24., 13., 0., 2., 6.],
+    //     [1., 3., 1., 1., 4., 7., 77., 44., 7., 1., 1., 5.],
+    //     [1., 5., 3., 5., 2., 8., 111., 122., 10., 0., 4., 7.],
+    //     [1., 12., 5., 5., 5., 16., 131., 122., 11., 0., 3., 4.],
+    //     [1., 13., 4., 3., 4., 15., 52., 0., 10., 1., 3., 3.]
+    // );
+
+    // dbg!(&original_data);
+
+    let built_arr: Array2<f32> = build_model_ndarray(pool).await.unwrap();
     dbg!(&built_arr);
-
-    // Replace with Existing Records of Completed Consults
-    let original_data: Array2<f32> = array!(
-        [1., 6., 3., 2., 1., 3., 30., 33., 7., 1., 7., 1.],
-        [1., 3., 1., 3., 2., 8., 122., 44., 8., 1., 2., 2.],
-        [1., 1., 1., 1., 3., 9., 134., 32., 8., 1., 1., 5.],
-        [1., 5., 3., 4., 4., 9., 13., 123., 8., 0., 5., 1.],
-        [1., 2., 2., 4., 2., 10., 135., 54., 10., 1., 3., 7.],
-        [1., 8., 1., 4., 3., 16., 66., 44., 12., 1., 3., 2.],
-        [1., 7., 2., 2., 1., 13., 43., 32., 11., 1., 2., 4.],
-        [1., 4., 1., 3., 4., 11., 15., 24., 13., 0., 2., 6.],
-        [1., 3., 1., 1., 4., 7., 77., 44., 7., 1., 1., 5.],
-        [1., 5., 3., 5., 2., 8., 111., 122., 10., 0., 4., 7.],
-        [1., 12., 5., 5., 5., 16., 131., 122., 11., 0., 3., 4.],
-        [1., 13., 4., 3., 4., 15., 52., 0., 10., 1., 3., 3.]
-    );
-
-    dbg!(&original_data);
 
     let feature_names = vec![
         "consult_purpose_id",
-        "client_id",
         "client_type",
+        "client_id",
         "specialty_id",
         "territory_id",
         "location_id",
@@ -228,7 +233,8 @@ pub fn linfa_pred(input: &LinfaPredictionInput) {
         [1., 8., 4., 3., 11., 15., 0., 3., 1.],
         [1., 2., 5., 12., 13., 30., 33., 1., 1.]
     );
-    let predictions = model.predict(&test);
+    let input: Array2<f32> = input.as_ndarray();
+    let predictions = model.predict(&input);
 
     println!("{:?}", predictions);
     // println!("{:?}", test.targets);

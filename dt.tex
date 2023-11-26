@@ -28,12 +28,52 @@ for tree={
   align=center,
 }   
 }
-}\begin{document}\begin{forest}[Val($1$) $ \leq 3.50$ \\ Imp. $0.44$
-	[Label: "Rub"]
-	[Label: "Hulk Hogan"]]
+}\begin{document}\begin{forest}[Val($0$) $ \leq 2.50$ \\ Imp. $0.05$
+	[Val($7$) $ \leq 70.00$ \\ Imp. $0.06$
+		[Val($4$) $ \leq 2.50$ \\ Imp. $0.13$
+			[Val($6$) $ \leq 11.50$ \\ Imp. $0.26$
+				[Label: "Hulk Hogan"]
+				[Val($6$) $ \leq 42.00$ \\ Imp. $0.25$
+					[Label: "Zardos"]
+					[Val($1$) $ \leq 2.50$ \\ Imp. $0.50$
+						[Label: "Greg"]
+						[Label: "Nobody"]]]]
+			[Val($7$) $ \leq 19.50$ \\ Imp. $0.05$
+				[Val($6$) $ \leq 9.50$ \\ Imp. $0.11$
+					[Val($7$) $ \leq -315.00$ \\ Imp. $0.50$
+						[Label: "Hulk Hogan"]
+						[Label: "Mike"]]
+					[Label: "Hulk Hogan"]]
+				[Label: "Hulk Hogan"]]]
+		[Val($5$) $ \leq 11.00$ \\ Imp. $0.12$
+			[Val($6$) $ \leq 33.50$ \\ Imp. $0.22$
+				[Label: "Mike"]
+				[Val($3$) $ \leq 2.50$ \\ Imp. $0.16$
+					[Val($6$) $ \leq 37.50$ \\ Imp. $0.22$
+						[Label: "Joe"]
+						[Val($6$) $ \leq 39.00$ \\ Imp. $0.13$
+							[Label: "Hulk Hogan"]
+							[Val($6$) $ \leq 45.50$ \\ Imp. $0.33$
+								[Label: "Zardos"]
+								[Label: "Hulk Hogan"]]]]
+					[Val($5$) $ \leq 3.50$ \\ Imp. $0.50$
+						[Label: "Mike"]
+						[Label: "Greg"]]]]
+			[Label: "Hulk Hogan"]]]
+	[Val($0$) $ \leq 3.50$ \\ Imp. $0.11$
+		[Val($1$) $ \leq 1.50$ \\ Imp. $0.10$
+			[Label: "Hulk Hogan"]
+			[Val($6$) $ \leq 2.00$ \\ Imp. $0.05$
+				[Val($7$) $ \leq 44.50$ \\ Imp. $0.50$
+					[Label: "Rob"]
+					[Label: "Mike"]]
+				[Label: "Mike"]]]
+		[Val($0$) $ \leq 4.50$ \\ Imp. $0.50$
+			[Label: "Zardos"]
+			[Label: "Rob"]]]]
 \node [anchor=north west] at (current bounding box.north east) {%
                 \begin{tabular}{c c c}
                   \multicolumn{3}{@{}l@{}}{Legend:}\\
-                  Imp.&:&Impurity decrease\\Var(1)&:&client_id\\\end{tabular}};
+                  Imp.&:&Impurity decrease\\Var(0)&:&consult_purpose_id\\Var(1)&:&client_type\\Var(6)&:&notes_length\\Var(7)&:&meeting_duration\\Var(5)&:&location_id\\Var(3)&:&specialty_id\\Var(4)&:&territory_id\\\end{tabular}};
 	\end{forest}
 \end{document}
