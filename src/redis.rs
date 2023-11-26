@@ -1,7 +1,9 @@
 use crate::{config::UserSubscriptions, ValidatedUser};
 use dotenv::dotenv;
-use redis::{Client, Commands};
+use futures_util::TryFutureExt;
+use redis::{Client, Commands, AsyncCommands};
 use std::{collections::BTreeMap, env, sync::Arc};
+use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime, Pool, Manager, Connection};
 
 pub trait RedisState {
     fn client(&self) -> &Arc<Client>;
@@ -75,20 +77,17 @@ pub fn set_str(
     Ok(())
 }
 
-pub fn set_int(
-    con: &mut redis::Connection,
+pub async fn set_int(
+    con: &mut deadpool_redis::Connection,
     key: &str,
     value: i32,
     ttl_seconds: i32,
 ) -> Result<(), String> {
-    let _ = con
-        .set::<&str, i32, String>(key, value)
-        .map_err(|e| e.to_string());
-    if ttl_seconds > 0 {
-        let _ = con
-            .expire::<&str, String>(key, ttl_seconds.try_into().unwrap())
-            .map_err(|e| e.to_string());
-    }
+    println!("Set Int");
+    cmd("SET")
+        .arg(&["deadpool/test_key", "42"])
+        .query_async::<_, ()>(con)
+        .await.unwrap();
     Ok(())
 }
 
@@ -105,7 +104,7 @@ pub fn set_int(
 //     });
 // }
 
-pub fn redis_connect() -> redis::Connection {
+pub fn redis_connect() -> Pool {
     //format - host:port
     let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(
         env::var("REDIS_HOSTNAME")
@@ -119,10 +118,15 @@ pub fn redis_connect() -> redis::Connection {
             .unwrap_or("NoURL".to_string()),
     );
     let redis_conn_url = format!("redis://:{}@{}:6379", redis_password, redis_host_name);
-    redis::Client::open(redis_conn_url)
-        .expect("Invalid connection URL")
-        .get_connection()
-        .expect("failed to connect to Redis")
+
+    let mut cfg = Config::from_url(redis_conn_url);
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
+    pool
+
+    // redis::Client::open(redis_conn_url)
+    //     .expect("Invalid connection URL")
+    //     .get_connection()
+    //     .expect("failed to connect to Redis")
 }
 
 // pub fn insert_validated_user(mut con: redis::Connection, cookie_token: String, user: ValidatedUser) -> () {
@@ -161,25 +165,31 @@ pub fn redis_connect() -> redis::Connection {
 //     println!("info for rust redis driver: {:?}", info);
 // }
 
-pub fn redis_test_data(mut con: redis::Connection) -> () {
+pub async fn redis_test_data(pool: &Pool) -> () {
+    let mut con = pool.get().await.unwrap();
     let mut option: BTreeMap<String, i32> = BTreeMap::new();
     let prefix = "select-option";
-    option.insert(String::from("location_one"), 1);
-    option.insert(String::from("location_two"), 2);
+    option.insert(String::from("location_one_new"), 1);
+    option.insert(String::from("location_two_new"), 2);
     // Set it in Redis
     let _: () = redis::cmd("HSET")
         .arg(format!("{}:{}", prefix, "location"))
         .arg(option)
-        .query(&mut con)
+        .query_async::<_, ()>(&mut con)
+        .await
         .expect("failed to execute HSET");
     let _ = set_int(&mut con, "answer", 44, 60);
     // let _: () = con.set("answer", 44).unwrap();
-    let answer: i32 = con.get("answer").unwrap();
-    println!("Answer: {}", answer);
+    // let answer: i32 = cmd("GET")
+    //     .arg(&["deadpool/test_key"])
+    //     .query_async(&mut con)
+    //     .await.unwrap();
+    // println!("Answer: {}", answer);
 
     let info: BTreeMap<String, String> = redis::cmd("HGETALL")
         .arg(format!("{}:{}", prefix, "location"))
-        .query(&mut con)
+        .query_async(&mut con)
+        .await
         .expect("failed to execute HGETALL");
     println!("info for rust redis driver: {:?}", info);
 

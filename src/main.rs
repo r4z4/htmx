@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, collections::BTreeMap};
 
 use actix_files::Files;
 use actix_web::{
@@ -30,9 +30,9 @@ use crate::{
     config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse},
     linfa::linfa_pred,
 };
-
+use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime, Pool as RedisPool, Manager, Connection};
 use scopes::{
-    admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope,
+    admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope, service::service_scope,
     consultant::consultant_scope, event::event_scope, location::location_scope, user::user_scope,
 };
 mod config;
@@ -56,6 +56,10 @@ pub struct AppState {
     db: Pool<Postgres>,
     secret: String,
     pub token: String,
+}
+
+pub struct RedisState {
+    r_pool: RedisPool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -404,11 +408,24 @@ async fn fixed_table(hb: web::Data<Handlebars<'_>>) -> impl Responder {
 async fn homepage(
     hb: web::Data<Handlebars<'_>>,
     state: Data<AppState>,
+    r_state: Data<RedisState>,
     req: HttpRequest,
 ) -> impl Responder {
     dbg!(&req);
     // FIXME unwrap()
     let headers = req.headers();
+    let mut con = r_state.r_pool.get().await.unwrap();
+    let mut hp_option: BTreeMap<String, i32> = BTreeMap::new();
+    let prefix = "user-details";
+    hp_option.insert(String::from("user_id"), 12);
+    hp_option.insert(String::from("user_age"), 27);
+    // Set it in Redis
+    let _: () = crate::cmd("HSET")
+        .arg(format!("{}:{}", prefix, "location"))
+        .arg(hp_option)
+        .query_async::<_, ()>(&mut con)
+        .await
+        .expect("failed to execute HSET");
     dbg!(&headers);
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(&cookie);
@@ -775,8 +792,8 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let mut con = redis_connect();
-    redis_test_data(con);
+    let r_pool = redis_connect();
+    let _ = redis_test_data(&r_pool).await;
 
     // Using GlitchTip. Works with the Rust Sentry SDK
     let _guard = sentry::init("https://ec778decf4e94595b5a48520185298c3@app.glitchtip.com/5073");
@@ -823,6 +840,9 @@ async fn main() -> std::io::Result<()> {
                 db: pool.clone(),
                 secret: secret.to_string(),
                 token: "".to_string().clone(),
+            }))
+            .app_data(web::Data::new(RedisState {
+                r_pool: r_pool.clone(),
             }))
             .app_data(web::Data::new(config.clone()))
             .app_data(web::Data::new(handlebars.clone()))

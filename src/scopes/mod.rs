@@ -6,3 +6,4 @@ pub mod consultant;
 pub mod event;
 pub mod location;
 pub mod user;
+pub mod service;

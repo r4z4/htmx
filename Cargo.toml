@@ -38,6 +38,7 @@ linfa = "0.7.0"
 linfa-trees = "0.7.0"
 ndarray = "0.15.6"
 ics = "0.5.8"
+deadpool-redis = { version = "0.13.0", features = ["serde", "rt_async-std_1"] }
 
 [dev-dependencies]
 test-context = "0.1.4"
