@@ -20,6 +20,7 @@ use hbs_helpers::{
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
+use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind};
 use redis::{redis_connect, redis_test_data};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -30,7 +31,7 @@ use crate::{
     config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse},
     linfa::linfa_pred,
 };
-use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime, Pool as RedisPool, Manager, Connection};
+use deadpool_redis::{redis::{cmd}, Pool as RedisPool};
 use scopes::{
     admin::admin_scope, auth::auth_scope, client::client_scope, consult::consult_scope, service::service_scope,
     consultant::consultant_scope, event::event_scope, location::location_scope, user::user_scope,
@@ -605,7 +606,7 @@ async fn content(
 pub struct ValError {
     error: String,
 }
-#[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Validate, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ValidatedUser {
     email: String,
     username: String,
@@ -616,6 +617,18 @@ pub struct ValidatedUser {
     consult_subs: Vec<i32>,
     location_subs: Vec<i32>,
     consultant_subs: Vec<i32>,
+}
+
+// assume a task is defined as "<id>-<desc>"
+impl FromRedisValue for ValidatedUser {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
+    }
 }
 
 pub trait HeaderValueExt {

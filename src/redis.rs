@@ -1,9 +1,7 @@
-use crate::{config::UserSubscriptions, ValidatedUser};
 use dotenv::dotenv;
-use futures_util::TryFutureExt;
 use redis::{Client, Commands, AsyncCommands};
 use std::{collections::BTreeMap, env, sync::Arc};
-use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime, Pool, Manager, Connection};
+use deadpool_redis::{redis::{cmd}, Config, Runtime, Pool, Connection};
 
 pub trait RedisState {
     fn client(&self) -> &Arc<Client>;

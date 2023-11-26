@@ -276,7 +276,17 @@ async fn basic_auth(
                             .await
                             .expect("failed to execute HSET");
                         let con = push_subs(&user.user_subs, "user_subs", &session.session_id, con).await;
-                        let _ = push_subs(&user.client_subs, "client_subs", &session.session_id, con).await;
+                        let mut con = push_subs(&user.client_subs, "client_subs", &session.session_id, con).await;
+                        let mut users: BTreeMap<String, &str> = BTreeMap::new();
+                        let j = serde_json::to_string(&user).unwrap();
+                        users.insert(session.session_id.to_string(), &j.as_str());
+                        let _: () = redis::cmd("HSET")
+                            // .arg(format!("{}:{}", prefix, "serialized_user"))
+                            .arg(prefix)
+                            .arg(users)
+                            .query_async::<_, ()>(&mut con)
+                            .await
+                            .expect("failed to execute HSET");
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,
@@ -346,8 +356,15 @@ async fn register_form(
 
 pub async fn remove_redis_keys(cookie: &HeaderValue, pool: &Pool) -> Result<(), String> {
     let mut con = pool.get().await.unwrap();
-    let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
     // DEL operation
+    let deleted_serialized: RedisResult<bool> = con.del(&cookie.to_string()).await;
+    match deleted_serialized {
+        Ok(true) => println!("Key deleted"),
+        Ok(false) => println!("Key not found {}", &cookie.to_string()),
+        Err(err) => return Err(format!("Error: {}", err))
+    };
+
+    let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
     let deleted: RedisResult<bool> = con.del(&key).await;
     match deleted {
         Ok(true) => println!("Key deleted"),

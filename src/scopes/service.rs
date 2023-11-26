@@ -1,27 +1,15 @@
 use actix_web::web::{Data, Form};
 use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder, Scope};
-use chrono::{DateTime, Datelike, NaiveDate, Utc};
-use ics::properties::{Categories, Description, DtEnd, DtStart, Organizer, Status, Summary};
-use ics::{escape_text, Event, ICalendar};
 use serde_json::json;
 use sqlx::FromRow;
-use uuid::Uuid;
 
-use crate::models::model_consult::ConsultPost;
 use crate::{
     config::{
-        self, get_validation_response, subs_from_user, test_subs, validate_and_get_user,
-        FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse,
-        ACCEPTED_SECONDARIES,
+        validate_and_get_user,
     },
-    models::model_location::{
-        LocationFormRequest, LocationFormTemplate, LocationList, LocationPostRequest,
-    },
-    AppState, ValidatedUser,
+    AppState,
 };
 use handlebars::Handlebars;
-use serde::{Deserialize, Serialize};
-use validator::Validate;
 
 pub fn service_scope() -> Scope {
     web::scope("/service")

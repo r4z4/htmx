@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sqlx::{FromRow, Pool, Postgres};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::net::{Ipv4Addr, SocketAddr};
@@ -21,7 +21,7 @@ use std::{fmt::Debug, net::IpAddr};
 use struct_iterable::Iterable;
 use validator::{Validate, ValidationError, ValidationErrors};
 
-use crate::{AppState, HeaderValueExt, ValidatedUser};
+use crate::{AppState, HeaderValueExt, ValidatedUser, RedisState};
 
 lazy_static! {
     pub static ref RE_USERNAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
@@ -904,6 +904,45 @@ pub async fn validate_and_get_user(
         }
     }
 }
+
+// pub async fn redis_validate_and_get_user(
+//     cookie: &actix_web::http::header::HeaderValue,
+//     r_state: &Data<RedisState>,
+// ) -> Result<Option<ValidatedUser>, crate::ValError> {
+//     let mut con = r_state.r_pool.get().await.unwrap();
+//     let info: BTreeMap<String, String> = redis::cmd("HGETALL")
+//         .arg(format!("{}:{}", &cookie.to_string(), "user_details"))
+//         .query_async(&mut con)
+//         .await
+//         .expect("failed to execute HGETALL");
+
+//     let user_subs = redis::cmd("LRANGE")
+//         .arg(format!("{}:{}", &cookie.to_string(), "user_subs"))
+//         .arg(0)
+//         .arg(-1)
+//         .query_async(&mut con)
+//         .await
+//         .expect("failed to execute LRANGE");
+
+//     let client_subs = redis::cmd("LRANGE")
+//         .arg(format!("{}:{}", &cookie.to_string(), "client_subs"))
+//         .arg(0)
+//         .arg(-1)
+//         .query_async(&mut con)
+//         .await
+//         .expect("failed to execute LRANGE");
+
+//     println!("info for rust redis driver: {:?}", info);
+//     {
+//         Ok(user_option) => Ok(user_option),
+//         Err(err) => {
+//             dbg!(&err);
+//             Err(crate::ValError {
+//                 error: format!("You must not be verified: {}", err),
+//             })
+//         }
+//     }
+// }
 
 pub struct SendEmailInput {
     to_email: String,
