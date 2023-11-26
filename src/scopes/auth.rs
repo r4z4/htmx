@@ -5,14 +5,16 @@ use actix_web::{
 };
 use argonautica::{Hasher, Verifier};
 use chrono::{DateTime, Duration, Utc};
+use deadpool_redis::Connection;
 use handlebars::Handlebars;
+use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use std::{ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc, collections::BTreeMap};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::{config::ValidationResponse, AppState, HeaderValueExt};
+use crate::{config::ValidationResponse, AppState, HeaderValueExt, RedisState};
 use crate::{
     config::{
         get_ip, send_email, user_feed, SendEmailInput, RE_EMAIL, RE_SPECIAL_CHAR, RE_USERNAME,
@@ -182,9 +184,19 @@ pub struct SessionUpdate {
     // expires: DateTime<Utc>,
 }
 
+pub async fn push_subs(subs: &Vec<i32>, name: &str, mut con: Connection) -> Connection {
+    let fake_subs = vec![&2,&3,&6];
+    for sub in fake_subs {
+    // LPUSH operation
+        let _ = con.lpush::<String, i32, String>(name.to_string(), *sub).await;
+    };
+    con
+}
+
 #[post("/login")]
 async fn basic_auth(
     state: Data<AppState>,
+    r_state: Data<RedisState>,
     body: web::Form<LoginRequest>,
     hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
@@ -235,6 +247,7 @@ async fn basic_auth(
                 .await
                 {
                     Ok(session) => {
+                        // AuthUser -> ValidatedUser - FIXME
                         let user = ValidatedUser {
                             username: user.username,
                             email: user.email,
@@ -246,10 +259,29 @@ async fn basic_auth(
                             location_subs: user.location_subs,
                             consultant_subs: user.consultant_subs,
                         };
+                        // Set in Redis
+                        let mut con = r_state.r_pool.get().await.unwrap();
+                        let mut auth_option: BTreeMap<String, &str> = BTreeMap::new();
+                        let prefix = session.session_id;
+                        let user_type_id = user.user_type_id.clone().to_string();
+                        auth_option.insert(String::from("username"), &user.username);
+                        auth_option.insert(String::from("email"), &user.email);
+                        auth_option.insert(String::from("user_type_id"), &user_type_id);
+                        auth_option.insert(String::from("list_view"), &user.list_view);
+                        // Subs
+                        let _: () = redis::cmd("HSET")
+                            .arg(format!("{}:{}", prefix, "user_details"))
+                            .arg(auth_option)
+                            .query_async::<_, ()>(&mut con)
+                            .await
+                            .expect("failed to execute HSET");
+
+                        let con = push_subs(&user.user_subs, "user_subs", con).await;
+                        let _ = push_subs(&user.client_subs, "client_subs", con).await;
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,
-                            user: Some(user),
+                            user: Some(user.clone()),
                             feed_data: feed_data,
                         };
                         let body = hb.render("homepage", &template_data).unwrap();
@@ -316,6 +348,7 @@ async fn register_form(
 #[get("/logout")]
 async fn logout(
     state: Data<AppState>,
+    r_state: Data<RedisState>,
     req: HttpRequest,
     hb: web::Data<Handlebars<'_>>,
 ) -> impl Responder {
@@ -331,6 +364,16 @@ async fn logout(
         {
             Ok(expires) => {
                 dbg!(&expires);
+                let mut con = r_state.r_pool.get().await.unwrap();
+                let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
+                // DEL operation
+                let deleted: RedisResult<bool> = con.del(&key).await;
+                match deleted {
+                    Ok(true) => println!("Key deleted"),
+                    Ok(false) => println!("Key not found {}", &key),
+                    Err(err) => eprintln!("Error: {}", err),
+                }
+
                 let body = hb.render("index", &expires).unwrap();
                 return HttpResponse::Ok()
                 .header("HX-Redirect", "/")

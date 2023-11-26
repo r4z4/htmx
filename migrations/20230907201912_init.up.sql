@@ -685,7 +685,7 @@ VALUES
 (5, 1, 3,  2,  '2022-06-19 15:10:25', '2022-06-19 15:20:11', ARRAY[6], 'Ruby PDF', 1, 5),
 (1, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 2, 5),
 (1, 3, 5,  4,  '2023-09-13 12:10:25', '2023-09-13 13:20:11', ARRAY[5], 'Arp Swanson and Aribiter met on this one', 1, 6),
-(2, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 3, 3),
+(2, 6, 3,  7,  '2023-09-10 12:00:25', '2023-09-10 13:50:11', NULL, 'This is in that one city that is really long', 1, 3),
 (2, 4, 2,  3,  '2023-09-14 14:00:00', '2023-09-14 15:11:25', ARRAY[1, 3, 4], 'Hour long session w/ Billy Gil and Tobias. Lots of media!!! See attachments.', 1, 2),
 (1, 6, 8,  7,  '2023-09-18 11:00:25', '2023-09-18 13:50:11', ARRAY[7], 'Added a PDF that explains it all. It should be in attachments.', 1, 1),
 (1, 3, 9,  19, '2023-09-19 11:10:25', '2023-09-19 12:20:11', ARRAY[5], 'Almost met her at Xerxes ave but went to location instead.', 1, 1),

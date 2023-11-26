@@ -10,6 +10,7 @@
         "Hyperscript",
         "lettre",
         "Linfa",
+        "lpush",
         "ndarray",
         "Retarget",
         "sqlx",
