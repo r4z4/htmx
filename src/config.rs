@@ -905,44 +905,27 @@ pub async fn validate_and_get_user(
     }
 }
 
-// pub async fn redis_validate_and_get_user(
-//     cookie: &actix_web::http::header::HeaderValue,
-//     r_state: &Data<RedisState>,
-// ) -> Result<Option<ValidatedUser>, crate::ValError> {
-//     let mut con = r_state.r_pool.get().await.unwrap();
-//     let info: BTreeMap<String, String> = redis::cmd("HGETALL")
-//         .arg(format!("{}:{}", &cookie.to_string(), "user_details"))
-//         .query_async(&mut con)
-//         .await
-//         .expect("failed to execute HGETALL");
-
-//     let user_subs = redis::cmd("LRANGE")
-//         .arg(format!("{}:{}", &cookie.to_string(), "user_subs"))
-//         .arg(0)
-//         .arg(-1)
-//         .query_async(&mut con)
-//         .await
-//         .expect("failed to execute LRANGE");
-
-//     let client_subs = redis::cmd("LRANGE")
-//         .arg(format!("{}:{}", &cookie.to_string(), "client_subs"))
-//         .arg(0)
-//         .arg(-1)
-//         .query_async(&mut con)
-//         .await
-//         .expect("failed to execute LRANGE");
-
-//     println!("info for rust redis driver: {:?}", info);
-//     {
-//         Ok(user_option) => Ok(user_option),
-//         Err(err) => {
-//             dbg!(&err);
-//             Err(crate::ValError {
-//                 error: format!("You must not be verified: {}", err),
-//             })
-//         }
-//     }
-// }
+pub async fn redis_validate_and_get_user(
+    cookie: &actix_web::http::header::HeaderValue,
+    r_state: &Data<RedisState>,
+) -> Result<Option<ValidatedUser>, crate::ValError> {
+    println!("Redis Validation");
+    let mut con = r_state.r_pool.get().await.unwrap();
+    match redis::cmd("GET")
+    .arg(cookie.to_string())
+    .query_async(&mut con)
+    .await
+    {
+        Ok(user) => Ok(Some(user)),
+        Err(err) => {
+            dbg!(&err);
+            Err(crate::ValError {
+                // FIXME: msg
+                error: format!("Not in Redis = You must not be verified: {}", err),
+            })
+        }
+    }
+}
 
 pub struct SendEmailInput {
     to_email: String,

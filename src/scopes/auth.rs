@@ -261,32 +261,27 @@ async fn basic_auth(
                         };
                         // Set in Redis
                         let mut con = r_state.r_pool.get().await.unwrap();
-                        let mut auth_option: BTreeMap<String, &str> = BTreeMap::new();
                         let prefix = &session.session_id;
-                        let user_type_id = user.user_type_id.clone().to_string();
-                        auth_option.insert(String::from("username"), &user.username);
-                        auth_option.insert(String::from("email"), &user.email);
-                        auth_option.insert(String::from("user_type_id"), &user_type_id);
-                        auth_option.insert(String::from("list_view"), &user.list_view);
-                        // Subs
-                        let _: () = redis::cmd("HSET")
-                            .arg(format!("{}:{}", prefix, "user_details"))
-                            .arg(auth_option)
-                            .query_async::<_, ()>(&mut con)
-                            .await
-                            .expect("failed to execute HSET");
-                        let con = push_subs(&user.user_subs, "user_subs", &session.session_id, con).await;
-                        let mut con = push_subs(&user.client_subs, "client_subs", &session.session_id, con).await;
-                        let mut users: BTreeMap<String, &str> = BTreeMap::new();
+                        // The old way
+                        // let con = push_subs(&user.user_subs, "user_subs", &session.session_id, con).await;
+                        // let mut users: BTreeMap<String, &str> = BTreeMap::new();
                         let j = serde_json::to_string(&user).unwrap();
-                        users.insert(session.session_id.to_string(), &j.as_str());
-                        let _: () = redis::cmd("HSET")
+                        // users.insert(session.session_id.to_string(), &j.as_str());
+                        // let _: () = redis::cmd("HSET")
+                        //     // .arg(format!("{}:{}", prefix, "serialized_user"))
+                        //     .arg(prefix)
+                        //     .arg(users)
+                        //     .query_async::<_, ()>(&mut con)
+                        //     .await
+                        //     .expect("failed to execute HSET");
+                        // sessionId => ValidatedUser
+                        let _: () = redis::cmd("SET")
                             // .arg(format!("{}:{}", prefix, "serialized_user"))
-                            .arg(prefix)
-                            .arg(users)
+                            .arg(session.session_id)
+                            .arg(&j)
                             .query_async::<_, ()>(&mut con)
                             .await
-                            .expect("failed to execute HSET");
+                            .expect("failed to execute SET for ValidatedUser");
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,

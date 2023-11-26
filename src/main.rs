@@ -20,15 +20,15 @@ use hbs_helpers::{
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
-use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind};
-use redis::{redis_connect, redis_test_data};
+use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind, ToRedisArgs};
+use redis_mod::{redis_connect, redis_test_data};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::{
-    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse},
+    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, redis_validate_and_get_user},
     linfa::linfa_pred,
 };
 use deadpool_redis::{redis::{cmd}, Pool as RedisPool};
@@ -40,7 +40,7 @@ mod config;
 mod hbs_helpers;
 mod linfa;
 mod models;
-mod redis;
+mod redis_mod;
 mod scopes;
 #[cfg(test)]
 mod test_common;
@@ -222,6 +222,7 @@ async fn about_us(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: Data<AppState>,
+    r_state: Data<RedisState>,
 ) -> impl Responder {
     let headers = req.headers();
     let data = json!({
@@ -233,7 +234,8 @@ async fn about_us(
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
         // let _ = linfa_pred();
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+        // match validate_and_get_user(cookie, &state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let template_data = json! {{
@@ -421,7 +423,7 @@ async fn homepage(
     hp_option.insert(String::from("user_id"), 12);
     hp_option.insert(String::from("user_age"), 27);
     // Set it in Redis
-    let _: () = crate::cmd("HSET")
+    let _: () = redis::cmd("HSET")
         .arg(format!("{}:{}", prefix, "location"))
         .arg(hp_option)
         .query_async::<_, ()>(&mut con)
@@ -630,6 +632,8 @@ impl FromRedisValue for ValidatedUser {
         Ok(result)
     }
 }
+
+// Do I even need a ToRedisArgs impl?
 
 pub trait HeaderValueExt {
     fn to_string(&self) -> String;
