@@ -1,11 +1,11 @@
 use actix_web::{
     get, post,
     web::{self, Data, Json},
-    HttpRequest, HttpResponse, Responder, Scope,
+    HttpRequest, HttpResponse, Responder, Scope, http::header::HeaderValue,
 };
 use argonautica::{Hasher, Verifier};
 use chrono::{DateTime, Duration, Utc};
-use deadpool_redis::Connection;
+use deadpool_redis::{Connection, Pool};
 use handlebars::Handlebars;
 use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
@@ -184,11 +184,11 @@ pub struct SessionUpdate {
     // expires: DateTime<Utc>,
 }
 
-pub async fn push_subs(subs: &Vec<i32>, name: &str, mut con: Connection) -> Connection {
-    let fake_subs = vec![&2,&3,&6];
-    for sub in fake_subs {
-    // LPUSH operation
-        let _ = con.lpush::<String, i32, String>(name.to_string(), *sub).await;
+pub async fn push_subs(subs: &Vec<i32>, name: &str, cookie: &str, mut con: Connection) -> Connection {
+    // let fake_subs = vec![&2,&3,&6];
+    let key = format!("{}:{}", cookie, name);
+    for sub in subs {
+        let _ = con.lpush::<&str, i32, String>(&key, *sub).await;
     };
     con
 }
@@ -262,7 +262,7 @@ async fn basic_auth(
                         // Set in Redis
                         let mut con = r_state.r_pool.get().await.unwrap();
                         let mut auth_option: BTreeMap<String, &str> = BTreeMap::new();
-                        let prefix = session.session_id;
+                        let prefix = &session.session_id;
                         let user_type_id = user.user_type_id.clone().to_string();
                         auth_option.insert(String::from("username"), &user.username);
                         auth_option.insert(String::from("email"), &user.email);
@@ -275,9 +275,8 @@ async fn basic_auth(
                             .query_async::<_, ()>(&mut con)
                             .await
                             .expect("failed to execute HSET");
-
-                        let con = push_subs(&user.user_subs, "user_subs", con).await;
-                        let _ = push_subs(&user.client_subs, "client_subs", con).await;
+                        let con = push_subs(&user.user_subs, "user_subs", &session.session_id, con).await;
+                        let _ = push_subs(&user.client_subs, "client_subs", &session.session_id, con).await;
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,
@@ -345,6 +344,38 @@ async fn register_form(
     return HttpResponse::Ok().body(body);
 }
 
+pub async fn remove_redis_keys(cookie: &HeaderValue, pool: &Pool) -> Result<(), String> {
+    let mut con = pool.get().await.unwrap();
+    let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
+    // DEL operation
+    let deleted: RedisResult<bool> = con.del(&key).await;
+    match deleted {
+        Ok(true) => println!("Key deleted"),
+        Ok(false) => println!("Key not found {}", &key),
+        Err(err) => return Err(format!("Error: {}", err))
+    };
+    let user_subs_key = format!("{}:{}", cookie.to_string(), String::from("user_subs"));
+    let deleted_user_subs: RedisResult<bool> = con.del(&user_subs_key).await;
+    match deleted_user_subs {
+        Ok(true) => println!("Key deleted"),
+        Ok(false) => println!("Key not found {}", &user_subs_key),
+        Err(err) => return Err(format!("Error: {}", err))
+    }
+    let client_subs_key = format!("{}:{}", cookie.to_string(), String::from("client_subs"));
+    let deleted_client_subs: RedisResult<bool> = con.del(&client_subs_key).await;
+    match deleted_client_subs {
+        Ok(true) => {
+            println!("Key deleted");
+            Ok(())
+        },
+        Ok(false) => {
+            println!("Key not found {}", &client_subs_key);
+            Ok(())
+        },
+        Err(err) => return Err(format!("Error: {}", err))
+    }
+}
+
 #[get("/logout")]
 async fn logout(
     state: Data<AppState>,
@@ -364,16 +395,10 @@ async fn logout(
         {
             Ok(expires) => {
                 dbg!(&expires);
-                let mut con = r_state.r_pool.get().await.unwrap();
-                let key = format!("{}:{}", cookie.to_string(), String::from("user_details"));
-                // DEL operation
-                let deleted: RedisResult<bool> = con.del(&key).await;
-                match deleted {
-                    Ok(true) => println!("Key deleted"),
-                    Ok(false) => println!("Key not found {}", &key),
-                    Err(err) => eprintln!("Error: {}", err),
-                }
-
+                let result = remove_redis_keys(&cookie, &r_state.r_pool).await;
+                if result.is_err() {
+                    panic!("Redis keys not deleted for user session");
+                };
                 let body = hb.render("index", &expires).unwrap();
                 return HttpResponse::Ok()
                 .header("HX-Redirect", "/")
