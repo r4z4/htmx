@@ -7,10 +7,12 @@ use crate::config::SelectOption;
 
 #[derive(Debug, Validate, Serialize, FromRow, Deserialize)]
 pub struct ConsultPost {
+    #[validate(range(min = 1, max = 5, message = "Purpose out of range"))]
     pub consult_purpose_id: i32,
     pub client_id: i32,
     // Tired <Option>. Form makes it hard
     pub consultant_id: i32,
+    #[validate(range(min = 1, message = "Location out of range"))]
     pub location_id: i32,
     pub attachment_path: Option<String>,
     pub linfa_assign: Option<String>,
@@ -20,7 +22,7 @@ pub struct ConsultPost {
     pub consult_start_time: String,
     pub consult_end_date: String,
     pub consult_end_time: String,
-    #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
+    // #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: String,
 }
 

@@ -9,7 +9,7 @@ use actix_multipart::Multipart;
 use actix_web::{
     get, http::header::CONTENT_LENGTH, post, web, HttpRequest, HttpResponse, Responder, Scope,
 };
-use chrono::{DateTime, Timelike, Utc};
+use chrono::{DateTime, Timelike, Utc, Duration};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use mime::{Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV};
@@ -17,12 +17,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use struct_iterable::Iterable;
 use uuid::Uuid;
+use validator::Validate;
 
 use crate::{
     config::{
         consult_purpose_options, consult_result_options, mime_type_id_from_path, subs_from_user,
         validate_and_get_user, FilterOptions, ResponsiveTableData, SelectOption, UserAlert,
-        ValidationResponse,
+        ValidationResponse, get_validation_response,
     },
     linfa::linfa_pred,
     models::model_consult::{
@@ -187,17 +188,36 @@ async fn create_consult(
     state: web::Data<AppState>,
 ) -> impl Responder {
     println!("What");
+    let is_valid = body.validate();
+    if is_valid.is_err() {
+        let validation_response = get_validation_response(is_valid);
+        let body = hb
+            .render("forms/form-validation", &validation_response)
+            .unwrap();
+        return HttpResponse::BadRequest()
+            .header("HX-Retarget", "#consult_errors")
+            .body(body);
+    };
     if validate_consult_input(&body) {
         // FIXME Make Optional
         dbg!(&body);
         let consult_start_string =
             body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
-        let consult_end_string =
-            body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00";
-        let consult_end_dt =
-            DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
         let consult_start_dt =
             DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+        // End date
+        let consult_end_string =
+            if body.consult_end_date.is_empty() {
+                body.consult_end_date.clone()
+            } else {
+                body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00"
+            };
+        let consult_end_dt =
+            if body.consult_end_date.is_empty() {
+                consult_start_dt + Duration::hours(1)
+            } else {
+                DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap()
+            };
         let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
         // Compute consultant_id based on Linfa assign
         let linfa_pred_result = if body.linfa_assign.is_some() {
@@ -251,7 +271,7 @@ async fn create_consult(
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
                     match sqlx::query_as::<_, ConsultResponse>(
-                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, '')) RETURNING id",
+                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), $10, NULLIF($11, '')) RETURNING id",
                     )
                     .bind(body.consult_purpose_id as i32)
                     .bind(body.consult_result_id)
@@ -291,7 +311,7 @@ async fn create_consult(
             // FIXME: If end_date null, just add an hour to start
             // NULLIF($2, 0) for Ints
             match sqlx::query_as::<_, ConsultResponse>(
-                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULLIF($10, '')) RETURNING id",
+                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), NULLIF($10, '')) RETURNING id",
             )
             .bind(body.consult_purpose_id as i32)
             .bind(body.consult_result_id)
