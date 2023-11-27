@@ -178,6 +178,8 @@ pub struct ConsultResponse {
     id: i32,
 }
 
+use crate::linfa::LinfaPredictionResult;
+
 #[post("/form")]
 async fn create_consult(
     body: web::Form<ConsultPost>,
@@ -198,7 +200,7 @@ async fn create_consult(
             DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
         let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
         // Compute consultant_id based on Linfa assign
-        let computed_consultant_id = if body.linfa_assign.is_some() {
+        let linfa_pred_result = if body.linfa_assign.is_some() {
             let cd = get_client_details(body.client_id, &state.db).await.unwrap();
             let diff = consult_end_dt - consult_start_dt;
             let duration = diff.num_minutes() as i32;
@@ -219,11 +221,16 @@ async fn create_consult(
                 num_attendees: body.num_attendees,
             };
             println!("Linfa will decide");
-            linfa_pred(&input, &state.db).await;
-            5
+            let result = linfa_pred(&input, &state.db).await;
+            result
+            // let id = result.1;
+            // id
         } else {
-            body.consultant_id
+            LinfaPredictionResult("".to_string(), body.consultant_id)
         };
+        
+        let computed_consultant_id = linfa_pred_result.1;
+        let texfile = linfa_pred_result.0;
         // Get Current User
         if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
             let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
@@ -244,7 +251,7 @@ async fn create_consult(
                 Ok(attachment_resp) => {
                     let consult_attachments_array = vec![attachment_resp.attachment_id];
                     match sqlx::query_as::<_, ConsultResponse>(
-                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
+                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, '')) RETURNING id",
                     )
                     .bind(body.consult_purpose_id as i32)
                     .bind(body.consult_result_id)
@@ -256,6 +263,7 @@ async fn create_consult(
                     .bind(body.num_attendees)
                     .bind(body.notes.clone())
                     .bind(consult_attachments_array)
+                    .bind(texfile)
                     .fetch_one(&state.db)
                     .await
                     {
@@ -283,7 +291,7 @@ async fn create_consult(
             // FIXME: If end_date null, just add an hour to start
             // NULLIF($2, 0) for Ints
             match sqlx::query_as::<_, ConsultResponse>(
-                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
+                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULLIF($10, '')) RETURNING id",
             )
             .bind(body.consult_purpose_id as i32)
             .bind(body.consult_result_id)
@@ -294,6 +302,7 @@ async fn create_consult(
             .bind(consult_end_dt)
             .bind(body.num_attendees)
             .bind(body.notes.clone())
+            .bind(texfile)
             .fetch_one(&state.db)
             .await
             {

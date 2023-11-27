@@ -1,0 +1,77 @@
+
+\documentclass[margin=10pt]{standalone}
+\usepackage{tikz,forest}
+\usetikzlibrary{arrows.meta}
+\forestset{
+default preamble={
+before typesetting nodes={
+  !r.replace by={[, coordinate, append]}
+},  
+where n children=0{
+  tier=word,
+}{  
+  %diamond, aspect=2,
+},  
+where level=0{}{
+  if n=1{
+    edge label={node[pos=.2, above] {Y}},
+  }{  
+    edge label={node[pos=.2, above] {N}},
+  }   
+},  
+for tree={
+  edge+={thick, -Latex},
+  s sep'+=2cm,
+  draw,
+  thick,
+  edge path'={ (!u) -| (.parent)},
+  align=center,
+}   
+}
+}\begin{document}\begin{forest}[Val($0$) $ \leq 1.50$ \\ Imp. $0.06$
+	[Val($2$) $ \leq 1.50$ \\ Imp. $0.11$
+		[Val($7$) $ \leq 70.00$ \\ Imp. $0.18$
+			[Label: "Hulk Hogan"]
+			[Val($6$) $ \leq 33.50$ \\ Imp. $0.39$
+				[Label: "Mike"]
+				[Val($6$) $ \leq 39.00$ \\ Imp. $0.11$
+					[Label: "Hulk Hogan"]
+					[Label: "Rob"]]]]
+		[Val($3$) $ \leq 3.50$ \\ Imp. $0.14$
+			[Val($5$) $ \leq 8.00$ \\ Imp. $0.33$
+				[Val($1$) $ \leq 6.50$ \\ Imp. $0.50$
+					[Label: "Joe"]
+					[Label: "Nobody"]]
+				[Label: "Mike"]]
+			[Val($6$) $ \leq 42.00$ \\ Imp. $0.22$
+				[Val($6$) $ \leq 29.50$ \\ Imp. $0.12$
+					[Label: "Hulk Hogan"]
+					[Label: "Zardos"]]
+				[Label: "Greg"]]]]
+	[Val($0$) $ \leq 3.50$ \\ Imp. $0.07$
+		[Val($1$) $ \leq 1.50$ \\ Imp. $0.06$
+			[Label: "Hulk Hogan"]
+			[Val($6$) $ \leq 40.50$ \\ Imp. $0.07$
+				[Val($0$) $ \leq 2.50$ \\ Imp. $0.10$
+					[Val($6$) $ \leq 11.50$ \\ Imp. $0.33$
+						[Label: "Hulk Hogan"]
+						[Label: "Greg"]]
+					[Val($6$) $ \leq 2.00$ \\ Imp. $0.08$
+						[Val($7$) $ \leq 44.50$ \\ Imp. $0.50$
+							[Label: "Rob"]
+							[Label: "Mike"]]
+						[Label: "Mike"]]]
+				[Val($5$) $ \leq 3.50$ \\ Imp. $0.25$
+					[Label: "Mike"]
+					[Val($7$) $ \leq 59.00$ \\ Imp. $0.33$
+						[Label: "Hulk Hogan"]
+						[Label: "Zardos"]]]]]
+		[Val($0$) $ \leq 4.50$ \\ Imp. $0.50$
+			[Label: "Zardos"]
+			[Label: "Rob"]]]]
+\node [anchor=north west] at (current bounding box.north east) {%
+                \begin{tabular}{c c c}
+                  \multicolumn{3}{@{}l@{}}{Legend:}\\
+                  Imp.&:&Impurity decrease\\Var(0)&:&consult_purpose_id\\Var(1)&:&client_type\\Var(6)&:&notes_length\\Var(5)&:&location_id\\Var(7)&:&meeting_duration\\Var(2)&:&client_id\\Var(3)&:&specialty_id\\\end{tabular}};
+	\end{forest}
+\end{document}

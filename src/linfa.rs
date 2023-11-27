@@ -6,6 +6,7 @@ use ndarray::{array, s, Array2, Axis, ArrayBase, OwnedRepr, Dim};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use sqlx::{Pool, Postgres};
+use uuid::Uuid;
 use std::{fs::File, io::Write};
 
 use crate::scopes::consult::LinfaPredictionInput;
@@ -110,7 +111,9 @@ impl LinfaPredictionInput {
     }
 }
 
-pub async fn linfa_pred(input: &LinfaPredictionInput, pool: &Pool<Postgres>) {
+pub struct LinfaPredictionResult(pub String, pub i32);
+
+pub async fn linfa_pred(input: &LinfaPredictionInput, pool: &Pool<Postgres>) -> LinfaPredictionResult {
     // Convert input to ndarray
 
     let input_vec = input.as_ndarray();
@@ -239,8 +242,31 @@ pub async fn linfa_pred(input: &LinfaPredictionInput, pool: &Pool<Postgres>) {
     println!("{:?}", predictions);
     // println!("{:?}", test.targets);
 
-    File::create("dt.tex")
+    // Map back to int. FIXME
+    let pred = predictions[0];
+    let consultant_id =
+        match pred {
+            "Hulk Hogan" => 1,
+            "Mike" => 2,
+            "Zardos" => 3,
+            "Greg" => 4,
+            "Rob" => 5,
+            "Vanessa" => 6,
+            "Joe" => 7,
+            _ => 0,
+        };
+
+    dbg!(&consultant_id);
+
+    // Create Decision Tree file for each generation for audit/review/records. FIXME: Export to Storage (GCP)
+    let path = "./static/linfa/consults/";
+    let filename = Uuid::new_v4().to_string();
+    let ext = ".tex";
+    File::create(format!("{}{}{}", path, filename, ext))
         .unwrap()
         .write_all(model.export_to_tikz().with_legend().to_string().as_bytes())
         .unwrap();
+
+    // return tuple struct (filename_uuid, consultant_id)
+    LinfaPredictionResult(filename, consultant_id)
 }
