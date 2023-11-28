@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use lettre::{message::header::ContentType, transport::stub::StubTransport, Message, Transport};
 use mini_markdown::render;
 use rand::distributions::{Distribution, Uniform};
+use redis::{FromRedisValue, from_redis_value, RedisResult, Value, ErrorKind};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
@@ -91,6 +92,22 @@ pub struct SelectOption {
     pub key: Option<String>,
 }
 
+#[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
+pub struct SelectOptionsVec {
+    pub vec: Vec<SelectOption>
+}
+
+impl FromRedisValue for SelectOptionsVec {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
+    }
+}
+
 impl From<(i32, Option<String>)> for SelectOption {
     fn from(pair: (i32, Option<String>)) -> Self {
         let (value, key) = pair;
@@ -98,6 +115,17 @@ impl From<(i32, Option<String>)> for SelectOption {
             key: key,
             value: value,
         }
+    }
+}
+
+impl FromRedisValue for SelectOption {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
     }
 }
 

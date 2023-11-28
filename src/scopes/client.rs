@@ -1,13 +1,13 @@
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
-use redis::{AsyncCommands, RedisResult};
+use redis::{AsyncCommands, RedisResult, RedisError};
 
 use crate::{
     config::{
         self, get_validation_response, subs_from_user, validate_and_get_user, FilterOptions,
         FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap,
-        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery,
+        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery, SelectOptionsVec,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -126,7 +126,7 @@ async fn client_form(
     let account_options = account_options(&state, &r_state).await;
     let template_data = ClientFormTemplate {
         entity: None,
-        account_options: account_options,
+        account_options: account_options.vec,
         specialty_options: config::specialty_options(),
         state_options: config::get_state_options(&state.db).await,
     };
@@ -136,42 +136,60 @@ async fn client_form(
     return HttpResponse::Ok().body(body);
 }
 
-async fn account_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> Vec<SelectOption> {
+fn hash_query(query: &SimpleQuery) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    query.hash(&mut hasher);
+    let query_hash = hasher.finish();
+    query_hash
+}
+
+async fn account_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
     let simple_query = SimpleQuery {
         query_str: "SELECT id AS value, account_name AS key 
                         FROM accounts 
                         ORDER by account_name",
     };
+    let query_hash = hash_query(&simple_query);
     // FIXME: Search for key in Redis before reaching for DB
-    let account_result = sqlx::query_as::<_, SelectOption>(simple_query.query_str)
-    .fetch_all(&state.db)
-    .await;
-
-    let mut hasher = DefaultHasher::new();
-    simple_query.hash(&mut hasher);
-    let query_hash = hasher.finish();
-    dbg!(&query_hash);
-    if account_result.is_err() {
-        let err = "Error occurred while fetching account option KVs";
-        let default_options = SelectOption {
-            key: Some("No accounts Found".to_owned()),
-            value: 0,
-        };
-        // default_options
-        dbg!("Incoming Panic");
-    }
-
-    let account_options = account_result.unwrap();
-
-    // Cache the query in Redis -- `query:hash_value => result_hash`
     let mut con = r_state.r_pool.get().await.unwrap();
     let prefix = "query";
     let key = format!("{:?}:{:?}", prefix, query_hash);
-    let val = serde_json::to_string(&account_options).unwrap();
-    let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
 
+    let exists: Result<SelectOptionsVec, RedisError> = con.get(&key).await;
 
-    account_options
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting account_options from Redis");
+        let result = exists.unwrap();
+        return result;
+    } else {
+        println!("Getting account_options from DB");
+        let account_result = sqlx::query_as::<_, SelectOption>(simple_query.query_str)
+        .fetch_all(&state.db)
+        .await;
+
+        dbg!(&query_hash);
+        if account_result.is_err() {
+            let err = "Error occurred while fetching account option KVs";
+            let default_options = SelectOption {
+                key: Some("No accounts Found".to_owned()),
+                value: 0,
+            };
+            // default_options
+            dbg!("Incoming Panic");
+        }
+
+        let account_options = account_result.unwrap();
+        let sov = SelectOptionsVec {
+            vec: account_options,
+        };
+        // Cache the query in Redis -- `query:hash_value => result_hash`
+        let val = serde_json::to_string(&sov).unwrap();
+        let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
+
+        return sov;
+    }
 }
 
 #[get("/form/{slug}")]
@@ -208,7 +226,7 @@ async fn client_edit_form(
         entity: Some(client),
         specialty_options: config::specialty_options(),
         state_options: config::get_state_options(&state.db).await,
-        account_options: account_options,
+        account_options: account_options.vec,
     };
 
     let body = hb.render("forms/client-form", &template_data).unwrap();
