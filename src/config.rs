@@ -21,6 +21,7 @@ use std::time::{self, Instant};
 use std::{fmt::Debug, net::IpAddr};
 use struct_iterable::Iterable;
 use validator::{Validate, ValidationError, ValidationErrors};
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
 use crate::{AppState, HeaderValueExt, ValidatedUser, RedisState};
 
@@ -161,6 +162,13 @@ impl Config {
         let config = serde_yaml::from_reader(file).expect("Could not read values.");
         config
     }
+}
+
+pub fn hash_query(query: &SimpleQuery) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    query.hash(&mut hasher);
+    let query_hash = hasher.finish();
+    query_hash
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -492,11 +500,15 @@ pub fn read_yaml() -> UserPostFile {
 
 pub struct SimpleQuery {
     pub query_str: &'static str,
+    pub int_args: Option<Vec<i32>>,
+    pub str_args: Option<Vec<String>>,
 }
 
 impl std::hash::Hash for SimpleQuery {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.query_str.hash(state);
+        self.int_args.hash(state);
+        self.str_args.hash(state);
     }
 }
 

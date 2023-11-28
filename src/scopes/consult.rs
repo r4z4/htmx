@@ -10,9 +10,11 @@ use actix_web::{
     get, http::header::CONTENT_LENGTH, post, web, HttpRequest, HttpResponse, Responder, Scope,
 };
 use chrono::{DateTime, Timelike, Utc, Duration};
+use deadpool_redis::{Connection, Manager, Pool as RedisPool};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use mime::{Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV};
+use redis::{RedisResult, AsyncCommands, RedisError, ErrorKind, FromRedisValue, from_redis_value, Value};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, FromRow, Pool, Postgres, QueryBuilder, Row};
 use struct_iterable::Iterable;
@@ -23,7 +25,7 @@ use crate::{
     config::{
         consult_purpose_options, consult_result_options, mime_type_id_from_path, subs_from_user,
         FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, 
-        get_validation_response, redis_validate_and_get_user,
+        get_validation_response, redis_validate_and_get_user, SelectOptionsVec, SimpleQuery, hash_query,
     },
     linfa::linfa_pred,
     models::model_consult::{
@@ -92,27 +94,53 @@ async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     consultant_options
 }
 
-async fn client_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
-    let client_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, id AS value 
-        FROM clients ORDER BY key"
-    )
-    .fetch_all(&state.db)
-    .await;
+async fn client_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
+    let simple_query = SimpleQuery {
+        query_str: "SELECT COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS key, id AS value 
+        FROM clients ORDER BY key",
+        int_args: None,
+        str_args: None,
+    };
+    let query_hash = hash_query(&simple_query);
+    // FIXME: Search for key in Redis before reaching for DB
+    let mut con = r_state.r_pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{:?}:{:?}", prefix, query_hash);
 
-    if client_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption {
-            key: Some("No Clientt Found".to_owned()),
-            value: 0,
+    let exists: Result<SelectOptionsVec, RedisError> = con.get(&key).await;
+
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting client_options from Redis");
+        let result = exists.unwrap();
+        return result;
+    } else {
+        println!("Getting client_options from DB");
+        let client_result = sqlx::query_as::<_, SelectOption>(simple_query.query_str)
+        .fetch_all(&state.db)
+        .await;
+
+        if client_result.is_err() {
+            let err = "Error occurred while fetching location option KVs";
+            let default_options = SelectOption {
+                key: Some("No Client Found".to_owned()),
+                value: 0,
+            };
+            // default_options
+            dbg!("Incoming Panic");
+        }
+
+        let client_options = client_result.unwrap();
+        let sov = SelectOptionsVec {
+            vec: client_options,
         };
-        // default_options
-        dbg!("Incoming Panic");
-    }
+        // Cache the query in Redis -- `query:hash_value => result_hash`
+        let val = serde_json::to_string(&sov).unwrap();
+        let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
 
-    let client_options = client_result.unwrap();
-    client_options
+        return sov;
+    }
 }
 
 fn validate_consult_input(body: &ConsultPost) -> bool {
@@ -147,30 +175,70 @@ pub struct ClientDetailResult {
     pub territory_id: i32,
 }
 
+impl FromRedisValue for ClientDetailResult {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
+    }
+}
+
 pub struct ClientDetails(i32, i32, i32);
 
 pub async fn get_client_details(
     client_id: i32,
     db: &Pool<Postgres>,
+    pool: &RedisPool,
 ) -> Result<ClientDetails, String> {
-    match sqlx::query_as::<_, ClientDetailResult>(
-        "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE id = $1",
-    )
-    .bind(client_id)
-    .fetch_optional(db)
-    .await
-    {
-        Ok(client_details) => {
-            let deets = client_details.unwrap();
-            Ok(ClientDetails(
-                deets.client_type_id,
-                deets.specialty_id,
-                deets.territory_id,
-            ))
-        }
-        Err(_) => Err("Error in Client Details".to_string()),
-    }
+    let simple_query = SimpleQuery {
+        query_str: "SELECT client_type_id, specialty_id, territory_id FROM clients WHERE id = $1",
+        int_args: Some(vec![client_id]),
+        str_args: None,
+    };
+    let query_hash = hash_query(&simple_query);
+    // FIXME: Search for key in Redis before reaching for DB
+    let mut con = pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{:?}:{:?}", prefix, query_hash);
 
+    let exists: Result<ClientDetailResult, RedisError> = con.get(&key).await;
+
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting client_details from Redis");
+        let client_details = exists.unwrap();
+        return                 
+            Ok(ClientDetails(
+                client_details.client_type_id,
+                client_details.specialty_id,
+                client_details.territory_id,
+            ));
+    } else {
+        println!("Getting client_details from DB");
+        match sqlx::query_as::<_, ClientDetailResult>(simple_query.query_str)
+        .bind(client_id)
+        .fetch_optional(db)
+        .await
+        {
+            Ok(client_details_opt) => {
+                let client_details = client_details_opt.unwrap();
+                // Cache the query in Redis -- `query:hash_value => result_hash`
+                let val = serde_json::to_string(&client_details).unwrap();
+                let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
+
+                Ok(ClientDetails(
+                    client_details.client_type_id,
+                    client_details.specialty_id,
+                    client_details.territory_id,
+                ))
+            }
+            Err(_) => Err("Error in Client Details".to_string()),
+        }
+    }
     // ClientDetails(1,1,2)
 }
 
@@ -186,6 +254,7 @@ async fn create_consult(
     body: web::Form<ConsultPost>,
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     println!("What");
     let is_valid = body.validate();
@@ -221,7 +290,7 @@ async fn create_consult(
         let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
         // Compute consultant_id based on Linfa assign
         let linfa_pred_result = if body.linfa_assign.is_some() {
-            let cd = get_client_details(body.client_id, &state.db).await.unwrap();
+            let cd = get_client_details(body.client_id, &state.db, &r_state.r_pool).await.unwrap();
             let diff = consult_end_dt - consult_start_dt;
             let duration = diff.num_minutes() as i32;
             println!("Meeting duration is {}", &duration);
@@ -352,19 +421,20 @@ async fn create_consult(
 async fn consult_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
     // path: web::Path<i32>,
 ) -> impl Responder {
     println!("consults_form firing");
 
     let location_options = location_options(&state).await;
     let consultant_options = consultant_options(&state).await;
-    let client_options = client_options(&state).await;
+    let client_options = client_options(&state, &r_state).await;
 
     let template_data = ConsultFormTemplate {
         entity: None,
         location_options: location_options,
         consultant_options: consultant_options,
-        client_options: client_options,
+        client_options: client_options.vec,
         consult_purpose_options: consult_purpose_options(),
         consult_result_options: consult_result_options(),
     };
@@ -405,6 +475,7 @@ fn get_consult_time(dt: Option<DateTime<Utc>>) -> Option<String> {
 async fn consult_edit_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
     path: web::Path<String>,
 ) -> impl Responder {
     println!("consults_form firing");
@@ -448,12 +519,12 @@ async fn consult_edit_form(
 
     let location_options = location_options(&state).await;
     let consultant_options = consultant_options(&state).await;
-    let client_options = client_options(&state).await;
+    let client_options = client_options(&state, &r_state).await;
 
     let consult_form_template = ConsultFormTemplate {
         entity: Some(consult_with_dates),
         location_options: location_options,
-        client_options: client_options,
+        client_options: client_options.vec,
         consultant_options: consultant_options,
         consult_purpose_options: consult_purpose_options(),
         consult_result_options: consult_result_options(),

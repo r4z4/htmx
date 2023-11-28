@@ -1,5 +1,3 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
-
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
 use redis::{AsyncCommands, RedisResult, RedisError};
 
@@ -7,7 +5,7 @@ use crate::{
     config::{
         self, get_validation_response, subs_from_user, validate_and_get_user, FilterOptions,
         FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap,
-        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery, SelectOptionsVec,
+        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery, SelectOptionsVec, hash_query,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
@@ -136,18 +134,13 @@ async fn client_form(
     return HttpResponse::Ok().body(body);
 }
 
-fn hash_query(query: &SimpleQuery) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    query.hash(&mut hasher);
-    let query_hash = hasher.finish();
-    query_hash
-}
-
 async fn account_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
     let simple_query = SimpleQuery {
         query_str: "SELECT id AS value, account_name AS key 
                         FROM accounts 
                         ORDER by account_name",
+        int_args: None,
+        str_args: None,
     };
     let query_hash = hash_query(&simple_query);
     // FIXME: Search for key in Redis before reaching for DB
