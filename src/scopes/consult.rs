@@ -22,15 +22,15 @@ use validator::Validate;
 use crate::{
     config::{
         consult_purpose_options, consult_result_options, mime_type_id_from_path, subs_from_user,
-        validate_and_get_user, FilterOptions, ResponsiveTableData, SelectOption, UserAlert,
-        ValidationResponse, get_validation_response,
+        FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, 
+        get_validation_response, redis_validate_and_get_user,
     },
     linfa::linfa_pred,
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
         ConsultWithDates,
     },
-    AppState,
+    AppState, RedisState,
 };
 
 pub fn consult_scope() -> Scope {
@@ -566,9 +566,10 @@ pub async fn get_consults_handler(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_consultants_handler firing");

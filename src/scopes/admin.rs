@@ -118,9 +118,10 @@ async fn recent_activity(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     let recent = sqlx::query_as!(

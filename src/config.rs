@@ -462,6 +462,16 @@ pub fn read_yaml() -> UserPostFile {
     post_file
 }
 
+pub struct SimpleQuery {
+    pub query_str: &'static str,
+}
+
+impl std::hash::Hash for SimpleQuery {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.query_str.hash(state);
+    }
+}
+
 pub fn states() -> Vec<StringSelectOption> {
     vec![
         StringSelectOption {

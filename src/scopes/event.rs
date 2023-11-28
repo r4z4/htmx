@@ -7,6 +7,8 @@ use serde_json::json;
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use crate::RedisState;
+use crate::config::redis_validate_and_get_user;
 use crate::models::model_consult::ConsultPost;
 use crate::{
     config::{
@@ -317,9 +319,10 @@ async fn next_month(
     req: HttpRequest,
     path: web::Path<(u32, u32)>,
     state: Data<AppState>,
+    r_state: Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user) => {
                 if let Some(usr) = user {
                     let (input_year, input_month) = path.into_inner();

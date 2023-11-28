@@ -261,27 +261,21 @@ async fn basic_auth(
                         };
                         // Set in Redis
                         let mut con = r_state.r_pool.get().await.unwrap();
-                        let prefix = &session.session_id;
+                        // let prefix = &session.session_id;
                         // The old way
                         // let con = push_subs(&user.user_subs, "user_subs", &session.session_id, con).await;
                         // let mut users: BTreeMap<String, &str> = BTreeMap::new();
                         let j = serde_json::to_string(&user).unwrap();
-                        // users.insert(session.session_id.to_string(), &j.as_str());
-                        // let _: () = redis::cmd("HSET")
+                        // sessionId => ValidatedUser
+                        // 86400 sec = one day
+                        let _: RedisResult<bool> = con.set_ex(session.session_id, &j, 86400).await;
+                        // let _: () = redis::cmd("SET")
                         //     // .arg(format!("{}:{}", prefix, "serialized_user"))
-                        //     .arg(prefix)
-                        //     .arg(users)
+                        //     .arg(session.session_id)
+                        //     .arg(&j)
                         //     .query_async::<_, ()>(&mut con)
                         //     .await
-                        //     .expect("failed to execute HSET");
-                        // sessionId => ValidatedUser
-                        let _: () = redis::cmd("SET")
-                            // .arg(format!("{}:{}", prefix, "serialized_user"))
-                            .arg(session.session_id)
-                            .arg(&j)
-                            .query_async::<_, ()>(&mut con)
-                            .await
-                            .expect("failed to execute SET for ValidatedUser");
+                        //     .expect("failed to execute SET for ValidatedUser");
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
                             err: None,

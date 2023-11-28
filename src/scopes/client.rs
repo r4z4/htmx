@@ -1,15 +1,18 @@
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
+use redis::{AsyncCommands, RedisResult};
 
 use crate::{
     config::{
         self, get_validation_response, subs_from_user, validate_and_get_user, FilterOptions,
         FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap,
-        ValidationResponse, ACCEPTED_SECONDARIES,
+        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
     },
-    AppState,
+    AppState, RedisState,
 };
 use chrono::NaiveDate;
 use handlebars::Handlebars;
@@ -32,9 +35,10 @@ pub async fn get_clients_handler(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user_opt) => {
                 if let Some(user) = user_opt {
                     println!("get_clients_handler firing");
@@ -112,13 +116,14 @@ pub async fn get_clients_handler(
 async fn client_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
     // path: web::Path<i32>,
 ) -> impl Responder {
     println!("client_form firing");
 
     // let _ = get_n_pages(8).await;
 
-    let account_options = account_options(&state).await;
+    let account_options = account_options(&state, &r_state).await;
     let template_data = ClientFormTemplate {
         entity: None,
         account_options: account_options,
@@ -131,16 +136,21 @@ async fn client_form(
     return HttpResponse::Ok().body(body);
 }
 
-async fn account_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
-    let account_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT id AS value, account_name AS key 
-        FROM accounts 
-        ORDER by account_name"
-    )
+async fn account_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> Vec<SelectOption> {
+    let simple_query = SimpleQuery {
+        query_str: "SELECT id AS value, account_name AS key 
+                        FROM accounts 
+                        ORDER by account_name",
+    };
+    // FIXME: Search for key in Redis before reaching for DB
+    let account_result = sqlx::query_as::<_, SelectOption>(simple_query.query_str)
     .fetch_all(&state.db)
     .await;
 
+    let mut hasher = DefaultHasher::new();
+    simple_query.hash(&mut hasher);
+    let query_hash = hasher.finish();
+    dbg!(&query_hash);
     if account_result.is_err() {
         let err = "Error occurred while fetching account option KVs";
         let default_options = SelectOption {
@@ -152,6 +162,15 @@ async fn account_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
     }
 
     let account_options = account_result.unwrap();
+
+    // Cache the query in Redis -- `query:hash_value => result_hash`
+    let mut con = r_state.r_pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{:?}:{:?}", prefix, query_hash);
+    let val = serde_json::to_string(&account_options).unwrap();
+    let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
+
+
     account_options
 }
 
@@ -159,6 +178,7 @@ async fn account_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
 async fn client_edit_form(
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
     path: web::Path<String>,
 ) -> impl Responder {
     let loc_slug = path.into_inner();
@@ -181,7 +201,7 @@ async fn client_edit_form(
         let body = hb.render("validation", &validation_response).unwrap();
         return HttpResponse::Ok().body(body);
     }
-    let account_options = account_options(&state).await;
+    let account_options = account_options(&state, &r_state).await;
     let client = query_result.unwrap();
 
     let template_data = ClientFormTemplate {
