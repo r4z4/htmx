@@ -1,4 +1,5 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, serde::{ts_seconds_option, ts_seconds}};
+use redis::{RedisResult, FromRedisValue, ErrorKind, Value, from_redis_value};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
@@ -51,10 +52,28 @@ pub struct ConsultList {
     pub consultant_name: Option<String>,
     pub location_name: String,
     pub result: i32,
+    #[serde(with = "ts_seconds")]
     pub consult_start: DateTime<Utc>,
+    #[serde(with = "ts_seconds_option")]
     pub consult_end: Option<DateTime<Utc>>,
     #[validate(length(min = 3, message = "Notes must be greater than 3 chars"))]
     pub notes: Option<String>,
+}
+
+#[derive(Debug, Validate, Serialize, Clone, Deserialize)]
+pub struct ConsultListVec {
+    pub vec: Vec<ConsultList>,
+}
+
+impl FromRedisValue for ConsultListVec {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
+    }
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]

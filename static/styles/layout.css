@@ -1527,6 +1527,10 @@ Responsive Cal
     box-shadow: 0px 35px 50px rgba( 0, 0, 0, 0.2 );
 }
 
+#applied_filters {
+    float: right;
+}
+
 .fl-table {
     border-radius: 5px;
     font-size: 12px;

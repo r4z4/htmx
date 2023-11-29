@@ -25,12 +25,12 @@ use crate::{
     config::{
         consult_purpose_options, consult_result_options, mime_type_id_from_path, subs_from_user,
         FilterOptions, ResponsiveTableData, SelectOption, UserAlert, ValidationResponse, 
-        get_validation_response, redis_validate_and_get_user, SelectOptionsVec, SimpleQuery, hash_query,
+        get_validation_response, redis_validate_and_get_user, SelectOptionsVec, SimpleQuery, hash_query, hash_owned_query,
     },
     linfa::linfa_pred,
     models::model_consult::{
         ConsultAttachments, ConsultFormRequest, ConsultFormTemplate, ConsultList, ConsultPost,
-        ConsultWithDates,
+        ConsultWithDates, ConsultListVec,
     },
     AppState, RedisState,
 };
@@ -590,10 +590,50 @@ async fn consult_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
+pub struct OwnedQuery {
+    query_str: String,
+    int_args: Vec<i32>,
+    str_args: Vec<String>,
+}
+
+impl std::hash::Hash for OwnedQuery {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.query_str.hash(state);
+        self.int_args.hash(state);
+        self.str_args.hash(state);
+    }
+}
+
+fn get_int_args(opts: &FilterOptions) -> Vec<i32> {
+    let mut vec = vec![];
+    if opts.page.is_some() {
+        vec.push(opts.page.unwrap() as i32)
+    };
+    if opts.limit.is_some() {
+        vec.push(opts.limit.unwrap() as i32)
+    };
+    vec
+}
+
+fn get_str_args(opts: &FilterOptions) -> Vec<String> {
+    let mut vec = vec![];
+    if opts.search.is_some() {
+        vec.push(opts.search.as_ref().unwrap().to_owned())
+    };
+    if opts.key.is_some() {
+        vec.push(opts.key.as_ref().unwrap().to_owned())
+    };
+    if opts.dir.is_some() {
+        vec.push(opts.dir.as_ref().unwrap().to_owned())
+    };
+    vec
+}
+
 async fn sort_query(
     opts: &FilterOptions,
     pool: &Pool<Postgres>,
-) -> Result<Vec<ConsultList>, Error> {
+    r_pool: &RedisPool,
+) -> Result<ConsultListVec, Error> {
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
     dbg!(&opts);
@@ -636,19 +676,54 @@ async fn sort_query(
     query.push(" OFFSET ");
     query.push_bind(offset as i32);
 
-    let q_build = query.build();
-    let res = q_build.fetch_all(pool).await;
+    let owned_query = OwnedQuery {
+        query_str: query.sql().to_owned(),
+        int_args: get_int_args(opts),
+        str_args: get_str_args(opts),
+    };
 
-    // This almost got me there. Error on .as_str() for consult_start column
-    // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
+    dbg!(&owned_query.query_str);
+    dbg!(&owned_query.int_args);
+    dbg!(&owned_query.str_args);
 
-    let consults = res
-        .unwrap()
-        .iter()
-        .map(|row| ConsultList::from_row(row).unwrap())
-        .collect::<Vec<ConsultList>>();
+    let query_hash = hash_owned_query(&owned_query);
+    println!("query hash = {}", query_hash);
+    // Search for key in Redis before reaching for DB
+    let mut con = r_pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{}:{}", prefix, query_hash);
 
-    Ok(consults)
+    let exists: Result<ConsultListVec, RedisError> = con.get(&key).await;
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting consultant_options from Redis");
+        let result = exists.unwrap();
+        return Ok(result);
+    } else {
+        println!("Getting consultant_options from DB");
+
+        let q_build = query.build();
+        let res = q_build.fetch_all(pool).await;
+
+        // This almost got me there. Error on .as_str() for consult_start column
+        // let consults = res.unwrap().iter().map(|row| row_to_consult_list(row)).collect::<Vec<ConsultList>>();
+
+        let consults = res
+            .unwrap()
+            .iter()
+            .map(|row| ConsultList::from_row(row).unwrap())
+            .collect::<Vec<ConsultList>>();
+
+        let clv = ConsultListVec {
+            vec: consults,
+        };
+        // Cache the query in Redis -- `query:hash_value => result_hash`
+        let val = serde_json::to_string(&clv).unwrap();
+        let _: RedisResult<bool> = con.set_ex(key, &val, 120).await;
+
+        return Ok(clv);
+    }
 
     // let query_str = query.build().sql().into();
     // dbg!(&query_str);
@@ -702,7 +777,7 @@ pub async fn get_consults_handler(
                     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
                     // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
-                    let query_result = sort_query(&opts, &state.db).await;
+                    let query_result = sort_query(&opts, &state.db, &r_state.r_pool).await;
 
                     dbg!(&query_result);
 
@@ -718,10 +793,10 @@ pub async fn get_consults_handler(
 
                     let consults_table_data = ResponsiveTableData {
                         entity_type_id: 6,
-                        vec_len: consults.len(),
+                        vec_len: consults.vec.len(),
                         lookup_url: "/consult/list?page=".to_string(),
                         page: opts.page.unwrap_or(1),
-                        entities: consults,
+                        entities: consults.vec,
                         subscriptions: subs_from_user(&user),
                     };
 

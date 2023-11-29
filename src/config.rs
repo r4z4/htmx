@@ -23,6 +23,7 @@ use struct_iterable::Iterable;
 use validator::{Validate, ValidationError, ValidationErrors};
 use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
+use crate::scopes::consult::OwnedQuery;
 use crate::{AppState, HeaderValueExt, ValidatedUser, RedisState};
 
 lazy_static! {
@@ -77,7 +78,7 @@ pub struct Post {
     pub body: String,
 }
 
-#[derive(Deserialize, Debug, Validate)]
+#[derive(Deserialize, Debug, Validate, Iterable)]
 pub struct FilterOptions {
     pub page: Option<usize>,
     pub limit: Option<usize>,
@@ -162,6 +163,13 @@ impl Config {
         let config = serde_yaml::from_reader(file).expect("Could not read values.");
         config
     }
+}
+
+pub fn hash_owned_query(query: &OwnedQuery) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    query.hash(&mut hasher);
+    let query_hash = hasher.finish();
+    query_hash
 }
 
 pub fn hash_query(query: &SimpleQuery) -> u64 {

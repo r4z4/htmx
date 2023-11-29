@@ -91,7 +91,7 @@ handlebars_helper!(subscribe_rte: |slug: String, entity_type_id: i32| {
 
 handlebars_helper!(subscribe_icon: |id: i32, entity_type_id: i32, subs: UserSubscriptions| {
     dbg!(&id);
-    dbg!(&subs.client_subs);
+    dbg!(&subs);
     // No icon for Query entity type
     if entity_type_id == 8 {
         ""
