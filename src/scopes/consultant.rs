@@ -15,6 +15,7 @@ use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use image::{imageops::FilterType, DynamicImage};
 use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
+use redis::{RedisResult, AsyncCommands};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, QueryBuilder, Row};
 use std::io::Write;
@@ -29,7 +30,7 @@ use crate::{
         ConsultantFormRequest, ConsultantFormTemplate, ConsultantPostRequest,
         ConsultantPostResponse, ResponseConsultant,
     },
-    AppState,
+    AppState, RedisState,
 };
 
 pub fn consultant_scope() -> Scope {
@@ -362,6 +363,7 @@ async fn create_consultant(
     body: web::Form<ConsultantPostRequest>,
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
 
@@ -413,8 +415,21 @@ async fn create_consultant(
         {
             Ok(consultant_response) => {
                 dbg!(&consultant_response.user_id);
+                // Del / Invalidate Redis Key to force a DB fetch
+                let mut con = r_state.r_pool.get().await.unwrap();
+                let key = format!("{}:{}", "query", "consultant_options");
+                let deleted: RedisResult<bool> = con.del(&key).await;
+                match deleted {
+                    Ok(true) => {
+                        println!("Key deleted");
+                    },
+                    Ok(false) => {
+                        println!("Key not found {}", &key);
+                    },
+                    Err(err) => println!("Error: {}", err)
+                }
                 match sqlx::query_as::<_, ConsultantPostResponse>(
-                    "UPDATE users SET user_type_id = 2, updated_at = now() WHERE user_id = $1 RETURNING user_id",
+                    "UPDATE users SET user_type_id = 2, updated_at = now() WHERE id = $1 RETURNING id AS user_id",
                 )
                 .bind(&consultant_response.user_id)
                 .fetch_one(&state.db)
@@ -428,7 +443,7 @@ async fn create_consultant(
                     Err(err) => {
                         dbg!(&err);
                         let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consultant: {:?}", err).as_str(), "alert_error"));
-                        let body = hb.render("crud-api", &user_alert).unwrap();
+                        let body = hb.render("crud-api-inner", &user_alert).unwrap();
                         return HttpResponse::Ok().body(body);
                     }
                 }

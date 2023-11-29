@@ -1,4 +1,5 @@
 use actix_web::{get, patch, post, web, HttpRequest, HttpResponse, Responder, Scope};
+use redis::{RedisResult, AsyncCommands};
 use serde_json::json;
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
         LocationFormRequest, LocationFormTemplate, LocationList, LocationPatchRequest,
         LocationPostRequest, LocationPostResponse,
     },
-    AppState, HeaderValueExt, ValidatedUser,
+    AppState, HeaderValueExt, ValidatedUser, RedisState,
 };
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
@@ -344,6 +345,7 @@ async fn create_location(
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
     let headers = req.headers();
@@ -399,6 +401,16 @@ async fn create_location(
                         {
                             Ok(loc) => {
                                 dbg!(loc.id);
+                                // Del / Invalidate Redis Key to force a DB fetch
+                                let mut con = r_state.r_pool.get().await.unwrap();
+                                let key = format!("{}:{}", "query", "location_options");
+                                let deleted: RedisResult<bool> = con.del(&key).await;
+                                match deleted {
+                                    Ok(bool) => {
+                                        println!("Key:{} -> {}", &key, {if bool {"Found & Deleted"} else {"Not Found"}});
+                                    },
+                                    Err(err) => println!("Error: {}", err)
+                                }
                                 let user_alert = UserAlert::from((format!("Location added successfully: ID #{:?}", loc.id).as_str(), "alert_success"));
                                 let template_data = json!({
                                     "user_alert": user_alert,

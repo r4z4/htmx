@@ -47,51 +47,104 @@ pub fn consult_scope() -> Scope {
         .service(availability)
 }
 
-async fn location_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
-    let location_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT id AS value, location_name AS key 
+async fn location_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
+    let simple_query = SimpleQuery {
+        query_str: "SELECT id AS value, location_name AS key 
         FROM locations 
-        ORDER by location_name"
-    )
-    .fetch_all(&state.db)
-    .await;
+        ORDER by location_name",
+        int_args: None,
+        str_args: None,
+    };
+    // Not hashing the query for options. Its always the same. Fixed Redis key so we can delete & invalidate when a record is added.
+    // let query_hash = hash_query(&simple_query);
+    // Search for key in Redis before reaching for DB
+    let mut con = r_state.r_pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{}:{}", prefix, "location_options");
 
-    if location_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption {
-            key: Some("No Locations Found".to_owned()),
-            value: 0,
+    let exists: Result<SelectOptionsVec, RedisError> = con.get(&key).await;
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting location_options from Redis");
+        let result = exists.unwrap();
+        return result;
+    } else {
+        println!("Getting location_options from DB");
+        let location_result = sqlx::query_as::<>(simple_query.query_str)
+        .fetch_all(&state.db)
+        .await;
+
+        if location_result.is_err() {
+            let err = "Error occurred while fetching location option KVs";
+            let default_options = SelectOption {
+                key: Some("No Locations Found".to_owned()),
+                value: 0,
+            };
+            // default_options
+            dbg!("Incoming Panic");
+        }
+
+        let location_options = location_result.unwrap();
+        let sov = SelectOptionsVec {
+            vec: location_options,
         };
-        // default_options
-        dbg!("Incoming Panic");
-    }
+        // Cache the query in Redis -- `query:hash_value => result_hash`
+        let val = serde_json::to_string(&sov).unwrap();
+        let _: RedisResult<bool> = con.set_ex(key, &val, 86400).await;
 
-    let location_options = location_result.unwrap();
-    location_options
+        return sov;
+    }   
 }
 
-async fn consultant_options(state: &web::Data<AppState>) -> Vec<SelectOption> {
-    let consultant_result = sqlx::query_as!(
-        SelectOption,
-        "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, id AS value 
-        FROM consultants ORDER BY key"
-    )
-    .fetch_all(&state.db)
-    .await;
+// FIXME: Just pass pools?
+async fn consultant_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
+    let simple_query = SimpleQuery {
+        query_str: "SELECT CONCAT(consultant_f_name, ' ',consultant_l_name) AS key, id AS value 
+        FROM consultants ORDER BY key",
+        int_args: None,
+        str_args: None,
+    };
+    // Not hashing the query for options. Its always the same. Fixed Redis key so we can delete & invalidate when a record is added.
+    // let query_hash = hash_query(&simple_query);
+    // Search for key in Redis before reaching for DB
+    let mut con = r_state.r_pool.get().await.unwrap();
+    let prefix = "query";
+    let key = format!("{}:{}", prefix, "consultant_options");
 
-    if consultant_result.is_err() {
-        let err = "Error occurred while fetching location option KVs";
-        let default_options = SelectOption {
-            key: Some("No Consultant Found".to_owned()),
-            value: 0,
+    let exists: Result<SelectOptionsVec, RedisError> = con.get(&key).await;
+    dbg!(&exists);
+
+    if exists.is_ok() {
+        println!("Getting consultant_options from Redis");
+        let result = exists.unwrap();
+        return result;
+    } else {
+        println!("Getting consultant_options from DB");
+        let consultant_result = sqlx::query_as::<_, SelectOption>(simple_query.query_str)
+        .fetch_all(&state.db)
+        .await;
+
+        if consultant_result.is_err() {
+            let err = "Error occurred while fetching location option KVs";
+            let default_options = SelectOption {
+                key: Some("No Consultant Found".to_owned()),
+                value: 0,
+            };
+            // default_options
+            dbg!("Incoming Panic");
+        }
+
+        let consultant_options = consultant_result.unwrap();
+        let sov = SelectOptionsVec {
+            vec: consultant_options,
         };
-        // default_options
-        dbg!("Incoming Panic");
-    }
+        // Cache the query in Redis -- `query:hash_value => result_hash`
+        let val = serde_json::to_string(&sov).unwrap();
+        let _: RedisResult<bool> = con.set_ex(key, &val, 120).await;
 
-    let consultant_options = consultant_result.unwrap();
-    consultant_options
+        return sov;
+    }
 }
 
 async fn client_options(state: &web::Data<AppState>, r_state: &web::Data<RedisState>) -> SelectOptionsVec {
@@ -101,11 +154,12 @@ async fn client_options(state: &web::Data<AppState>, r_state: &web::Data<RedisSt
         int_args: None,
         str_args: None,
     };
-    let query_hash = hash_query(&simple_query);
-    // FIXME: Search for key in Redis before reaching for DB
+    // Not hashing the query for options. Its always the same. Fixed Redis key so we can delete & invalidate when a record is added.
+    // let query_hash = hash_query(&simple_query);
+    // Search for key in Redis before reaching for DB
     let mut con = r_state.r_pool.get().await.unwrap();
     let prefix = "query";
-    let key = format!("{:?}:{:?}", prefix, query_hash);
+    let key = format!("{}:{}", prefix, "client_options");
 
     let exists: Result<SelectOptionsVec, RedisError> = con.get(&key).await;
 
@@ -426,14 +480,14 @@ async fn consult_form(
 ) -> impl Responder {
     println!("consults_form firing");
 
-    let location_options = location_options(&state).await;
-    let consultant_options = consultant_options(&state).await;
+    let location_options = location_options(&state, &r_state).await;
+    let consultant_options = consultant_options(&state, &r_state).await;
     let client_options = client_options(&state, &r_state).await;
 
     let template_data = ConsultFormTemplate {
         entity: None,
-        location_options: location_options,
-        consultant_options: consultant_options,
+        location_options: location_options.vec,
+        consultant_options: consultant_options.vec,
         client_options: client_options.vec,
         consult_purpose_options: consult_purpose_options(),
         consult_result_options: consult_result_options(),
@@ -517,15 +571,15 @@ async fn consult_edit_form(
         consult_end_time: get_consult_time(consult.consult_end),
     };
 
-    let location_options = location_options(&state).await;
-    let consultant_options = consultant_options(&state).await;
+    let location_options = location_options(&state, &r_state).await;
+    let consultant_options = consultant_options(&state, &r_state).await;
     let client_options = client_options(&state, &r_state).await;
 
     let consult_form_template = ConsultFormTemplate {
         entity: Some(consult_with_dates),
-        location_options: location_options,
+        location_options: location_options.vec,
         client_options: client_options.vec,
-        consultant_options: consultant_options,
+        consultant_options: consultant_options.vec,
         consult_purpose_options: consult_purpose_options(),
         consult_result_options: consult_result_options(),
     };

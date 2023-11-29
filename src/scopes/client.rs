@@ -248,6 +248,7 @@ async fn create_client(
     body: web::Form<ClientPostRequest>,
     hb: web::Data<Handlebars<'_>>,
     state: web::Data<AppState>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
 
@@ -297,6 +298,19 @@ async fn create_client(
         {
             Ok(loc) => {
                 dbg!(loc.id);
+                // Del / Invalidate Redis Key to force a DB fetch
+                let mut con = r_state.r_pool.get().await.unwrap();
+                let key = format!("{}:{}", "query", "client_options");
+                let deleted: RedisResult<bool> = con.del(&key).await;
+                match deleted {
+                    Ok(true) => {
+                        println!("Key deleted");
+                    },
+                    Ok(false) => {
+                        println!("Key not found {}", &key);
+                    },
+                    Err(err) => println!("Error: {}", err)
+                }
                 let user_alert = UserAlert::from((format!("Client added successfully: client_id #{:?}", loc.id).as_str(), "alert_success"));
                 let body = hb.render("crud-api-inner", &user_alert).unwrap();
                 return HttpResponse::Ok().body(body);
