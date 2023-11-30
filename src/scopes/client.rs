@@ -78,11 +78,14 @@ pub async fn get_clients_handler(
 
                     let clients = query_result.unwrap();
 
+                    let f_opts = FilterOptions::from(&opts);
+
                     let clients_table_data = ResponsiveTableData {
                         entity_type_id: 7,
                         vec_len: clients.len(),
                         lookup_url: "/client/list?page=".to_string(),
-                        page: opts.page.unwrap_or(1),
+                        opts: f_opts,
+                        // page: opts.page.unwrap_or(1),
                         entities: clients,
                         subscriptions: subs_from_user(&user),
                     };

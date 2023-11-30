@@ -791,11 +791,14 @@ pub async fn get_consults_handler(
 
                     let consults = query_result.unwrap();
 
+                    let f_opts = FilterOptions::from(&opts);
+
                     let consults_table_data = ResponsiveTableData {
                         entity_type_id: 6,
                         vec_len: consults.vec.len(),
                         lookup_url: "/consult/list?page=".to_string(),
-                        page: opts.page.unwrap_or(1),
+                        opts: f_opts,
+                        // page: opts.page.unwrap_or(1),
                         entities: consults.vec,
                         subscriptions: subs_from_user(&user),
                     };

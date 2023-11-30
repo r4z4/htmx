@@ -12,7 +12,7 @@ use config::{is_dirty, Post, UserFeedData};
 use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
-    attachments_rte, concat_args, concat_str_args, fifth_week, first_week, form_rte, fourth_week,
+    attachments_rte, construct_opts_url, concat_str_args, fifth_week, first_week, form_rte, fourth_week,
     get_icon, get_list_view, get_month_name, get_search_rte, get_table_title, int_eq, int_in,
     is_icon_col, loc_vec_len_ten, lower_and_single, preview_text, second_week, sort_rte, str_eq,
     subscribe_icon, subscribe_rte, third_week, to_title_case,
@@ -831,7 +831,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("fourth_week", Box::new(fourth_week));
     handlebars.register_helper("fifth_week", Box::new(fifth_week));
     handlebars.register_helper("lower_and_single", Box::new(lower_and_single));
-    handlebars.register_helper("concat_args", Box::new(concat_args));
+    handlebars.register_helper("construct_opts_url", Box::new(construct_opts_url));
     handlebars.register_helper("concat_str_args", Box::new(concat_str_args));
     handlebars.register_helper("loc_vec_len_ten", Box::new(loc_vec_len_ten));
     handlebars.register_helper("form_rte", Box::new(form_rte));

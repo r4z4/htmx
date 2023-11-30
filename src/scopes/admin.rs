@@ -142,11 +142,14 @@ async fn recent_activity(
 
                     let recent_queries = recent.unwrap();
 
+                    let f_opts = FilterOptions::from(&opts);
+
                     let recent_queries_table_data = ResponsiveTableData {
                         entity_type_id: 8,
                         vec_len: recent_queries.len(),
                         lookup_url: "/consultant/list?page=".to_string(),
-                        page: opts.page.unwrap_or(1),
+                        opts: f_opts,
+                        // page: opts.page.unwrap_or(1),
                         entities: recent_queries,
                         subscriptions: subs_from_user(&user),
                     };
@@ -301,11 +304,14 @@ pub async fn get_users_handler(
 
     let users = query_result.unwrap();
 
+    let f_opts = FilterOptions::from(&opts);
+
     let users_table_data = ResponsiveTableData {
         entity_type_id: entity_type_from_user_type(user_type_id),
         vec_len: users.len(),
         lookup_url: "/admin/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
+        opts: f_opts,
+        // page: opts.page.unwrap_or(1),
         entities: users,
         subscriptions: test_subs(),
     };

@@ -166,11 +166,14 @@ async fn search_location(
 
     let locations = query_result.unwrap();
 
+    let f_opts = FilterOptions::from(&opts);
+
     let locations_table_data = ResponsiveTableData {
         entity_type_id: 5,
         vec_len: locations.len(),
         lookup_url: "/location/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
+        opts: f_opts,
+        // page: opts.page.unwrap_or(1),
         entities: locations,
         subscriptions: test_subs(),
     };
@@ -429,11 +432,14 @@ pub async fn get_locations_handler(
 
                         let locations = query_result.unwrap();
 
+                        let f_opts = FilterOptions::from(&opts);
+
                         let locations_table_data = ResponsiveTableData {
                             entity_type_id: 5,
                             vec_len: locations.len(),
                             lookup_url: "/location/list?page=".to_string(),
-                            page: opts.page.unwrap_or(1),
+                            opts: f_opts,
+                            // page: opts.page.unwrap_or(1),
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
@@ -477,6 +483,8 @@ pub async fn get_locations_handler(
 
                         let locations = query_result.unwrap();
 
+                        let f_opts = FilterOptions::from(&opts);
+
                         //     let consultants_response = ConsultantListResponse {
                         //         consultants: consultants,
                         //         name: "Hello".to_owned()
@@ -488,7 +496,8 @@ pub async fn get_locations_handler(
                             entity_type_id: 5,
                             vec_len: locations.len(),
                             lookup_url: "/location/list?page=".to_string(),
-                            page: opts.page.unwrap_or(1),
+                            opts: f_opts,
+                            // page: opts.page.unwrap_or(1),
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };

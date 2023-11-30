@@ -1,3 +1,4 @@
+use actix_web::web;
 use actix_web::{web::Data, HttpRequest};
 use chrono::{DateTime, Utc};
 use futures_util::{stream, Stream, StreamExt};
@@ -78,7 +79,7 @@ pub struct Post {
     pub body: String,
 }
 
-#[derive(Deserialize, Debug, Validate, Iterable)]
+#[derive(Deserialize, Clone, Serialize, Default, Debug, Validate, Iterable)]
 pub struct FilterOptions {
     pub page: Option<usize>,
     pub limit: Option<usize>,
@@ -86,6 +87,19 @@ pub struct FilterOptions {
     pub search: Option<String>,
     pub key: Option<String>,
     pub dir: Option<String>,
+}
+
+impl From<&web::Query<FilterOptions>> for FilterOptions {
+    fn from(web_opts: &web::Query<FilterOptions>) -> Self {
+        FilterOptions {
+            search: web_opts.search.clone(),
+            dir: web_opts.dir.clone(),
+            key: web_opts.key.clone(),
+            // Doing to keep same for table
+            page: Some(web_opts.page.unwrap_or(1)),
+            limit: web_opts.limit,
+        }
+    }
 }
 
 #[derive(Debug, Validate, Serialize, FromRow, Clone, Deserialize)]
@@ -243,7 +257,8 @@ pub struct UserSubscriptions {
 #[derive(Serialize, Validate, Deserialize, Debug, Default, Clone)]
 pub struct ResponsiveTableData<T> {
     pub entity_type_id: i32,
-    pub page: usize,
+    pub opts: FilterOptions,
+    // pub page: usize,
     pub vec_len: usize,
     pub subscriptions: UserSubscriptions,
     // #[validate(url)]

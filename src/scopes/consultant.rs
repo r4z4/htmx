@@ -158,11 +158,14 @@ pub async fn get_consultants_handler(
 
     let consultants = query_result.unwrap();
 
+    let f_opts = FilterOptions::from(&opts);
+
     let consultants_table_data = ResponsiveTableData {
         entity_type_id: 4,
         vec_len: consultants.len(),
         lookup_url: "/consultant/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
+        opts: f_opts,
+        // page: opts.page.unwrap_or(1),
         entities: consultants,
         subscriptions: test_subs(),
     };

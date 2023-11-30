@@ -77,11 +77,14 @@ async fn search_location(
 
     let locations = query_result.unwrap();
 
+    let f_opts = FilterOptions::from(&opts);
+
     let locations_table_data = ResponsiveTableData {
         entity_type_id: 5,
         vec_len: locations.len(),
         lookup_url: "/location/list?page=".to_string(),
-        page: opts.page.unwrap_or(1),
+        opts: f_opts,
+        // page: opts.page.unwrap_or(1),
         entities: locations,
         subscriptions: test_subs(),
     };
@@ -146,11 +149,14 @@ pub async fn get_locations_handler(
 
                         let locations = query_result.unwrap();
 
+                        let f_opts = FilterOptions::from(&opts);
+
                         let locations_table_data = ResponsiveTableData {
                             entity_type_id: 5,
                             vec_len: locations.len(),
                             lookup_url: "/location/list?page=".to_string(),
-                            page: opts.page.unwrap_or(1),
+                            opts: f_opts,
+                            // page: opts.page.unwrap_or(1),
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };
@@ -194,18 +200,14 @@ pub async fn get_locations_handler(
 
                         let locations = query_result.unwrap();
 
-                        //     let consultants_response = ConsultantListResponse {
-                        //         consultants: consultants,
-                        //         name: "Hello".to_owned()
-                        // ,    };
+                        let f_opts = FilterOptions::from(&opts);
 
-                        // let table_headers = ["ID".to_owned(),"Specialty".to_owned(),"First NAme".to_owned()].to_vec();
-                        // let load_more_url_base = "/location/list?page=".to_owned();
                         let locations_table_data = ResponsiveTableData {
                             entity_type_id: 5,
                             vec_len: locations.len(),
                             lookup_url: "/location/list?page=".to_string(),
-                            page: opts.page.unwrap_or(1),
+                            opts: f_opts,
+                            // page: opts.page.unwrap_or(1),
                             entities: locations,
                             subscriptions: subs_from_user(&user),
                         };

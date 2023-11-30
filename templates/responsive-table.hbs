@@ -61,7 +61,7 @@
       <div id="table_search">
         <input class="form-control" type="search" id="table_search_input"
               name="search" placeholder="Begin Typing To Search ..." 
-              hx-get={{get_search_rte entity_type_id}} 
+              hx-get={{get_search_rte entity_type_id opts}} 
               hx-trigger="keyup changed delay:500ms, search" 
               hx-target="#f1_table" 
               hx-swap="outerHTML"
@@ -163,7 +163,7 @@
                           hx-swap="outerHTML"
                           hx-select="tbody > tr"
                           {{!-- hx-get={{load_more_url_base + (page + 1)}} --}}
-                          hx-get={{concat_args lookup_url page}}
+                          hx-get={{construct_opts_url lookup_url opts}}
                           {{!-- hx-get="/{{ lower_and_single table_title }}/list?page={{ page + 1 }}" --}}
                       >Loading More...</span>
                 </td>

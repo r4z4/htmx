@@ -3,7 +3,7 @@ use handlebars::handlebars_helper;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::UserSubscriptions, models::model_location::LocationList, scopes::event::CalendarData,
+    config::{UserSubscriptions, FilterOptions}, models::model_location::LocationList, scopes::event::CalendarData,
     Entity,
 };
 
@@ -189,9 +189,32 @@ handlebars_helper!(lower_and_single: |plural: String| {
     m_plural.pop();
     m_plural.to_case(Case::Lower)
 });
-handlebars_helper!(concat_args: |lookup_url: String, page_num: i32| {
-    let added = page_num + 1;
-    lookup_url.to_owned() + &added.to_string()
+
+// http://localhost:8000/consult/list?search=gumshoes
+// http://localhost:8000/consult/list?key=id&dir=DESC
+// e.g. lookup_url: "/location/list?page=".to_string(),
+handlebars_helper!(construct_opts_url: |lookup_url: String, opts: FilterOptions| {
+    dbg!(&opts);
+    let added = opts.page.unwrap() as i32 + 1;
+    let search_url = if opts.search.is_some() {
+        let uw = opts.search.unwrap();
+        // When user clears by del, blank string remains
+        if uw.len() > 0 {
+            format!("&search={}", uw)
+        } else {"".to_string()}
+    } else { "".to_string() };
+    let key_url = if opts.key.is_some() {
+        format!("&key={}", opts.key.unwrap())
+    } else { "".to_string() };
+    let dir_url = if opts.dir.is_some() {
+        format!("&dir={}", opts.dir.unwrap())
+    } else { "".to_string() };
+    
+    // lookup_url.to_owned() + &added.to_string() + &search_url + &key_url + &dir_url
+
+    let url = lookup_url.to_owned() + &added.to_string() + &search_url + &key_url + &dir_url;
+    dbg!(&url);
+    url
 });
 
 handlebars_helper!(concat_str_args: |url: String, slug: String| {
@@ -206,16 +229,33 @@ handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
     }
 });
 
-handlebars_helper!(get_search_rte: |entity_type_id: i32| {
+handlebars_helper!(get_search_rte: |entity_type_id: i32, opts: FilterOptions| {
+    dbg!(&opts);
+    let added = opts.page.unwrap() as i32 + 1;
+    let search_url = if opts.search.is_some() {
+        let uw = opts.search.unwrap();
+        // When user clears by del, blank string remains
+        if uw.len() > 0 {
+            format!("&search={}", uw)
+        } else {"".to_string()}
+    } else { "".to_string() };
+    let key_url = if opts.key.is_some() {
+        format!("&key={}", opts.key.unwrap())
+    } else { "".to_string() };
+    let dir_url = if opts.dir.is_some() {
+        format!("&dir={}", opts.dir.unwrap())
+    } else { "".to_string() };
+
+    // The search input automatically adds the ?search query param?
     match entity_type_id {
-        1 => String::from("/users/search"),
-        2 => String::from("admin/search"),
-        3 => String::from("/users/search"),
-        4 => String::from("/consultant/list"),
-        5 => String::from("/location/list"),
-        6 => String::from("/consult/list"),
-        7 => String::from("/client/search"),
-        _ => String::from("/users/search"),
+        1 => String::from("/users/search?page=1") + &key_url + &dir_url,
+        2 => String::from("admin/search?page=1") + &key_url + &dir_url,
+        3 => String::from("/users/search?page=1") + &key_url + &dir_url,
+        4 => String::from("/consultant/list?page=1") + &key_url + &dir_url,
+        5 => String::from("/location/list?page=1") + &key_url + &dir_url,
+        6 => String::from("/consult/list?page=1") + &key_url + &dir_url,
+        7 => String::from("/client/search?page=1") + &key_url + &dir_url,
+        _ => String::from("/users/search?page=1") + &key_url + &dir_url,
     }
 });
 
