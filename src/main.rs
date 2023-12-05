@@ -21,7 +21,7 @@ use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
 use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind, ToRedisArgs};
-use redis_mod::{redis_connect, redis_test_data};
+use redis_mod::redis_mod::{redis_connect, redis_test_data};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
@@ -809,7 +809,7 @@ async fn main() -> std::io::Result<()> {
     };
 
     let r_pool = redis_connect();
-    let _ = redis_test_data(&r_pool).await;
+    // let _ = redis_test_data(&r_pool).await;
 
     // Using GlitchTip. Works with the Rust Sentry SDK
     let _guard = sentry::init("https://ec778decf4e94595b5a48520185298c3@app.glitchtip.com/5073");

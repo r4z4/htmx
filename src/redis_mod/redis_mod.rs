@@ -1,7 +1,13 @@
+use chrono::{DateTime, Utc};
 use dotenv::dotenv;
-use redis::{Client, Commands, AsyncCommands};
-use std::{collections::BTreeMap, env, sync::Arc};
+use futures_util::StreamExt;
+use redis::{Client, Commands, AsyncCommands, ControlFlow, PubSubCommands, from_redis_value, RedisResult, ErrorKind, Value, FromRedisValue, RedisWrite, ToRedisArgs, Msg};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use std::{collections::BTreeMap, env, sync::Arc, thread, time::Duration, ops::Deref};
 use deadpool_redis::{redis::{cmd}, Config, Runtime, Pool, Connection};
+
+use crate::redis_mod::{redis_subscriber::subscribe, redis_publisher::publish};
 
 pub trait RedisState {
     fn client(&self) -> &Arc<Client>;
@@ -9,10 +15,63 @@ pub trait RedisState {
 
 pub struct Ctx {
     pub client: Arc<Client>,
+    pub conn_url: String,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
+    pub id: String,
+    pub channel: String,
+    pub payload: PubSubMsg,
+}
+
+impl Message {
+    pub fn new(payload: PubSubMsg) -> Message {
+        Message {
+            id: Message::generate_id(),
+            channel: String::from("order"),
+            payload
+        }
+    }
+    fn generate_id() -> String {
+        Uuid::new_v4().simple().to_string()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PubSubMsg {
+    pub msg: String,
+    pub from: i32,
+    pub sent_at: DateTime<Utc>,
+}
+
+impl PubSubMsg {
+    pub fn new(msg: String, from: i32, sent_at: DateTime<Utc>) -> PubSubMsg {
+        PubSubMsg { msg, from, sent_at }
+    }
+}
+
+impl FromRedisValue for PubSubMsg {
+    fn from_redis_value(v: &Value) -> RedisResult<Self> {
+        let v: String = from_redis_value(v)?;
+        let result: Self = match serde_json::from_str::<Self>(&v) {
+          Ok(v) => v,
+          Err(_err) => return Err((ErrorKind::TypeError, "Parse to JSON Failed").into())
+        };
+        Ok(result)
+    }
+}
+
+impl ToRedisArgs for &PubSubMsg {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg_fmt(serde_json::to_string(self).expect("Can't serialize Planet as string"))
+    }
 }
 
 impl Ctx {
-    fn new() -> Ctx {
+    pub fn new() -> Ctx {
         dotenv().ok();
         let redis_host_name = env::var("REDIS_HOSTNAME").unwrap_or(
             env::var("REDIS_HOSTNAME")
@@ -25,9 +84,10 @@ impl Ctx {
                 .unwrap_or("NoURL".to_string()),
         );
         let redis_conn_url = format!("redis://:{}@{}:6379", redis_password, redis_host_name);
-        let client = Client::open(redis_conn_url).unwrap();
+        let client = Client::open(redis_conn_url.clone()).unwrap();
         Ctx {
             client: Arc::new(client),
+            conn_url: redis_conn_url,
         }
     }
 }
@@ -37,26 +97,6 @@ impl RedisState for Ctx {
         &self.client
     }
 }
-
-// pub fn subscribe(state: &impl RedisState) -> thread::JoinHandle<()> {
-//     let client = Arc::clone(state.client());
-//     thread::spawn(move || {
-//         let mut conn = client.get_connection().unwrap();
-
-//         conn.subscribe(&["updates"], |msg| {
-//             let ch = msg.get_channel_name();
-//             let payload: String = msg.get_payload().unwrap();
-//             match payload.as_ref() {
-//                 "10" => ControlFlow::Break(()),
-//                 a => {
-//                     println!("Channel '{}' received '{}'.", ch, a);
-//                     ControlFlow::Continue
-//                 }
-//             }
-//         })
-//         .unwrap();
-//     })
-// }
 
 pub fn set_str(
     con: &mut redis::Connection,
@@ -88,19 +128,6 @@ pub async fn set_int(
         .await.unwrap();
     Ok(())
 }
-
-// pub fn publish(state: &impl RedisState) {
-//     let client = Arc::clone(state.client());
-//     thread::spawn(move || {
-//         let mut conn = client.get_connection().unwrap();
-
-//         for x in 0..11 {
-//             thread::sleep(Duration::from_millis(500));
-//             println!("Publish {} to updates.", x);
-//             let _: () = conn.publish("updates", x).unwrap();
-//         }
-//     });
-// }
 
 pub fn redis_connect() -> Pool {
     //format - host:port
@@ -196,13 +223,24 @@ pub async fn redis_test_data(pool: &Pool) -> () {
     // publish(&ctx);
     // handle.join().unwrap();
 
-    // let mut pubsub = con.as_pubsub();
-    // pubsub.subscribe("channel_1")?;
-    // pubsub.subscribe("channel_2")?;
-    //
+    // let client = try!(redis::Client::open("redis://127.0.0.1/"));
+    let ctx = Ctx::new();
+    let mut cfg = Config::from_url(ctx.conn_url);
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
+    let mut new_con = ctx.client.get_connection().unwrap();
+    let mut pubsub = new_con.as_pubsub();
+    pubsub.subscribe("updates");
+
     // loop {
-    //     let msg = pubsub.get_message()?;
-    //     let payload : String = msg.get_payload()?;
-    //     println!("channel '{}': {}", msg.get_channel_name(), payload);
+    //     let mut msg = pubsub.get_message();
+    //     let (payload, channel) = 
+    //         if msg.is_ok() {
+    //             let uw = msg.unwrap();
+    //             (uw.get_payload().unwrap(), String::from(uw.get_channel_name()))
+    //         } else {
+    //             (String::from("No payload"), String::from("No channel"))
+    //         };
+        
+    //     println!("channel '{}': {}", channel, payload);
     // }
 }

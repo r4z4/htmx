@@ -10,7 +10,7 @@ use crate::{
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
     },
-    AppState, RedisState,
+    AppState, RedisState, redis_mod::{redis_mod::Ctx, redis_subscriber::subscribe, redis_publisher::publish},
 };
 use chrono::NaiveDate;
 use handlebars::Handlebars;
@@ -121,6 +121,10 @@ async fn client_form(
     // path: web::Path<i32>,
 ) -> impl Responder {
     println!("client_form firing");
+
+    let ctx = Ctx::new();
+    // let handle = subscribe(&ctx);
+    publish(&ctx);
 
     // let _ = get_n_pages(8).await;
 
