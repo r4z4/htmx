@@ -480,13 +480,17 @@ async fn patch_client(
             Err(err) => {
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
-                return HttpResponse::Ok().body(body);
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
-        HttpResponse::Ok().body(body)
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
