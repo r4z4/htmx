@@ -79,6 +79,22 @@ pub struct Post {
     pub body: String,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ApiError {
+    pub error_text: String,
+    pub error_class: i32,
+}
+
+impl From<(&str, i32)> for ApiError {
+    fn from(pair: (&str, i32)) -> Self {
+        let (text, class) = pair;
+        ApiError {
+            error_text: text.to_string(),
+            error_class: class,
+        }
+    }
+}
+
 #[derive(Deserialize, Clone, Serialize, Default, Debug, Validate, Iterable)]
 pub struct FilterOptions {
     pub page: Option<usize>,

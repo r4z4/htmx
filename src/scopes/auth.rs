@@ -232,6 +232,7 @@ async fn basic_auth(
 
             if is_valid {
                 let cookie_token = Uuid::new_v4().to_string();
+                dbg!(&cookie_token);
                 let cookie = format!("{}; Path=/; HttpOnly; Max-Age=1209600", cookie_token);
                 // FIXME: Sync these expires
                 let expires = Utc::now() + Duration::days(137);
@@ -247,6 +248,7 @@ async fn basic_auth(
                 .await
                 {
                     Ok(session) => {
+                        dbg!(&session.session_id);
                         // AuthUser -> ValidatedUser - FIXME
                         let user = ValidatedUser {
                             username: user.username,
@@ -278,7 +280,7 @@ async fn basic_auth(
                         //     .expect("failed to execute SET for ValidatedUser");
                         let feed_data = user_feed(&user, &state.db).await;
                         let template_data = HomepageTemplate {
-                            err: None,
+                            error: None,
                             user: Some(user.clone()),
                             feed_data: feed_data,
                         };

@@ -480,7 +480,7 @@ async fn edit_user(
                 let admin_types = vec![1,2];
                 if admin_types.iter().any(|&i| i == body.user_type_id) {
                     match sqlx::query_as::<_, AdminUserPostResponse>(
-                        "INSERT INTO user_details (user_id) VALUES ($1) RETURNING id",
+                        "INSERT INTO user_details (user_id) VALUES ($1) RETURNING user_id",
                     )
                     .bind(&usr.id)
                     .fetch_one(&state.db)

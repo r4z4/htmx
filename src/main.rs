@@ -28,7 +28,7 @@ use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::{
-    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, redis_validate_and_get_user},
+    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, redis_validate_and_get_user, ApiError},
     linfa::linfa_pred,
 };
 use deadpool_redis::{redis::{cmd}, Pool as RedisPool};
@@ -92,7 +92,7 @@ pub struct ResponsiveTableRow {
 // }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HomepageTemplate {
-    err: Option<String>,
+    error: Option<ApiError>,
     user: Option<ValidatedUser>,
     feed_data: UserFeedData,
 }
@@ -117,7 +117,7 @@ async fn index(
                 if let Some(user) = user_option {
                     let feed_data = user_feed(&user, &state.db).await;
                     let template_data = HomepageTemplate {
-                        err: None,
+                        error: None,
                         user: Some(user),
                         feed_data: feed_data,
                     };
@@ -256,13 +256,11 @@ async fn about_us(
                 }
             }
             Err(err) => {
-                // User's cookie is invalud or expired. Need to get a new one via logging in.
+                // User's cookie is invalid or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
+                let api_error = ApiError::from((format!("Something unexpected {}", err.error).as_str(), 1));
                 let template_data = HomepageTemplate {
-                    err: Some(format!(
-                        "Something quite unexpected has happened in your session: {}",
-                        err.error
-                    )),
+                    error: Some(api_error),
                     user: None,
                     feed_data: UserFeedData {
                         posts: None,
@@ -270,12 +268,6 @@ async fn about_us(
                         subs: None,
                     },
                 };
-                // let data = HbError {
-                //     str: format!(
-                //         "Something quite unexpected has happened in your session: {}",
-                //         err.error
-                //     ),
-                // };
                 let body = hb.render("homepage", &template_data).unwrap();
                 HttpResponse::Ok().body(body)
             }
@@ -438,7 +430,7 @@ async fn homepage(
                 if let Some(user) = user_option {
                     let feed_data = user_feed(&user, &state.db).await;
                     let template_data = HomepageTemplate {
-                        err: None,
+                        error: None,
                         user: Some(user),
                         feed_data: feed_data,
                     };
@@ -447,9 +439,7 @@ async fn homepage(
                     HttpResponse::Ok().body(body)
                 } else {
                     let template_data = HomepageTemplate {
-                        err: Some(
-                            "Seems your session has expired. Please login again (4)".to_owned(),
-                        ),
+                        error: Some(ApiError::from(("Seems your session has expired. Please login again (4)", 1))),
                         user: None,
                         feed_data: UserFeedData {
                             posts: None,
@@ -465,10 +455,7 @@ async fn homepage(
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let template_data = HomepageTemplate {
-                    err: Some(format!(
-                        "Something quite unexpected has happened in your session: {}",
-                        err.error
-                    )),
+                    error: Some(ApiError::from((format!("Something quite unexpected has happened in your session: {}", err.error).as_str(), 1))),
                     user: None,
                     feed_data: UserFeedData {
                         posts: None,
@@ -482,7 +469,7 @@ async fn homepage(
         }
     } else {
         let template_data = HomepageTemplate {
-            err: Some("Cookie is missing".to_owned()),
+            error: Some(ApiError::from(("Cookie is missing", 1))),
             user: None,
             feed_data: UserFeedData {
                 posts: None,
@@ -554,10 +541,10 @@ async fn detail(
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
                 // They had a session. Could give them details about that. Get from DB.
                 let template_data = HomepageTemplate {
-                    err: Some(format!(
+                    error: Some(ApiError::from((format!(
                         "Something quite unexpected has happened in your session: {}",
                         err.error
-                    )),
+                    ).as_str(), 1))),
                     user: None,
                     feed_data: UserFeedData {
                         posts: None,
@@ -925,9 +912,9 @@ mod tests {
     #[test_context(Context)]
     #[test]
     fn homepage_displays_the_error(ctx: &mut Context) {
-        let err_msg = "Test error message".to_string();
+        let error_msg = "Test Error";
         let template_data = HomepageTemplate {
-            err: Some(err_msg.clone()),
+            error: Some(ApiError::from((error_msg, 1))),
             user: None,
             feed_data: UserFeedData {
                 posts: None,
@@ -948,6 +935,6 @@ mod tests {
             .get(parser)
             .unwrap();
 
-        assert_eq!(element.inner_text(parser), err_msg);
+        assert_eq!(element.inner_text(parser), error_msg.to_owned());
     }
 }

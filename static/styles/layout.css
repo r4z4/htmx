@@ -55,14 +55,16 @@ button:disabled {
 ** Errors **
 ***********/
 
-.error_div {
-    margin: 0;
+#error_div {
+    margin: auto;
+    width: 80%;
+    text-align: center;
     padding: 0;
     list-style-type: none;
     color: rgb(245, 54, 54);
 }
 
-.error_div li:not(:last-child) { 
+#error_div li:not(:last-child) { 
     border-bottom: 1px solid rgb(13, 8, 42); 
 }
 
@@ -665,12 +667,6 @@ p,ul,ol {
 
 .full-width {
     width: 100%;
-}
-
-.error_div {
-    margin: auto;
-    text-align: center;
-    color: red;
 }
 
 .formcontainer {

@@ -3,11 +3,8 @@
  main-layout title='Homepage' user=user}}
  <div class="homepage">
     <h1>Welcome to External Review or Whatever</h1>
-    {{#if err}}
-        <div id="error_div">
-            <p id="error_text">{{err}}</p>
-            <p><a href="/">Login</a></p>
-        </div>
+    {{#if error}}
+        {{> api-error error=error}}
     {{else}}
     <div class="fancy_links">
         <p>Glad you could join us, <span _="on mouseover toggle .blue on me">{{user.username}}</span>. Here are some helpful links:</p>
