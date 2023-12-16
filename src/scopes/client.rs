@@ -10,7 +10,7 @@ use crate::{
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
     },
-    AppState, RedisState, redis_mod::{redis_mod::Ctx, redis_subscriber::subscribe, redis_publisher::publish},
+    AppState, RedisState, redis_mod::{redis_mod::Ctx, redis_subscriber::subscribe, redis_publisher::publish}, scopes::location::FullPageTemplateData,
 };
 use chrono::NaiveDate;
 use handlebars::Handlebars;
@@ -367,101 +367,126 @@ fn validate_patch(body: &ClientPostRequest) -> bool {
 async fn patch_client(
     body: web::Form<ClientPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     path: web::Path<String>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
-    let client_slug = path.into_inner();
-    dbg!(&body);
-
-    let is_valid = body.validate();
-    if is_valid.is_err() {
-        println!("Got err");
-        dbg!(is_valid.is_err());
-        let val_errs = is_valid
-            .err()
-            .unwrap()
-            .field_errors()
-            .iter()
-            .map(|x| {
-                let (key, errs) = x;
-                ValidationErrorMap {
-                    key: key.to_string(),
-                    errs: errs.to_vec(),
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user_opt) => {
+                if let Some(user) = user_opt {
+                    let client_slug = path.into_inner();
+                    dbg!(&body);
+                    let is_valid = body.validate();
+                    if is_valid.is_err() {
+                        println!("Got err");
+                        dbg!(is_valid.is_err());
+                        let val_errs = is_valid
+                            .err()
+                            .unwrap()
+                            .field_errors()
+                            .iter()
+                            .map(|x| {
+                                let (key, errs) = x;
+                                ValidationErrorMap {
+                                    key: key.to_string(),
+                                    errs: errs.to_vec(),
+                                }
+                            })
+                            .collect::<Vec<ValidationErrorMap>>();
+                        dbg!(&val_errs);
+                        // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+                        let validation_response = FormErrorResponse {
+                            errors: Some(val_errs),
+                        };
+                        let body = hb
+                            .render("forms/form-validation", &validation_response)
+                            .unwrap();
+                        return HttpResponse::BadRequest()
+                            .header("HX-Retarget", "#client_errors")
+                            .body(body);
+                    }else{
+                        // Valid input so perform query
+                        match sqlx::query_as::<_, ClientPostResponse>(
+                            "UPDATE clients 
+                                SET client_company_name = $1,
+                                    client_f_name = $2,
+                                    client_l_name = $3,
+                                    client_address_one = $4,
+                                    client_address_two = $5,
+                                    client_city = $6,
+                                    client_state = $7,
+                                    client_zip = $8,
+                                    client_primary_phone = $9,
+                                    client_email = $10,
+                                    account_id = $11,
+                                    specialty_id = $12
+                                WHERE slug = $13
+                                RETURNING id",
+                        )
+                        .bind(&body.client_company_name)
+                        .bind(&body.client_f_name)
+                        .bind(&body.client_l_name)
+                        .bind(&body.client_address_one)
+                        .bind(&body.client_address_two)
+                        .bind(&body.client_city)
+                        .bind(&body.client_state)
+                        .bind(&body.client_zip)
+                        .bind(&body.client_primary_phone)
+                        .bind(&body.client_email)
+                        .bind(&body.account_id)
+                        .bind(&body.specialty_id)
+                        .bind(client_slug)
+                        .fetch_one(&state.db)
+                        .await
+                        {
+                            Ok(client) => {
+                                dbg!(client.id);
+                                let user_alert = UserAlert::from((
+                                    format!("Client edited successfully: client_id #{:?}", client.id).as_str(),
+                                    "alert_success",
+                                ));
+                                let full_page_data = FullPageTemplateData {
+                                    user_alert: user_alert.clone(),
+                                    user: Some(user),
+                                };
+                                let body = hb.render("list-api", &full_page_data).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
+                            Err(err) => {
+                                dbg!(&err);
+                                let user_alert = UserAlert::from((
+                                    format!("Error patching location: {:?}", err).as_str(),
+                                    "alert_error",
+                                ));
+                                let full_page_data = FullPageTemplateData {
+                                    user_alert: user_alert.clone(),
+                                    user: Some(user),
+                                };
+                                let body = hb.render("list-api", &full_page_data).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
+                        }
+                    }
+                }else{
+                    println!("User Option is None");
+                    let error_msg = "Validation error";
+                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
+                    let body = hb.render("validation", &validation_response).unwrap();
+                    return HttpResponse::BadRequest().body(body);
                 }
-            })
-            .collect::<Vec<ValidationErrorMap>>();
-        dbg!(&val_errs);
-        // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
-        let validation_response = FormErrorResponse {
-            errors: Some(val_errs),
-        };
-        let body = hb
-            .render("forms/form-validation", &validation_response)
-            .unwrap();
-        return HttpResponse::BadRequest()
-            .header("HX-Retarget", "#client_errors")
-            .body(body);
-    }
-
-    if validate_patch(&body) {
-        match sqlx::query_as::<_, ClientPostResponse>(
-            "UPDATE locations 
-                SET client_company_name = $1,
-                    client_f_name = $2,
-                    client_l_name = $3,
-                    client_address_one = $4.
-                    client_address_two = $5.
-                    client_city = $6,
-                    client_state = $7,
-                    client_zip = $8,
-                    client_primary_phone = $9,
-                    client_email = $10,
-                    account_id = $11,
-                    specialty_id = $12
-                WHERE slug = $13
-                RETURNING client_id",
-        )
-        .bind(&body.client_company_name)
-        .bind(&body.client_f_name)
-        .bind(&body.client_l_name)
-        .bind(&body.client_address_one)
-        .bind(&body.client_address_two)
-        .bind(&body.client_city)
-        .bind(&body.client_state)
-        .bind(&body.client_zip)
-        .bind(&body.client_primary_phone)
-        .bind(&body.client_email)
-        .bind(&body.account_id)
-        .bind(&body.specialty_id)
-        .bind(client_slug)
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(client) => {
-                dbg!(client.id);
-                let user_alert = UserAlert::from((
-                    format!("Location added successfully: client_id #{:?}", client.id).as_str(),
-                    "alert_success",
-                ));
-                let body = hb.render("list-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert::from((
-                    format!("Error patching location: {:?}", err).as_str(),
-                    "alert_error",
-                ));
-                let body = hb.render("list-api", &user_alert).unwrap();
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
                 return HttpResponse::Ok().body(body);
             }
         }
     } else {
-        println!("Val error");
-        let error_msg = "Validation error";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::BadRequest().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok().body(body)
     }
 }
 
@@ -471,7 +496,6 @@ mod tests {
     use crate::{
         config::states,
         hbs_helpers::{concat_str_args, int_eq, str_eq},
-        models::{model_client::ClientWithDates, model_consult::ConsultFormTemplate},
         test_common::{self, *},
     };
     use chrono::NaiveDate;

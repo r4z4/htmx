@@ -15,7 +15,7 @@
     {{> navbar user=user}}
 {{/if}}
 {{#if user_alert}}
-    {{> user-alert msg=user_alert}}
+    {{> user-alert alert=user_alert}}
 {{/if}}
 <body id="main_body" hx-boost="true">
 {{> @partial-block }}

@@ -54,11 +54,19 @@ button:disabled {
 /***********
 ** Errors **
 ***********/
-
-#error_div {
-    margin: auto;
+#api_error {
+    border: 2px solid rgb(227, 87, 87);
+    margin: 20px auto;
     width: 80%;
     text-align: center;
+    padding: 0;
+    list-style-type: none;
+    color: rgb(245, 54, 54);
+}
+
+/* error_div are lists */
+
+#error_div {
     padding: 0;
     list-style-type: none;
     color: rgb(245, 54, 54);

@@ -332,8 +332,8 @@ fn validate_location_input(body: &LocationPostRequest) -> bool {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FullPageTemplateData {
-    user_alert: UserAlert,
-    user: Option<ValidatedUser>,
+    pub user_alert: UserAlert,
+    pub user: Option<ValidatedUser>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
