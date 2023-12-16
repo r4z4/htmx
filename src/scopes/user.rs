@@ -65,7 +65,7 @@ async fn settings(
 
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserSettingsQuery>(
-            "SELECT users.user_id, username, email, users.created_at, users.updated_at AS user_updated, user_settings.updated_at AS settings_updated
+            "SELECT users.username, users.id, users.email, users.created_at, users.updated_at AS user_updated, user_settings.updated_at AS settings_updated
             FROM users
             LEFT JOIN user_sessions on user_sessions.user_id = users.id 
             LEFT JOIN user_settings on user_settings.user_id = users.id
@@ -325,10 +325,10 @@ async fn edit_settings(
     if validate_user_settings_input(&body) {
         match sqlx::query_as::<_, UserHomeQuery>(
             "UPDATE user_settings SET theme_id = $1 WHERE user_id = $2 RETURNING (
-                SELECT users.user_id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
+                SELECT users.id, username, email, user_type_id, users.created_at, users.updated_at, COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated
                 FROM users
                 LEFT JOIN user_settings on user_settings.user_id = users.id
-                WHERE user_id = $2
+                WHERE id = $2
             )",
         )
         .bind(body.theme_id)
@@ -430,7 +430,7 @@ async fn home(
     // let user_id = get_user_id_from_token();
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match sqlx::query_as::<_, UserHomeQuery>(
-            "SELECT users.user_id, username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, users.created_at, users.updated_at, 
+            "SELECT users.id, username, email, user_type_id, user_subs, client_subs, consult_subs, location_subs, consultant_subs, users.created_at, users.updated_at, 
                     COALESCE(avatar_path, '/images/default_avatar.svg') AS avatar_path, user_settings.updated_at AS settings_updated, user_settings.list_view
                 -- TO_CHAR(users.created_at, 'YYYY/MM/DD HH:MI:SS') AS created_at_fmt, 
                 -- TO_CHAR(users.updated_at, 'YYYY/MM/DD HH:MI:SS') AS updated_at_fmt

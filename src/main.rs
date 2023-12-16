@@ -104,6 +104,7 @@ async fn index(
     state: Data<AppState>,
     req: HttpRequest,
     config: web::Data<config::Config>,
+    r_state: Data<RedisState>,
 ) -> impl Responder {
     let headers = req.headers();
     // for (pos, e) in headers.iter().enumerate() {
@@ -111,7 +112,7 @@ async fn index(
     // }
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
-        match validate_and_get_user(cookie, &state).await {
+        match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user_option) => {
                 if let Some(user) = user_option {
                     let feed_data = user_feed(&user, &state.db).await;
@@ -142,6 +143,7 @@ async fn index(
             }
         }
     } else {
+        println!("No Cookie");
         let data = json!({
             "header": "Login Form",
         });
