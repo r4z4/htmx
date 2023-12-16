@@ -11,11 +11,12 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+use validator::Validate;
 
 use crate::{
     config::{
-        self, subs_from_user, test_subs, validate_and_get_user, FilterOptions, ResponsiveTableData,
-        UserAlert, ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user,
+        self, subs_from_user, test_subs, FilterOptions, ResponsiveTableData,
+        UserAlert, ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, ValidationErrorMap, FormErrorResponse,
     },
     models::{
         model_admin::{
@@ -26,7 +27,7 @@ use crate::{
             AdminUserPostResponse,
         },
     },
-    AppState, HeaderValueExt, ValidatedUser, RedisState,
+    AppState, RedisState,
 };
 
 pub fn admin_scope() -> Scope {
@@ -66,14 +67,8 @@ async fn admin_home(
         .await 
         {
             Ok(user) => {
-                if let Some(usr) = user {
-                    let body = hb.render("admin-home", &usr).unwrap();
-                    HttpResponse::Ok().body(body)
-                } else {
-                    let message = "Cannot find you";
-                    let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok().body(body);
-                }
+                let body = hb.render("admin-home", &user).unwrap();
+                HttpResponse::Ok().body(body)
             }
             Err(err) => {
                 dbg!(&err);
@@ -122,53 +117,47 @@ async fn recent_activity(
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
-            Ok(user_opt) => {
-                if let Some(user) = user_opt {
-                    let recent = sqlx::query_as!(
-                        PgStat,
-                        "SELECT schemaname, relname, relid::integer AS id, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
-                        ",
-                    )
-                    .fetch_all(&state.db)
-                    .await;
+            Ok(user) => {
+                let recent = sqlx::query_as!(
+                    PgStat,
+                    "SELECT schemaname, relname, relid::integer AS id, gen_random_uuid() AS slug, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables;
+                    ",
+                )
+                .fetch_all(&state.db)
+                .await;
 
-                    if recent.is_err() {
-                        let error_msg = "Error occurred while fetching from pg_stat";
-                        let validation_response =
-                            ValidationResponse::from((error_msg, "validation_error"));
-                        let body = hb.render("validation", &validation_response).unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
+                if recent.is_err() {
+                    let error_msg = "Error occurred while fetching from pg_stat";
+                    let validation_response =
+                        ValidationResponse::from((error_msg, "validation_error"));
+                    let body = hb.render("validation", &validation_response).unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
 
-                    let recent_queries = recent.unwrap();
+                let recent_queries = recent.unwrap();
 
-                    let f_opts = FilterOptions::from(&opts);
+                let f_opts = FilterOptions::from(&opts);
 
-                    let recent_queries_table_data = ResponsiveTableData {
-                        entity_type_id: 8,
-                        vec_len: recent_queries.len(),
-                        lookup_url: "/consultant/list?page=".to_string(),
-                        opts: f_opts,
-                        // page: opts.page.unwrap_or(1),
-                        entities: recent_queries,
-                        subscriptions: subs_from_user(&user),
-                    };
+                let recent_queries_table_data = ResponsiveTableData {
+                    entity_type_id: 8,
+                    vec_len: recent_queries.len(),
+                    lookup_url: "/consultant/list?page=".to_string(),
+                    opts: f_opts,
+                    // page: opts.page.unwrap_or(1),
+                    entities: recent_queries,
+                    subscriptions: subs_from_user(&user),
+                };
 
-                    // Only return whole Table if brand new
-                    if opts.key.is_none() && opts.search.is_none() {
-                        let body = hb
-                            .render("responsive-table", &recent_queries_table_data)
-                            .unwrap();
-                        return HttpResponse::Ok().body(body);
-                    } else {
-                        let body = hb
-                            .render("responsive-table-inner", &recent_queries_table_data)
-                            .unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
+                // Only return whole Table if brand new
+                if opts.key.is_none() && opts.search.is_none() {
+                    let body = hb
+                        .render("responsive-table", &recent_queries_table_data)
+                        .unwrap();
+                    return HttpResponse::Ok().body(body);
                 } else {
-                    let message = "Cannot find you";
-                    let body = hb.render("index", &message).unwrap();
+                    let body = hb
+                        .render("responsive-table-inner", &recent_queries_table_data)
+                        .unwrap();
                     return HttpResponse::Ok().body(body);
                 }
             }
@@ -431,97 +420,116 @@ async fn subadmin_form(
     return HttpResponse::Ok().body(body);
 }
 
-fn validate_admin_subadmin_input(body: &AdminSubadminPostRequest) -> bool {
-    // Woof
-    dbg!(&body);
-    if let Some(addr_two) = &body.address_two {
-        let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0];
-        dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(&first) {
-            true
-        } else {
-            false
-        }
-    } else {
-        true
-    }
-}
-
-fn validate_admin_user_input(body: &AdminUserPostRequest) -> bool {
-    // Woof
-    dbg!(&body);
-    true
-}
-
 #[post("/form/user/{slug}")]
 async fn edit_user(
     body: web::Form<AdminUserPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     path: web::Path<i32>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
-
-    if validate_admin_user_input(&body) {
-        let user_id = path.into_inner();
-        match sqlx::query_as::<_, AdminUserPostResponse>(
-            "UPDATE users SET username = $1, email = $2, user_type_id = $3 WHERE slug = $4 RETURNING id",
-        )
-        .bind(&body.username)
-        .bind(&body.email)
-        .bind(&body.user_type_id)
-        .bind(&user_id)
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(usr) => {
-                dbg!(usr.id);
-                let admin_types = vec![1,2];
-                if admin_types.iter().any(|&i| i == body.user_type_id) {
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user) => {
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    println!("Got err");
+                    dbg!(is_valid.is_err());
+                    let val_errs = is_valid
+                        .err()
+                        .unwrap()
+                        .field_errors()
+                        .iter()
+                        .map(|x| {
+                            let (key, errs) = x;
+                            ValidationErrorMap {
+                                key: key.to_string(),
+                                errs: errs.to_vec(),
+                            }
+                        })
+                        .collect::<Vec<ValidationErrorMap>>();
+                    dbg!(&val_errs);
+                    // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+                    let validation_response = FormErrorResponse {
+                        errors: Some(val_errs),
+                    };
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#subadmin_errors")
+                        .body(body);
+                } else {
+                    let user_id = path.into_inner();
                     match sqlx::query_as::<_, AdminUserPostResponse>(
-                        "INSERT INTO user_details (user_id) VALUES ($1) RETURNING user_id",
+                        "UPDATE users SET username = $1, email = $2, user_type_id = $3 WHERE slug = $4 RETURNING id",
                     )
-                    .bind(&usr.id)
+                    .bind(&body.username)
+                    .bind(&body.email)
+                    .bind(&body.user_type_id)
+                    .bind(&user_id)
                     .fetch_one(&state.db)
                     .await
                     {
                         Ok(usr) => {
                             dbg!(usr.id);
-                            // let user_alert = UserAlert {
-                            //     msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.id),
-                            //     alert_class: "alert_success".to_owned(),
-                            // };
-                            let user_alert = UserAlert::from((format!("User #{:?} successfully updated & Record inserted in Details.", usr.id).as_str(), "alert_success"));
-                            let body = hb.render("admin-home", &user_alert).unwrap();
-                            return HttpResponse::Ok().body(body);
+                            let admin_types = vec![1,2];
+                            if admin_types.iter().any(|&i| i == body.user_type_id) {
+                                match sqlx::query_as::<_, AdminUserPostResponse>(
+                                    "INSERT INTO user_details (user_id) VALUES ($1) RETURNING user_id",
+                                )
+                                .bind(&usr.id)
+                                .fetch_one(&state.db)
+                                .await
+                                {
+                                    Ok(usr) => {
+                                        dbg!(usr.id);
+                                        // let user_alert = UserAlert {
+                                        //     msg: format!("User #{:?} successfully updated & Record inserted in Details.", usr.id),
+                                        //     alert_class: "alert_success".to_owned(),
+                                        // };
+                                        let user_alert = UserAlert::from((format!("User #{:?} successfully updated & Record inserted in Details.", usr.id).as_str(), "alert_success"));
+                                        let body = hb.render("admin-home", &user_alert).unwrap();
+                                        return HttpResponse::Ok().body(body);
+                                    }
+                                    Err(err) => {
+                                        dbg!(&err);
+                                        let user_alert = UserAlert::from((format!("Error updated user DETAILS: {:?}", err).as_str(), "alert_error"));
+                                        let body = hb.render("admin-home", &user_alert).unwrap();
+                                        return HttpResponse::Ok().body(body);
+                                    }
+                                }
+                            } else {
+                                let user_alert = UserAlert::from((format!("User #{:?} successfully updated.", usr.id).as_str(), "alert_success"));
+                                let body = hb.render("admin-home", &user_alert).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
                         }
                         Err(err) => {
                             dbg!(&err);
-                            let user_alert = UserAlert::from((format!("Error updated user DETAILS: {:?}", err).as_str(), "alert_error"));
+                            let user_alert = UserAlert::from((format!("Error updated user DETAILS (2): {:?}", err).as_str(), "alert_error"));
                             let body = hb.render("admin-home", &user_alert).unwrap();
                             return HttpResponse::Ok().body(body);
                         }
                     }
-                } else {
-                    let user_alert = UserAlert::from((format!("User #{:?} successfully updated.", usr.id).as_str(), "alert_success"));
-                    let body = hb.render("admin-home", &user_alert).unwrap();
-                    return HttpResponse::Ok().body(body);
                 }
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert::from((format!("Error updated user DETAILS (2): {:?}", err).as_str(), "alert_error"));
-                let body = hb.render("admin-home", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
-        println!("Val error");
-        let validation_response =
-            ValidationResponse::from(("Validation error", "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
@@ -530,59 +538,101 @@ async fn edit_user(
 async fn edit_subadmin(
     body: web::Form<AdminSubadminPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     path: web::Path<String>,
+    r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
-
-    if validate_admin_subadmin_input(&body) {
-        let user_slug = path.into_inner();
-        match sqlx::query_as::<_, AdminUserPostResponse>(
-            "UPDATE user_details 
-                INNER JOIN users ON users.id = user_details.user_id
-                SET address_one = $1, 
-                    address_two = $2, 
-                    city = $3, 
-                    state = $4, 
-                    zip = $5, 
-                    primary_phone = $6
-                WHERE users.slug = $7
-                RETURNING user_id",
-        )
-        .bind(&body.address_one)
-        .bind(&body.address_two)
-        .bind(&body.city)
-        .bind(&body.state)
-        .bind(&body.zip)
-        .bind(&body.primary_phone)
-        .bind(&user_slug)
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(usr) => {
-                dbg!(usr.id);
-                let user_alert = UserAlert::from((
-                    format!("User #{:?} successfully updated.", usr.id).as_str(),
-                    "alert_success",
-                ));
-                let body = hb.render("admin-home", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user) => {
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    println!("Got err");
+                    dbg!(is_valid.is_err());
+                    let val_errs = is_valid
+                        .err()
+                        .unwrap()
+                        .field_errors()
+                        .iter()
+                        .map(|x| {
+                            let (key, errs) = x;
+                            ValidationErrorMap {
+                                key: key.to_string(),
+                                errs: errs.to_vec(),
+                            }
+                        })
+                        .collect::<Vec<ValidationErrorMap>>();
+                    dbg!(&val_errs);
+                    // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+                    let validation_response = FormErrorResponse {
+                        errors: Some(val_errs),
+                    };
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#subadmin_errors")
+                        .body(body);
+                } else {
+                    let user_slug = path.into_inner();
+                    match sqlx::query_as::<_, AdminUserPostResponse>(
+                        "UPDATE user_details 
+                            INNER JOIN users ON users.id = user_details.user_id
+                            SET address_one = $1, 
+                                address_two = $2, 
+                                city = $3, 
+                                state = $4, 
+                                zip = $5, 
+                                primary_phone = $6
+                            WHERE users.slug = $7
+                            RETURNING user_id",
+                    )
+                    .bind(&body.address_one)
+                    .bind(&body.address_two)
+                    .bind(&body.city)
+                    .bind(&body.state)
+                    .bind(&body.zip)
+                    .bind(&body.primary_phone)
+                    .bind(&user_slug)
+                    .fetch_one(&state.db)
+                    .await
+                    {
+                        Ok(usr) => {
+                            dbg!(usr.id);
+                            let user_alert = UserAlert::from((
+                                format!("User #{:?} successfully updated.", usr.id).as_str(),
+                                "alert_success",
+                            ));
+                            let body = hb.render("admin-home", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                        Err(err) => {
+                            dbg!(&err);
+                            let user_alert = UserAlert::from((
+                                format!("Error updated user DETAILS (3): {:?}", err).as_str(),
+                                "alert_error",
+                            ));
+                            let body = hb.render("admin-home", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                    }
+                }
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert::from((
-                    format!("Error updated user DETAILS (3): {:?}", err).as_str(),
-                    "alert_error",
-                ));
-                let body = hb.render("admin-home", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
-        println!("Val error");
-        let validation_response =
-            ValidationResponse::from(("Validation error", "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }

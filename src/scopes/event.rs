@@ -327,43 +327,37 @@ async fn next_month(
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user) => {
-                if let Some(usr) = user {
-                    let (input_year, input_month) = path.into_inner();
+                let (input_year, input_month) = path.into_inner();
 
-                    let cal_month = if input_month == 12 {
-                        1
-                    } else {
-                        input_month + 1
-                    };
-                    let cal_year = if input_month == 12 {
-                        input_year + 1
-                    } else {
-                        input_year
-                    };
-
-                    let day_one: NaiveDate =
-                        NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();
-                    let day_one_weekday = day_one.weekday();
-                    // Sunday is 1, Saturday is 7
-                    let day_one_int = day_one_weekday.number_from_sunday();
-                    let cal_data = CalendarData {
-                        month: cal_month,
-                        year: cal_year,
-                        first_day_of_month: day_one_int,
-                        num_days: get_num_days(cal_month),
-                        weekday_range: vec![1, 2, 3, 4, 5, 6, 7],
-                        holidays: get_month_holidays(cal_month),
-                    };
-                    let month_data = json! {{
-                        "cal_data": cal_data,
-                    }};
-                    let body = hb.render("calendar/month", &month_data).unwrap();
-                    HttpResponse::Ok().body(body)
+                let cal_month = if input_month == 12 {
+                    1
                 } else {
-                    let message = "Cannot find you";
-                    let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok().body(body);
-                }
+                    input_month + 1
+                };
+                let cal_year = if input_month == 12 {
+                    input_year + 1
+                } else {
+                    input_year
+                };
+
+                let day_one: NaiveDate =
+                    NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();
+                let day_one_weekday = day_one.weekday();
+                // Sunday is 1, Saturday is 7
+                let day_one_int = day_one_weekday.number_from_sunday();
+                let cal_data = CalendarData {
+                    month: cal_month,
+                    year: cal_year,
+                    first_day_of_month: day_one_int,
+                    num_days: get_num_days(cal_month),
+                    weekday_range: vec![1, 2, 3, 4, 5, 6, 7],
+                    holidays: get_month_holidays(cal_month),
+                };
+                let month_data = json! {{
+                    "cal_data": cal_data,
+                }};
+                let body = hb.render("calendar/month", &month_data).unwrap();
+                HttpResponse::Ok().body(body)
             }
             Err(err) => {
                 dbg!(&err);

@@ -2,12 +2,21 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
+use crate::config::RE_NO_NUMBER;
 
 use crate::config::SelectOption;
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct ConsultantPostRequest {
     pub user_id: i32,
+    #[validate(regex(
+        path = "RE_NO_NUMBER",
+        message = "Names cannot contain #s."
+    ))]
     pub consultant_f_name: String,
+    #[validate(regex(
+        path = "RE_NO_NUMBER",
+        message = "Names cannot contain #s."
+    ))]
     pub consultant_l_name: String,
     pub specialty_id: i32,
     pub territory_id: i32,

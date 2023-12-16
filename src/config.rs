@@ -30,6 +30,7 @@ use crate::{AppState, HeaderValueExt, ValidatedUser, RedisState};
 lazy_static! {
     pub static ref RE_USERNAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
+    pub static ref RE_NO_NUMBER: Regex = Regex::new("^([^0-9]*)$").unwrap();
     pub static ref RE_EMAIL: Regex = Regex::new(
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})"
     )
@@ -981,7 +982,7 @@ pub async fn validate_and_get_user(
 pub async fn redis_validate_and_get_user(
     cookie: &actix_web::http::header::HeaderValue,
     r_state: &Data<RedisState>,
-) -> Result<Option<ValidatedUser>, crate::ValError> {
+) -> Result<ValidatedUser, crate::ValError> {
     println!("Redis Validation");
     let mut con = r_state.r_pool.get().await.unwrap();
     match redis::cmd("GET")
@@ -989,7 +990,7 @@ pub async fn redis_validate_and_get_user(
     .query_async(&mut con)
     .await
     {
-        Ok(user) => Ok(Some(user)),
+        Ok(user) => Ok(user),
         Err(err) => {
             dbg!(&err);
             Err(crate::ValError {

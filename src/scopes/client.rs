@@ -3,14 +3,14 @@ use redis::{AsyncCommands, RedisResult, RedisError};
 
 use crate::{
     config::{
-        self, get_validation_response, subs_from_user, validate_and_get_user, FilterOptions,
+        self, get_validation_response, subs_from_user, FilterOptions,
         FormErrorResponse, ResponsiveTableData, SelectOption, UserAlert, ValidationErrorMap,
-        ValidationResponse, ACCEPTED_SECONDARIES, redis_validate_and_get_user, SimpleQuery, SelectOptionsVec, hash_query,
+        ValidationResponse, redis_validate_and_get_user, SimpleQuery, SelectOptionsVec, hash_query,
     },
     models::model_client::{
         ClientFormRequest, ClientFormTemplate, ClientList, ClientPostRequest, ClientPostResponse,
     },
-    AppState, RedisState, redis_mod::{redis_mod::Ctx, redis_subscriber::subscribe, redis_publisher::publish}, scopes::location::FullPageTemplateData,
+    AppState, RedisState, redis_mod::{redis_mod::Ctx, redis_publisher::publish}, scopes::location::FullPageTemplateData,
 };
 use chrono::NaiveDate;
 use handlebars::Handlebars;
@@ -37,79 +37,78 @@ pub async fn get_clients_handler(
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
-            Ok(user_opt) => {
-                if let Some(user) = user_opt {
-                    println!("get_clients_handler firing");
-                    let limit = opts.limit.unwrap_or(10);
-                    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+            Ok(user) => {
+                println!("get_clients_handler firing");
+                let limit = opts.limit.unwrap_or(10);
+                let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-                    let query_result = sqlx::query_as!(
-                        ClientList,
-                        "SELECT 
-                            clients.id,
-                            clients.client_type_id,
-                            slug,
-                            specialty_name,
-                            COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
-                            client_email,
-                            client_address_one AS address,
-                            client_city,
-                            client_zip,
-                            client_primary_phone AS phone
-                        FROM clients
-                        INNER JOIN specialties ON specialties.id = clients.specialty_id
-                        ORDER by id
-                        LIMIT $1 OFFSET $2",
-                        limit as i32,
-                        offset as i32
-                    )
-                    .fetch_all(&state.db)
-                    .await;
+                let query_result = sqlx::query_as!(
+                    ClientList,
+                    "SELECT 
+                        clients.id,
+                        clients.client_type_id,
+                        slug,
+                        specialty_name,
+                        COALESCE(client_company_name, CONCAT(client_f_name, ' ', client_l_name)) AS client_name,
+                        client_email,
+                        client_address_one AS address,
+                        client_city,
+                        client_zip,
+                        client_primary_phone AS phone
+                    FROM clients
+                    INNER JOIN specialties ON specialties.id = clients.specialty_id
+                    ORDER by id
+                    LIMIT $1 OFFSET $2",
+                    limit as i32,
+                    offset as i32
+                )
+                .fetch_all(&state.db)
+                .await;
 
-                    dbg!(&query_result);
+                dbg!(&query_result);
 
-                    if query_result.is_err() {
-                        let error_msg = "Error occurred while fetching all client records";
-                        let validation_response =
-                            ValidationResponse::from((error_msg, "validation_error"));
-                        let body = hb.render("validation", &validation_response).unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
-
-                    let clients = query_result.unwrap();
-
-                    let f_opts = FilterOptions::from(&opts);
-
-                    let clients_table_data = ResponsiveTableData {
-                        entity_type_id: 7,
-                        vec_len: clients.len(),
-                        lookup_url: "/client/list?page=".to_string(),
-                        opts: f_opts,
-                        // page: opts.page.unwrap_or(1),
-                        entities: clients,
-                        subscriptions: subs_from_user(&user),
-                    };
-
-                    dbg!(&clients_table_data);
-
-                    let body = hb.render("responsive-table", &clients_table_data).unwrap();
+                if query_result.is_err() {
+                    let error_msg = "Error occurred while fetching all client records";
+                    let validation_response =
+                        ValidationResponse::from((error_msg, "validation_error"));
+                    let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
-                } else {
-                    let message = "User Option is a None".to_owned();
-                    let body = hb.render("index", &message).unwrap();
-                    return HttpResponse::Ok().body(body);
+                }
+
+                let clients = query_result.unwrap();
+
+                let f_opts = FilterOptions::from(&opts);
+
+                let clients_table_data = ResponsiveTableData {
+                    entity_type_id: 7,
+                    vec_len: clients.len(),
+                    lookup_url: "/client/list?page=".to_string(),
+                    opts: f_opts,
+                    // page: opts.page.unwrap_or(1),
+                    entities: clients,
+                    subscriptions: subs_from_user(&user),
                 };
+
+                dbg!(&clients_table_data);
+
+                let body = hb.render("responsive-table", &clients_table_data).unwrap();
+                return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
+                // FIXME - Display message about session expired
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
-                return HttpResponse::Ok().body(body);
+                return HttpResponse::Ok()
+                .header("HX-Redirect", "/")
+                .body(body);
             }
         }
     } else {
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
-        HttpResponse::Ok().body(body)
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
@@ -233,133 +232,101 @@ async fn client_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
-fn validate_client_input(body: &ClientPostRequest) -> bool {
-    // Woof
-    dbg!(&body);
-    if let Some(addr_two) = &body.client_address_two {
-        let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0];
-        dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(&first) {
-            true
-        } else {
-            false
-        }
-    } else {
-        true
-    }
-}
-
 #[post("/form")]
 async fn create_client(
     body: web::Form<ClientPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     r_state: web::Data<RedisState>,
 ) -> impl Responder {
-    dbg!(&body);
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user) => {
+                dbg!(&body);
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    let validation_response = get_validation_response(is_valid);
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#client_errors")
+                        .body(body);
+                } else {
+                    let dob_date = if body.client_dob.is_some() {
+                        if body.client_dob.as_ref().unwrap().is_empty() {
+                            NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
+                        } else {
+                            NaiveDate::parse_from_str(&body.client_dob.as_deref().unwrap(), "%Y-%m-%d").unwrap()
+                        }
+                    } else {
+                        NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
+                    };
 
-    let is_valid = body.validate();
-    if is_valid.is_err() {
-        let validation_response = get_validation_response(is_valid);
-        let body = hb
-            .render("forms/form-validation", &validation_response)
-            .unwrap();
-        return HttpResponse::BadRequest()
-            .header("HX-Retarget", "#client_errors")
-            .body(body);
-    }
-
-    // Need PG Extension for UUID via PG -> CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-    if validate_client_input(&body) {
-        let dob_date = if body.client_dob.is_some() {
-            if body.client_dob.as_ref().unwrap().is_empty() {
-                NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
-            } else {
-                NaiveDate::parse_from_str(&body.client_dob.as_deref().unwrap(), "%Y-%m-%d").unwrap()
-            }
-        } else {
-            NaiveDate::parse_from_str("1900-01-01", "%Y-%m-%d").unwrap()
-        };
-
-        match sqlx::query_as::<_, ClientPostResponse>(
-            "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
-                    VALUES (NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, ''), $4, NULLIF($5, ''), $6, $7, $8, NULLIF($9, '1900-01-01'), $10, $11, $12, $13) RETURNING id",
-        )
-        .bind(&body.client_f_name)
-        .bind(&body.client_l_name)
-        .bind(&body.client_company_name)
-        .bind(&body.client_address_one)
-        .bind(&body.client_address_two)
-        .bind(&body.client_city)
-        .bind(&body.client_state)
-        .bind(&body.client_zip)
-        .bind(dob_date)
-        .bind(&body.account_id)
-        .bind(&body.specialty_id)
-        .bind(&body.client_email)
-        .bind(&body.client_primary_phone)
-        //.bind(Uuid::new_v4().to_string())
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(loc) => {
-                dbg!(loc.id);
-                // Del / Invalidate Redis Key to force a DB fetch
-                let mut con = r_state.r_pool.get().await.unwrap();
-                let key = format!("{}:{}", "query", "client_options");
-                let deleted: RedisResult<bool> = con.del(&key).await;
-                match deleted {
-                    Ok(true) => {
-                        println!("Key deleted");
-                    },
-                    Ok(false) => {
-                        println!("Key not found {}", &key);
-                    },
-                    Err(err) => println!("Error: {}", err)
+                    match sqlx::query_as::<_, ClientPostResponse>(
+                        "INSERT INTO clients (client_f_name, client_l_name, client_company_name, client_address_one, client_address_two, client_city, client_state, client_zip, client_dob, account_id, specialty_id, client_email, client_primary_phone) 
+                                VALUES (NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, ''), $4, NULLIF($5, ''), $6, $7, $8, NULLIF($9, '1900-01-01'), $10, $11, $12, $13) RETURNING id",
+                    )
+                    .bind(&body.client_f_name)
+                    .bind(&body.client_l_name)
+                    .bind(&body.client_company_name)
+                    .bind(&body.client_address_one)
+                    .bind(&body.client_address_two)
+                    .bind(&body.client_city)
+                    .bind(&body.client_state)
+                    .bind(&body.client_zip)
+                    .bind(dob_date)
+                    .bind(&body.account_id)
+                    .bind(&body.specialty_id)
+                    .bind(&body.client_email)
+                    .bind(&body.client_primary_phone)
+                    //.bind(Uuid::new_v4().to_string())
+                    .fetch_one(&state.db)
+                    .await
+                    {
+                        Ok(loc) => {
+                            dbg!(loc.id);
+                            // Del / Invalidate Redis Key to force a DB fetch
+                            let mut con = r_state.r_pool.get().await.unwrap();
+                            let key = format!("{}:{}", "query", "client_options");
+                            let deleted: RedisResult<bool> = con.del(&key).await;
+                            match deleted {
+                                Ok(true) => {
+                                    println!("Key deleted");
+                                },
+                                Ok(false) => {
+                                    println!("Key not found {}", &key);
+                                },
+                                Err(err) => println!("Error: {}", err)
+                            }
+                            let user_alert = UserAlert::from((format!("Client added successfully: client_id #{:?}", loc.id).as_str(), "alert_success"));
+                            let body = hb.render("crud-api-inner", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                        Err(err) => {
+                            dbg!(&err);
+                            let user_alert = UserAlert::from((format!("Error adding client: {:?}", err).as_str(), "alert_error"));
+                            let body = hb.render("crud-api", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                    }
                 }
-                let user_alert = UserAlert::from((format!("Client added successfully: client_id #{:?}", loc.id).as_str(), "alert_success"));
-                let body = hb.render("crud-api-inner", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert::from((format!("Error adding client: {:?}", err).as_str(), "alert_error"));
-                let body = hb.render("crud-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
-        println!("Val error");
-        let error_msg = "Validation error";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
-
-        // // To test the alert more easily
-        // let user_alert = UserAlert {
-        //     msg: "Error adding client:".to_owned(),
-        //     class: "alert_error".to_owned(),
-        // };
-        // let body = hb.render("crud-api", &user_alert).unwrap();
-        // return HttpResponse::Ok().body(body);
-    }
-}
-
-fn validate_patch(body: &ClientPostRequest) -> bool {
-    // Woof
-    dbg!(&body);
-    if let Some(addr_two) = &body.client_address_two {
-        let apt_ste: Vec<&str> = addr_two.split(" ").collect::<Vec<&str>>().to_owned();
-        let first = apt_ste[0];
-        dbg!(&first);
-        if ACCEPTED_SECONDARIES.contains(&first) {
-            true
-        } else {
-            false
-        }
-    } else {
-        true
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
@@ -374,107 +341,99 @@ async fn patch_client(
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
-            Ok(user_opt) => {
-                if let Some(user) = user_opt {
-                    let client_slug = path.into_inner();
-                    dbg!(&body);
-                    let is_valid = body.validate();
-                    if is_valid.is_err() {
-                        println!("Got err");
-                        dbg!(is_valid.is_err());
-                        let val_errs = is_valid
-                            .err()
-                            .unwrap()
-                            .field_errors()
-                            .iter()
-                            .map(|x| {
-                                let (key, errs) = x;
-                                ValidationErrorMap {
-                                    key: key.to_string(),
-                                    errs: errs.to_vec(),
-                                }
-                            })
-                            .collect::<Vec<ValidationErrorMap>>();
-                        dbg!(&val_errs);
-                        // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
-                        let validation_response = FormErrorResponse {
-                            errors: Some(val_errs),
-                        };
-                        let body = hb
-                            .render("forms/form-validation", &validation_response)
-                            .unwrap();
-                        return HttpResponse::BadRequest()
-                            .header("HX-Retarget", "#client_errors")
-                            .body(body);
-                    }else{
-                        // Valid input so perform query
-                        match sqlx::query_as::<_, ClientPostResponse>(
-                            "UPDATE clients 
-                                SET client_company_name = $1,
-                                    client_f_name = $2,
-                                    client_l_name = $3,
-                                    client_address_one = $4,
-                                    client_address_two = $5,
-                                    client_city = $6,
-                                    client_state = $7,
-                                    client_zip = $8,
-                                    client_primary_phone = $9,
-                                    client_email = $10,
-                                    account_id = $11,
-                                    specialty_id = $12
-                                WHERE slug = $13
-                                RETURNING id",
-                        )
-                        .bind(&body.client_company_name)
-                        .bind(&body.client_f_name)
-                        .bind(&body.client_l_name)
-                        .bind(&body.client_address_one)
-                        .bind(&body.client_address_two)
-                        .bind(&body.client_city)
-                        .bind(&body.client_state)
-                        .bind(&body.client_zip)
-                        .bind(&body.client_primary_phone)
-                        .bind(&body.client_email)
-                        .bind(&body.account_id)
-                        .bind(&body.specialty_id)
-                        .bind(client_slug)
-                        .fetch_one(&state.db)
-                        .await
-                        {
-                            Ok(client) => {
-                                dbg!(client.id);
-                                let user_alert = UserAlert::from((
-                                    format!("Client edited successfully: client_id #{:?}", client.id).as_str(),
-                                    "alert_success",
-                                ));
-                                let full_page_data = FullPageTemplateData {
-                                    user_alert: user_alert.clone(),
-                                    user: Some(user),
-                                };
-                                let body = hb.render("list-api", &full_page_data).unwrap();
-                                return HttpResponse::Ok().body(body);
+            Ok(user) => {
+                let client_slug = path.into_inner();
+                dbg!(&body);
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    println!("Got err");
+                    dbg!(is_valid.is_err());
+                    let val_errs = is_valid
+                        .err()
+                        .unwrap()
+                        .field_errors()
+                        .iter()
+                        .map(|x| {
+                            let (key, errs) = x;
+                            ValidationErrorMap {
+                                key: key.to_string(),
+                                errs: errs.to_vec(),
                             }
-                            Err(err) => {
-                                dbg!(&err);
-                                let user_alert = UserAlert::from((
-                                    format!("Error patching location: {:?}", err).as_str(),
-                                    "alert_error",
-                                ));
-                                let full_page_data = FullPageTemplateData {
-                                    user_alert: user_alert.clone(),
-                                    user: Some(user),
-                                };
-                                let body = hb.render("list-api", &full_page_data).unwrap();
-                                return HttpResponse::Ok().body(body);
-                            }
+                        })
+                        .collect::<Vec<ValidationErrorMap>>();
+                    dbg!(&val_errs);
+                    // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+                    let validation_response = FormErrorResponse {
+                        errors: Some(val_errs),
+                    };
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#client_errors")
+                        .body(body);
+                }else{
+                    // Valid input so perform query
+                    match sqlx::query_as::<_, ClientPostResponse>(
+                        "UPDATE clients 
+                            SET client_company_name = $1,
+                                client_f_name = $2,
+                                client_l_name = $3,
+                                client_address_one = $4,
+                                client_address_two = $5,
+                                client_city = $6,
+                                client_state = $7,
+                                client_zip = $8,
+                                client_primary_phone = $9,
+                                client_email = $10,
+                                account_id = $11,
+                                specialty_id = $12
+                            WHERE slug = $13
+                            RETURNING id",
+                    )
+                    .bind(&body.client_company_name)
+                    .bind(&body.client_f_name)
+                    .bind(&body.client_l_name)
+                    .bind(&body.client_address_one)
+                    .bind(&body.client_address_two)
+                    .bind(&body.client_city)
+                    .bind(&body.client_state)
+                    .bind(&body.client_zip)
+                    .bind(&body.client_primary_phone)
+                    .bind(&body.client_email)
+                    .bind(&body.account_id)
+                    .bind(&body.specialty_id)
+                    .bind(client_slug)
+                    .fetch_one(&state.db)
+                    .await
+                    {
+                        Ok(client) => {
+                            dbg!(client.id);
+                            let user_alert = UserAlert::from((
+                                format!("Client edited successfully: client_id #{:?}", client.id).as_str(),
+                                "alert_success",
+                            ));
+                            let full_page_data = FullPageTemplateData {
+                                user_alert: user_alert.clone(),
+                                user: Some(user),
+                            };
+                            let body = hb.render("list-api", &full_page_data).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
+                        Err(err) => {
+                            dbg!(&err);
+                            let user_alert = UserAlert::from((
+                                format!("Error patching location: {:?}", err).as_str(),
+                                "alert_error",
+                            ));
+                            let full_page_data = FullPageTemplateData {
+                                user_alert: user_alert.clone(),
+                                user: Some(user),
+                            };
+                            let body = hb.render("list-api", &full_page_data).unwrap();
+                            return HttpResponse::Ok().body(body);
                         }
                     }
-                }else{
-                    println!("User Option is None");
-                    let error_msg = "Validation error";
-                    let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-                    let body = hb.render("validation", &validation_response).unwrap();
-                    return HttpResponse::BadRequest().body(body);
                 }
             }
             Err(err) => {

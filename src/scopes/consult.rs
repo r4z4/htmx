@@ -10,7 +10,7 @@ use actix_web::{
     get, http::header::CONTENT_LENGTH, post, web, HttpRequest, HttpResponse, Responder, Scope,
 };
 use chrono::{DateTime, Timelike, Utc, Duration};
-use deadpool_redis::{Connection, Manager, Pool as RedisPool};
+use deadpool_redis::{Pool as RedisPool};
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use mime::{Mime, APPLICATION_JSON, APPLICATION_PDF, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, TEXT_CSV};
@@ -197,13 +197,6 @@ async fn client_options(state: &web::Data<AppState>, r_state: &web::Data<RedisSt
     }
 }
 
-fn validate_consult_input(body: &ConsultPost) -> bool {
-    // if body.consultant_id && body.linfa_assign {
-    //     false
-    // }
-    true
-}
-
 #[derive(Debug, Serialize, FromRow, Deserialize)]
 pub struct AttachmentResponse {
     attachment_id: i32,
@@ -307,167 +300,181 @@ use crate::linfa::LinfaPredictionResult;
 async fn create_consult(
     body: web::Form<ConsultPost>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     r_state: web::Data<RedisState>,
 ) -> impl Responder {
-    println!("What");
-    let is_valid = body.validate();
-    if is_valid.is_err() {
-        let validation_response = get_validation_response(is_valid);
-        let body = hb
-            .render("forms/form-validation", &validation_response)
-            .unwrap();
-        return HttpResponse::BadRequest()
-            .header("HX-Retarget", "#consult_errors")
-            .body(body);
-    };
-    if validate_consult_input(&body) {
-        // FIXME Make Optional
-        dbg!(&body);
-        let consult_start_string =
-            body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
-        let consult_start_dt =
-            DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
-        // End date
-        let consult_end_string =
-            if body.consult_end_date.is_empty() {
-                body.consult_end_date.clone()
-            } else {
-                body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00"
-            };
-        let consult_end_dt =
-            if body.consult_end_date.is_empty() {
-                consult_start_dt + Duration::hours(1)
-            } else {
-                DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap()
-            };
-        let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
-        // Compute consultant_id based on Linfa assign
-        let linfa_pred_result = if body.linfa_assign.is_some() {
-            let cd = get_client_details(body.client_id, &state.db, &r_state.r_pool).await.unwrap();
-            let diff = consult_end_dt - consult_start_dt;
-            let duration = diff.num_minutes() as i32;
-            println!("Meeting duration is {}", &duration);
-            // Build Linfa
-            let input = LinfaPredictionInput {
-                client_type: cd.0,
-                specialty_id: cd.1,
-                territory_id: cd.2,
-                meeting_duration: duration,
-                hour_of_day: consult_start_dt.naive_local().hour() as i32,
-                location_id: body.location_id,
-                client_id: body.client_id,
-                consult_purpose_id: body.consult_purpose_id,
-                notes_length: body.notes.chars().count() as i32,
-                // We are predicting for the optimal result, which is a follow up consult (1)
-                received_follow_up: 1,
-                num_attendees: body.num_attendees,
-            };
-            println!("Linfa will decide");
-            let result = linfa_pred(&input, &state.db).await;
-            result
-            // let id = result.1;
-            // id
-        } else {
-            LinfaPredictionResult("".to_string(), body.consultant_id)
-        };
-        
-        let computed_consultant_id = linfa_pred_result.1;
-        let texfile = linfa_pred_result.0;
-        // Get Current User
-        if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
-            let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
-            let channel = "upload".to_string();
-            let short_desc = "Replace me with genuine desc".to_string();
-            match sqlx::query_as::<_, AttachmentResponse>(
-                "INSERT INTO attachments (path, user_id, mime_type_id, channel, short_desc) VALUES ($1, $2, $3, $4, $5) RETURNING attachment_id",
-            )
-            .bind(body.attachment_path.clone().unwrap().trim().to_string())
-            // FIXME
-            .bind(body.client_id)
-            .bind(mime_type_id)
-            .bind(channel)
-            .bind(short_desc)
-            .fetch_one(&state.db)
-            .await
-            {
-                Ok(attachment_resp) => {
-                    let consult_attachments_array = vec![attachment_resp.attachment_id];
-                    match sqlx::query_as::<_, ConsultResponse>(
-                        "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), $10, NULLIF($11, '')) RETURNING id",
-                    )
-                    .bind(body.consult_purpose_id as i32)
-                    .bind(body.consult_result_id)
-                    .bind(computed_consultant_id)
-                    .bind(body.client_id)
-                    .bind(body.location_id)
-                    .bind(consult_start_dt)
-                    .bind(consult_end_dt)
-                    .bind(body.num_attendees)
-                    .bind(body.notes.clone())
-                    .bind(consult_attachments_array)
-                    .bind(texfile)
-                    .fetch_one(&state.db)
-                    .await
-                    {
-                        Ok(consult_resp) => {
-                            let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
-                            let body = hb.render("crud-api-inner", &user_alert).unwrap();
-                            return HttpResponse::Ok().body(body);
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user) => {
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    let validation_response = get_validation_response(is_valid);
+                    // FIXME Copy how Clients does it
+                    let body = hb
+                        .render("forms/form-validation", &validation_response)
+                        .unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#consult_errors")
+                        .body(body);
+                } else {
+                    // FIXME Make Optional
+                    dbg!(&body);
+                    let consult_start_string =
+                        body.consult_start_date.clone() + " " + &body.consult_start_time + ":00 -06:00";
+                    let consult_start_dt =
+                        DateTime::parse_from_str(&consult_start_string, "%Y-%m-%d %H:%M:%S %z").unwrap();
+                    // End date
+                    let consult_end_string =
+                        if body.consult_end_date.is_empty() {
+                            body.consult_end_date.clone()
+                        } else {
+                            body.consult_end_date.clone() + " " + &body.consult_end_time + ":00 -06:00"
+                        };
+                    let consult_end_dt =
+                        if body.consult_end_date.is_empty() {
+                            consult_start_dt + Duration::hours(1)
+                        } else {
+                            DateTime::parse_from_str(&consult_end_string, "%Y-%m-%d %H:%M:%S %z").unwrap()
+                        };
+                    let consult_start_datetime_utc = consult_start_dt.with_timezone(&Utc);
+                    // Compute consultant_id based on Linfa assign
+                    let linfa_pred_result = if body.linfa_assign.is_some() {
+                        let cd = get_client_details(body.client_id, &state.db, &r_state.r_pool).await.unwrap();
+                        let diff = consult_end_dt - consult_start_dt;
+                        let duration = diff.num_minutes() as i32;
+                        println!("Meeting duration is {}", &duration);
+                        // Build Linfa
+                        let input = LinfaPredictionInput {
+                            client_type: cd.0,
+                            specialty_id: cd.1,
+                            territory_id: cd.2,
+                            meeting_duration: duration,
+                            hour_of_day: consult_start_dt.naive_local().hour() as i32,
+                            location_id: body.location_id,
+                            client_id: body.client_id,
+                            consult_purpose_id: body.consult_purpose_id,
+                            notes_length: body.notes.chars().count() as i32,
+                            // We are predicting for the optimal result, which is a follow up consult (1)
+                            received_follow_up: 1,
+                            num_attendees: body.num_attendees,
+                        };
+                        println!("Linfa will decide");
+                        let result = linfa_pred(&input, &state.db).await;
+                        result
+                        // let id = result.1;
+                        // id
+                    } else {
+                        LinfaPredictionResult("".to_string(), body.consultant_id)
+                    };
+                    
+                    let computed_consultant_id = linfa_pred_result.1;
+                    let texfile = linfa_pred_result.0;
+                    // Get Current User
+                    if body.attachment_path.is_some() && !body.attachment_path.as_ref().unwrap().is_empty() {
+                        let mime_type_id = mime_type_id_from_path(&body.attachment_path.as_ref().unwrap());
+                        let channel = "upload".to_string();
+                        let short_desc = "Replace me with genuine desc".to_string();
+                        match sqlx::query_as::<_, AttachmentResponse>(
+                            "INSERT INTO attachments (path, user_id, mime_type_id, channel, short_desc) VALUES ($1, $2, $3, $4, $5) RETURNING attachment_id",
+                        )
+                        .bind(body.attachment_path.clone().unwrap().trim().to_string())
+                        // FIXME
+                        .bind(body.client_id)
+                        .bind(mime_type_id)
+                        .bind(channel)
+                        .bind(short_desc)
+                        .fetch_one(&state.db)
+                        .await
+                        {
+                            Ok(attachment_resp) => {
+                                let consult_attachments_array = vec![attachment_resp.attachment_id];
+                                match sqlx::query_as::<_, ConsultResponse>(
+                                    "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, consult_attachments, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), $10, NULLIF($11, '')) RETURNING id",
+                                )
+                                .bind(body.consult_purpose_id as i32)
+                                .bind(body.consult_result_id)
+                                .bind(computed_consultant_id)
+                                .bind(body.client_id)
+                                .bind(body.location_id)
+                                .bind(consult_start_dt)
+                                .bind(consult_end_dt)
+                                .bind(body.num_attendees)
+                                .bind(body.notes.clone())
+                                .bind(consult_attachments_array)
+                                .bind(texfile)
+                                .fetch_one(&state.db)
+                                .await
+                                {
+                                    Ok(consult_resp) => {
+                                        let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
+                                        let body = hb.render("crud-api-inner", &user_alert).unwrap();
+                                        return HttpResponse::Ok().body(body);
+                                    }
+                                    Err(err) => {
+                                        dbg!(&err);
+                                        let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consult: {:?}", err).as_str(), "alert_error"));
+                                        let body = hb.render("crud-api", &user_alert).unwrap();
+                                        return HttpResponse::Ok().body(body);
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                dbg!(&err);
+                                let user_alert = UserAlert::from((format!("Error Adding the Attachment: {:?}", err).as_str(), "alert_error"));
+                                let body = hb.render("crud-api", &user_alert).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
                         }
-                        Err(err) => {
-                            dbg!(&err);
-                            let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consult: {:?}", err).as_str(), "alert_error"));
-                            let body = hb.render("crud-api", &user_alert).unwrap();
-                            return HttpResponse::Ok().body(body);
+                    } else {
+                        // FIXME: If end_date null, just add an hour to start
+                        // NULLIF($2, 0) for Ints
+                        match sqlx::query_as::<_, ConsultResponse>(
+                            "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), NULLIF($10, '')) RETURNING id",
+                        )
+                        .bind(body.consult_purpose_id as i32)
+                        .bind(body.consult_result_id)
+                        .bind(computed_consultant_id)
+                        .bind(body.client_id)
+                        .bind(body.location_id)
+                        .bind(consult_start_dt)
+                        .bind(consult_end_dt)
+                        .bind(body.num_attendees)
+                        .bind(body.notes.clone())
+                        .bind(texfile)
+                        .fetch_one(&state.db)
+                        .await
+                        {
+                            Ok(consult_resp) => {
+                                let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
+                                let body = hb.render("crud-api-inner", &user_alert).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
+                            Err(err) => {
+                                dbg!(&err);
+                                let error_msg = format!("Error occurred in (DB layer): {}.", err);
+                                let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
+                                let body = hb.render("validation", &validation_response).unwrap();
+                                return HttpResponse::Ok().body(body);
+                            }
                         }
                     }
                 }
-                Err(err) => {
-                    dbg!(&err);
-                    let user_alert = UserAlert::from((format!("Error Adding the Attachment: {:?}", err).as_str(), "alert_error"));
-                    let body = hb.render("crud-api", &user_alert).unwrap();
-                    return HttpResponse::Ok().body(body);
-                }
             }
-        } else {
-            // FIXME: If end_date null, just add an hour to start
-            // NULLIF($2, 0) for Ints
-            match sqlx::query_as::<_, ConsultResponse>(
-                "INSERT INTO consults (consult_purpose_id, consult_result_id, consultant_id, client_id, location_id, consult_start, consult_end, num_attendees, notes, texfile) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), NULLIF($10, '')) RETURNING id",
-            )
-            .bind(body.consult_purpose_id as i32)
-            .bind(body.consult_result_id)
-            .bind(computed_consultant_id)
-            .bind(body.client_id)
-            .bind(body.location_id)
-            .bind(consult_start_dt)
-            .bind(consult_end_dt)
-            .bind(body.num_attendees)
-            .bind(body.notes.clone())
-            .bind(texfile)
-            .fetch_one(&state.db)
-            .await
-            {
-                Ok(consult_resp) => {
-                    let user_alert = UserAlert::from((format!("Consult added successfully: ID #{:?}", consult_resp.id).as_str(), "alert_success"));
-                    let body = hb.render("crud-api-inner", &user_alert).unwrap();
-                    return HttpResponse::Ok().body(body);
-                }
-                Err(err) => {
-                    dbg!(&err);
-                    let error_msg = format!("Error occurred in (DB layer): {}.", err);
-                    let validation_response = ValidationResponse::from((error_msg.as_str(), "validation_error"));
-                    let body = hb.render("validation", &validation_response).unwrap();
-                    return HttpResponse::Ok().body(body);
-                }
+            Err(err) => {
+                dbg!(&err);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
-        let error_msg = "Validation error";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 
@@ -770,65 +777,63 @@ pub async fn get_consults_handler(
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
-            Ok(user_opt) => {
-                if let Some(user) = user_opt {
-                    println!("get_consultants_handler firing");
-                    let limit = opts.limit.unwrap_or(10);
-                    let offset = (opts.page.unwrap_or(1) - 1) * limit;
+            Ok(user) => {
+                println!("get_consultants_handler firing");
+                let limit = opts.limit.unwrap_or(10);
+                let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
-                    // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
-                    let query_result = sort_query(&opts, &state.db, &r_state.r_pool).await;
+                // QueryBuilder gets the query correct but end up w/ Vec<PgRow>. Need to get to Vec<Consult> or impl Serialize for PgRow?
+                let query_result = sort_query(&opts, &state.db, &r_state.r_pool).await;
 
-                    dbg!(&query_result);
+                dbg!(&query_result);
 
-                    if query_result.is_err() {
-                        let error_msg = "Error occurred while fetching all consultant records";
-                        let validation_response =
-                            ValidationResponse::from((error_msg, "validation_error"));
-                        let body = hb.render("validation", &validation_response).unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
-
-                    let consults = query_result.unwrap();
-
-                    let f_opts = FilterOptions::from(&opts);
-
-                    let consults_table_data = ResponsiveTableData {
-                        entity_type_id: 6,
-                        vec_len: consults.vec.len(),
-                        lookup_url: "/consult/list?page=".to_string(),
-                        opts: f_opts,
-                        // page: opts.page.unwrap_or(1),
-                        entities: consults.vec,
-                        subscriptions: subs_from_user(&user),
-                    };
-
-                    // Only return whole Table if brand new
-                    if opts.key.is_none() && opts.search.is_none() {
-                        let body = hb.render("responsive-table", &consults_table_data).unwrap();
-                        return HttpResponse::Ok().body(body);
-                    } else {
-                        let body = hb
-                            .render("responsive-table-inner", &consults_table_data)
-                            .unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
-                } else {
-                    let message = "User Option is a None".to_owned();
-                    let body = hb.render("index", &message).unwrap();
+                if query_result.is_err() {
+                    let error_msg = "Error occurred while fetching all consultant records";
+                    let validation_response =
+                        ValidationResponse::from((error_msg, "validation_error"));
+                    let body = hb.render("validation", &validation_response).unwrap();
                     return HttpResponse::Ok().body(body);
+                }
+
+                let consults = query_result.unwrap();
+
+                let f_opts = FilterOptions::from(&opts);
+
+                let consults_table_data = ResponsiveTableData {
+                    entity_type_id: 6,
+                    vec_len: consults.vec.len(),
+                    lookup_url: "/consult/list?page=".to_string(),
+                    opts: f_opts,
+                    // page: opts.page.unwrap_or(1),
+                    entities: consults.vec,
+                    subscriptions: subs_from_user(&user),
                 };
+
+                // Only return whole Table if brand new
+                if opts.key.is_none() && opts.search.is_none() {
+                    let body = hb.render("responsive-table", &consults_table_data).unwrap();
+                    return HttpResponse::Ok().body(body);
+                } else {
+                    let body = hb
+                        .render("responsive-table-inner", &consults_table_data)
+                        .unwrap();
+                    return HttpResponse::Ok().body(body);
+                }
             }
             Err(err) => {
                 dbg!(&err);
                 let body = hb.render("index", &format!("{:?}", err)).unwrap();
-                return HttpResponse::Ok().body(body);
+                return HttpResponse::Ok()
+                .header("HX-Redirect", "/")
+                .body(body);
             }
         }
     } else {
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
-        HttpResponse::Ok().body(body)
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 

@@ -113,25 +113,17 @@ async fn index(
     if let Some(cookie) = headers.get(actix_web::http::header::COOKIE) {
         dbg!(cookie.clone());
         match redis_validate_and_get_user(cookie, &r_state).await {
-            Ok(user_option) => {
-                if let Some(user) = user_option {
-                    let feed_data = user_feed(&user, &state.db).await;
-                    let template_data = HomepageTemplate {
-                        error: None,
-                        user: Some(user),
-                        feed_data: feed_data,
-                    };
-                    let body = hb.render("homepage", &template_data).unwrap();
-                    return HttpResponse::Ok()
-                        .header("HX-Redirect", "/homepage")
-                        .body(body);
-                } else {
-                    let message =
-                        "Your session seems to have expired. Please login again (1).".to_owned();
-                    let body = hb.render("index", &message).unwrap();
-
-                    HttpResponse::Ok().body(body)
-                }
+            Ok(user) => {
+                let feed_data = user_feed(&user, &state.db).await;
+                let template_data = HomepageTemplate {
+                    error: None,
+                    user: Some(user),
+                    feed_data: feed_data,
+                };
+                let body = hb.render("homepage", &template_data).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/homepage")
+                    .body(body);
             }
             Err(_err) => {
                 // User's cookie is invalud or expired. Need to get a new one via logging in.
@@ -237,23 +229,14 @@ async fn about_us(
         // let _ = linfa_pred();
         match redis_validate_and_get_user(cookie, &r_state).await {
         // match validate_and_get_user(cookie, &state).await {
-            Ok(user_option) => {
-                if let Some(user) = user_option {
-                    let template_data = json! {{
-                        "user": user,
-                        "data": &data,
-                    }};
-                    let body = hb.render("about-us", &template_data).unwrap();
+            Ok(user) => {
+                let template_data = json! {{
+                    "user": user,
+                    "data": &data,
+                }};
+                let body = hb.render("about-us", &template_data).unwrap();
 
-                    HttpResponse::Ok().body(body)
-                } else {
-                    let template_data = json! {{
-                        // "user": user,
-                        "data": &data,
-                    }};
-                    let body = hb.render("about-us", &template_data).unwrap();
-                    HttpResponse::Ok().body(body)
-                }
+                HttpResponse::Ok().body(body)
             }
             Err(err) => {
                 // User's cookie is invalid or expired. Need to get a new one via logging in.

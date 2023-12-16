@@ -18,13 +18,14 @@ use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
 use redis::{RedisResult, AsyncCommands};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, QueryBuilder, Row};
+use validator::Validate;
 use std::io::Write;
 use uuid::Uuid;
 
 use crate::{
     config::{
         specialty_options, territory_options, test_subs, FilterOptions, ResponsiveTableData,
-        SelectOption, UserAlert, ValidationResponse,
+        SelectOption, UserAlert, ValidationResponse, redis_validate_and_get_user, ValidationErrorMap, FormErrorResponse,
     },
     models::model_consultant::{
         ConsultantFormRequest, ConsultantFormTemplate, ConsultantPostRequest,
@@ -357,121 +358,122 @@ async fn consultant_edit_form(
     return HttpResponse::Ok().body(body);
 }
 
-fn validate_consultant_input(body: &ConsultantPostRequest) -> bool {
-    true
-}
-
 #[post("/form")]
 async fn create_consultant(
     body: web::Form<ConsultantPostRequest>,
     hb: web::Data<Handlebars<'_>>,
+    req: HttpRequest,
     state: web::Data<AppState>,
     r_state: web::Data<RedisState>,
 ) -> impl Responder {
     dbg!(&body);
+    if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
+        match redis_validate_and_get_user(cookie, &r_state).await {
+            Ok(user) => {
+                let is_valid = body.validate();
+                if is_valid.is_err() {
+                    let mut vec_errs = vec![];
+                    let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
+                        let (key, errs) = x;
+                        vec_errs.push(ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()});
+                    });
+                    // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
+                    let validation_response = FormErrorResponse {
+                        errors: Some(vec_errs),
+                    };
+                    let body = hb.render("forms/form-validation", &validation_response).unwrap();
+                    return HttpResponse::BadRequest()
+                        .header("HX-Retarget", "#consultant_errors")
+                        .body(body);
+                } else {
+                    // Using the NULLIF pattern, so just default to "" & DB will insert it as NULL.
+                    // If they uploaded we need to trim the input due to Hyperscript padding
+                    let image_path = if body.img_path.is_some() {
+                        if body.img_path.as_ref().unwrap().is_empty() {
+                            "".to_string()
+                        } else {
+                            let p = body.img_path.clone().unwrap().trim().to_string();
+                            p
+                            // dbg!(&p);
+                            // let path = &p[2..].to_string();
+                            // dbg!(&path);
+                            // path.to_owned()
+                        }
+                    } else {
+                        "".to_string()
+                    };
 
-    // let is_valid = body.validate();
-    // if is_valid.is_err() {
-    //     let mut vec_errs = vec![];
-    //     let val_errs = is_valid.err().unwrap().field_errors().iter().map(|x| {
-    //         let (key, errs) = x;
-    //         vec_errs.push(ValidationErrorMap{key: key.to_string(), errs: errs.to_vec()});
-    //     });
-    //     // return HttpResponse::InternalServerError().json(format!("{:?}", is_valid.err().unwrap()));
-    //     let validation_response = FormErrorResponse {
-    //         errors: Some(vec_errs),
-    //     };
-    //     let body = hb.render("validation", &validation_response).unwrap();
-    //     return HttpResponse::BadRequest().body(body);
-    // }
-
-    if validate_consultant_input(&body) {
-        // Using the NULLIF pattern, so just default to "" & DB will insert it as NULL.
-        // If they uploaded we need to trim the input due to Hyperscript padding
-        let image_path = if body.img_path.is_some() {
-            if body.img_path.as_ref().unwrap().is_empty() {
-                "".to_string()
-            } else {
-                let p = body.img_path.clone().unwrap().trim().to_string();
-                p
-                // dbg!(&p);
-                // let path = &p[2..].to_string();
-                // dbg!(&path);
-                // path.to_owned()
-            }
-        } else {
-            "".to_string()
-        };
-
-        match sqlx::query_as::<_, ConsultantPostResponse>(
-            "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path, user_id) 
-                    VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6) RETURNING user_id",
-        )
-        .bind(&body.consultant_f_name)
-        .bind(&body.consultant_l_name)
-        .bind(&body.specialty_id)
-        .bind(&body.territory_id)
-        .bind(image_path)
-        .bind(&body.user_id)
-        .fetch_one(&state.db)
-        .await
-        {
-            Ok(consultant_response) => {
-                dbg!(&consultant_response.user_id);
-                // Del / Invalidate Redis Key to force a DB fetch
-                let mut con = r_state.r_pool.get().await.unwrap();
-                let key = format!("{}:{}", "query", "consultant_options");
-                let deleted: RedisResult<bool> = con.del(&key).await;
-                match deleted {
-                    Ok(true) => {
-                        println!("Key deleted");
-                    },
-                    Ok(false) => {
-                        println!("Key not found {}", &key);
-                    },
-                    Err(err) => println!("Error: {}", err)
-                }
-                match sqlx::query_as::<_, ConsultantPostResponse>(
-                    "UPDATE users SET user_type_id = 2, updated_at = now() WHERE id = $1 RETURNING id AS user_id",
-                )
-                .bind(&consultant_response.user_id)
-                .fetch_one(&state.db)
-                .await
-                {
-                    Ok(update_response) => {
-                        let user_alert = UserAlert::from((format!("Consultant added successfully: ID #{:?}", update_response.user_id).as_str(), "alert_success"));
-                        let body = hb.render("crud-api-inner", &user_alert).unwrap();
-                        return HttpResponse::Ok().body(body);
-                    }
-                    Err(err) => {
-                        dbg!(&err);
-                        let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consultant: {:?}", err).as_str(), "alert_error"));
-                        let body = hb.render("crud-api-inner", &user_alert).unwrap();
-                        return HttpResponse::Ok().body(body);
+                    match sqlx::query_as::<_, ConsultantPostResponse>(
+                        "INSERT INTO consultants (consultant_f_name, consultant_l_name, specialty_id, territory_id, img_path, user_id) 
+                                VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6) RETURNING user_id",
+                    )
+                    .bind(&body.consultant_f_name)
+                    .bind(&body.consultant_l_name)
+                    .bind(&body.specialty_id)
+                    .bind(&body.territory_id)
+                    .bind(image_path)
+                    .bind(&body.user_id)
+                    .fetch_one(&state.db)
+                    .await
+                    {
+                        Ok(consultant_response) => {
+                            dbg!(&consultant_response.user_id);
+                            // Del / Invalidate Redis Key to force a DB fetch
+                            let mut con = r_state.r_pool.get().await.unwrap();
+                            let key = format!("{}:{}", "query", "consultant_options");
+                            let deleted: RedisResult<bool> = con.del(&key).await;
+                            match deleted {
+                                Ok(true) => {
+                                    println!("Key deleted");
+                                },
+                                Ok(false) => {
+                                    println!("Key not found {}", &key);
+                                },
+                                Err(err) => println!("Error: {}", err)
+                            }
+                            match sqlx::query_as::<_, ConsultantPostResponse>(
+                                "UPDATE users SET user_type_id = 2, updated_at = now() WHERE id = $1 RETURNING id AS user_id",
+                            )
+                            .bind(&consultant_response.user_id)
+                            .fetch_one(&state.db)
+                            .await
+                            {
+                                Ok(update_response) => {
+                                    let user_alert = UserAlert::from((format!("Consultant added successfully: ID #{:?}", update_response.user_id).as_str(), "alert_success"));
+                                    let body = hb.render("crud-api-inner", &user_alert).unwrap();
+                                    return HttpResponse::Ok().body(body);
+                                }
+                                Err(err) => {
+                                    dbg!(&err);
+                                    let user_alert = UserAlert::from((format!("Error Updating User After Adding Them As Consultant: {:?}", err).as_str(), "alert_error"));
+                                    let body = hb.render("crud-api-inner", &user_alert).unwrap();
+                                    return HttpResponse::Ok().body(body);
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            dbg!(&err);
+                            let user_alert = UserAlert::from((format!("Error adding consultant: {:?}", err).as_str(), "alert_error"));
+                            let body = hb.render("crud-api", &user_alert).unwrap();
+                            return HttpResponse::Ok().body(body);
+                        }
                     }
                 }
             }
             Err(err) => {
                 dbg!(&err);
-                let user_alert = UserAlert::from((format!("Error adding consultant: {:?}", err).as_str(), "alert_error"));
-                let body = hb.render("crud-api", &user_alert).unwrap();
-                return HttpResponse::Ok().body(body);
+                let body = hb.render("index", &format!("{:?}", err)).unwrap();
+                return HttpResponse::Ok()
+                    .header("HX-Redirect", "/")
+                    .body(body);
             }
         }
     } else {
-        println!("Val error");
-        let error_msg = "Validation error";
-        let validation_response = ValidationResponse::from((error_msg, "validation_error"));
-        let body = hb.render("validation", &validation_response).unwrap();
-        return HttpResponse::Ok().body(body);
-
-        // // To test the alert more easily
-        // let user_alert = UserAlert {
-        //     msg: "Error adding location:".to_owned(),
-        //     alert_class: "alert_error".to_owned(),
-        // };
-        // let body = hb.render("crud-api", &user_alert).unwrap();
-        // return HttpResponse::Ok().body(body);
+        let message = "Your session seems to have expired. Please login again.".to_owned();
+        let body = hb.render("index", &message).unwrap();
+        HttpResponse::Ok()
+        .header("HX-Redirect", "/")
+        .body(body)
     }
 }
 

@@ -65,7 +65,7 @@
           <input type="text" id="img_path" name="img_path" class="field-style field-full align-none" placeholder="Image Path" value="{{entity.img_path}}" readonly />
       </li>
       <li>
-        <select class="field-style field-split align-left" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" >
+        <select class="field-style field-split align-left" id="specialty_id" name="specialty_id" value="{{entity.specialty_id}}" required>
             {{!-- Only display default option if new form (or no value, but specialty is required) --}}
             {{#unless @root.entity}}
               <option value="" selected disabled hidden>Select One</option>
@@ -83,7 +83,7 @@
               {{/if}}
             {{/each}}
         </select>
-        <select class="field-style field-split align-right" id="territory_id" name="territory_id" value="{{entity.territory_id}}" >
+        <select class="field-style field-split align-right" id="territory_id" name="territory_id" value="{{entity.territory_id}}" required>
             {{!-- Only display default option if new form (or no value, but specialty is required) --}}
             {{#unless @root.entity}}
               <option value="" selected disabled hidden>Select One</option>
