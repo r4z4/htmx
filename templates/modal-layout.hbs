@@ -20,8 +20,8 @@ document.getElementById("close_btn").addEventListener('click', (event) => {
 	>
 	<div class="modal-underlay" _="on click trigger closeModal"></div>
 	<div class="modal-content">
+		<button class="close_x" _="on click trigger closeModal" id="close_btn">X</button>
         {{> @partial-block }}
-		<button _="on click trigger closeModal" id="close_btn">Close</button>
 	</div>
 </div>
 </body>

@@ -31,6 +31,8 @@ lazy_static! {
     pub static ref RE_USERNAME: Regex = Regex::new(r"^[a-zA-Z0-9]{4,}$").unwrap();
     pub static ref RE_SPECIAL_CHAR: Regex = Regex::new("^.*?[@$!%*?&].*$").unwrap();
     pub static ref RE_NO_NUMBER: Regex = Regex::new("^([^0-9]*)$").unwrap();
+    // HTML Validation seems to cover most of this
+    // pub static ref RE_EMAIL_DOT: Regex = Regex::new(r".+[a-z]\.[a-z]+$").unwrap();
     pub static ref RE_EMAIL: Regex = Regex::new(
         r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})"
     )
@@ -673,6 +675,19 @@ pub fn validate_username(username: &str) -> Result<(), ValidationError> {
             // FIXME: Use key? Make code a descriptor like 'length' or 'range'
             code: std::borrow::Cow::Borrowed("length"),
             message: Some(Cow::from("Username must be 3 chars.")),
+            params: HashMap::new(),
+        })
+    } else {
+        Ok(())
+    }
+}
+
+pub fn validate_email(email: &str) -> Result<(), ValidationError> {
+    if !email.contains(".") {
+        Err(ValidationError {
+            // FIXME: Use key? Make code a descriptor like 'length' or 'range'
+            code: std::borrow::Cow::Borrowed("format"),
+            message: Some(Cow::from("Email must contains a '.'")),
             params: HashMap::new(),
         })
     } else {

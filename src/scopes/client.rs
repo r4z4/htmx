@@ -107,7 +107,8 @@ pub async fn get_clients_handler(
         let message = "Your session seems to have expired. Please login again.".to_owned();
         let body = hb.render("index", &message).unwrap();
         HttpResponse::Ok()
-        .header("HX-Redirect", "/")
+        // .append_header(header::ContentType(mime::APPLICATION_JSON))
+        .append_header(("HX-Redirect", "/"))
         .body(body)
     }
 }

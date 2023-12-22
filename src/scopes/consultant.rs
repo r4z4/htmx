@@ -14,7 +14,7 @@ use actix_web::{
 use futures_util::TryStreamExt;
 use handlebars::Handlebars;
 use image::{imageops::FilterType, DynamicImage};
-use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG, IMAGE_SVG};
+use mime::{Mime, IMAGE_GIF, IMAGE_JPEG, IMAGE_PNG};
 use redis::{RedisResult, AsyncCommands};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, QueryBuilder, Row};

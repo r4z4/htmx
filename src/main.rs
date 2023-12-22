@@ -20,15 +20,15 @@ use hbs_helpers::{
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
 };
-use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind, ToRedisArgs};
-use redis_mod::redis_mod::{redis_connect, redis_test_data};
+use ::redis::{FromRedisValue, RedisResult, from_redis_value, Value, ErrorKind};
+use redis_mod::redis_mod::{redis_connect};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, Pool, Postgres};
 use validator::{Validate, ValidationError};
 
 use crate::{
-    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, redis_validate_and_get_user, ApiError},
+    config::{get_ip, mock_fixed_table_data, user_feed, validate_and_get_user, ValidationResponse, redis_validate_and_get_user, validate_email, ApiError},
     linfa::linfa_pred,
 };
 use deadpool_redis::{redis::{cmd}, Pool as RedisPool};
@@ -682,7 +682,8 @@ pub struct ContactUsRequest {
     name: String,
     #[validate(length(equal = 10, message = "Invalid Phone Number"))]
     phone: String,
-    #[validate(length(min = 3, message = "Invalid Email"))]
+    // email default from Validator is same as HTML5, which using on frontend
+    #[validate(custom = "validate_email")]
     email: String,
     #[validate(
         length(

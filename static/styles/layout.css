@@ -192,7 +192,7 @@ button:disabled {
 .article_display {
     width: 90%;
     margin: auto;
-    background-color: rgb(234, 202, 234);
+    background-color: rgb(241, 230, 241);
 }
 
 .compose_container {
@@ -256,7 +256,7 @@ fieldset {
     background-color: rgba(128, 0, 128, 0.579);
 }
 
-.compose_container button[type="submit"] {
+.compose_container, .contact_container button[type="submit"] {
     display: inline-block;
     outline: 0;
     border: none;
@@ -278,6 +278,11 @@ fieldset {
 	width:100%;
 	margin:0 auto;
 	position: relative;
+}
+
+.close_x {
+    float: right;
+    font-weight: bold;
 }
 
 #contact button[type="submit"]:hover {

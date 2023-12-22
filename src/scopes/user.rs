@@ -274,9 +274,12 @@ async fn subscribe(
                                     "added"
                                 }
                             });
+                        dbg!(&msg);
                         let user_alert = UserAlert::from((msg.as_str(), "alert_success"));
                         let template_body = hb.render("user-alert", &user_alert).unwrap();
-                        return HttpResponse::Ok().body(template_body);
+                        return HttpResponse::Ok()
+                        .header("HX-Retarget", "#table_response")
+                        .body(template_body);
                     }
                     Err(err) => {
                         dbg!(&err);
