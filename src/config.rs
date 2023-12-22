@@ -106,6 +106,8 @@ pub struct FilterOptions {
     pub search: Option<String>,
     pub key: Option<String>,
     pub dir: Option<String>,
+    pub year: Option<u32>,
+    pub month: Option<u32>,
 }
 
 impl From<&web::Query<FilterOptions>> for FilterOptions {
@@ -117,6 +119,8 @@ impl From<&web::Query<FilterOptions>> for FilterOptions {
             // Doing to keep same for table
             page: Some(web_opts.page.unwrap_or(1)),
             limit: web_opts.limit,
+            year: web_opts.year,
+            month: web_opts.month
         }
     }
 }

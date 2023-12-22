@@ -316,29 +316,42 @@ async fn home(
     }
 }
 
-#[get("/calendar/next/{cur_year}/{cur_month}")]
+#[get("/calendar/move")]
 async fn next_month(
+    opts: web::Query<FilterOptions>,
     hb: web::Data<Handlebars<'_>>,
     req: HttpRequest,
-    path: web::Path<(u32, u32)>,
     state: Data<AppState>,
     r_state: Data<RedisState>,
 ) -> impl Responder {
     if let Some(cookie) = req.headers().get(actix_web::http::header::COOKIE) {
         match redis_validate_and_get_user(cookie, &r_state).await {
             Ok(user) => {
-                let (input_year, input_month) = path.into_inner();
+                // let (input_year, input_month) = path.into_inner();
 
-                let cal_month = if input_month == 12 {
-                    1
-                } else {
-                    input_month + 1
-                };
-                let cal_year = if input_month == 12 {
-                    input_year + 1
-                } else {
-                    input_year
-                };
+                dbg!(&opts);
+
+                let input_year = opts.year.unwrap();
+                let input_month = opts.month.unwrap();
+                let input_dir = opts.dir.clone().unwrap();
+
+                let cal_month = 
+                    match (input_month, input_dir.as_str()) {
+                        (12, "next") => 1,
+                        (1, "prev")  => 12,
+                        (_, "prev")  => input_month - 1, 
+                        (_, "next")  => input_month + 1, 
+                        _            => input_month
+                    };
+
+                let cal_year = 
+                    match (input_month, input_dir.as_str()) {
+                        (12, "next") => input_year + 1,
+                        (1, "prev")  => input_year - 1,
+                        _            => input_year
+                    };
+
+                dbg!(&cal_month);
 
                 let day_one: NaiveDate =
                     NaiveDate::from_ymd_opt(cal_year as i32, cal_month, 1).unwrap();

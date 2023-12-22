@@ -28,11 +28,16 @@ handlebars_helper!(to_title_case: |s: String| {
 });
 
 handlebars_helper!(str_eq: |s_1: String, s_2: String| {
+    println!("{} and {}", s_1, s_2);
     if s_1 == s_2 {
         true
     } else {
         false
     }
+});
+
+handlebars_helper!(str_in: |s_1: String, list: Vec<String>| {
+    list.contains(&s_1)
 });
 
 handlebars_helper!(preview_text: |str: String| {
@@ -54,6 +59,11 @@ handlebars_helper!(form_rte: |slug: String, entity_type_id: i32| {
         _ => String::from("form/user/") + &slug
     }
 });
+
+handlebars_helper!(cal_rte: |dir: String, month: i32, year: i32| {
+    String::from("calendar/move?dir=") + &dir + "&year=" + &year.to_string() + "&month=" + &month.to_string()
+});
+
 
 handlebars_helper!(sort_rte: |key: String, entity_type_id: i32, dir: String| {
     match entity_type_id {

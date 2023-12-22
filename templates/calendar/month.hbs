@@ -8,13 +8,14 @@
         <div class="calendar_nav">
             <button
                 class="left"
-                hx-get="/event/calendar/prev/{{cal_data.year}}/{{cal_data.month}}"
+                hx-get={{cal_rte "prev" cal_data.month cal_data.year}}
                 hx-target="#calendar_month"
                 hx-swap="outerHtml"
             >Prev</button>
             <button
                 class="right"
-                hx-get="/event/calendar/next/{{cal_data.year}}/{{cal_data.month}}"
+                hx-get={{cal_rte "next" cal_data.month cal_data.year}}
+                {{!-- hx-get="/event/calendar/next/{{cal_data.year}}/{{cal_data.month}}" --}}
                 hx-target="#calendar_month"
                 hx-swap="outerHtml"
             >Next</button>

@@ -2,62 +2,66 @@
   <thead>
     <tr>
       {{#each entities.[0]}}
-        <th>{{to_title_case @key}}
-          <i 
-            class={{get_filter_class @root.opts @key "ASC"}}
-            id={{concat_str_args @key "_ASC"}}
-            hx-get={{sort_rte @key @root.entity_type_id "ASC"}} 
-            hx-target="#f1_table" 
-            hx-swap="outerHTML"
-            hx-indicator=".htmx-indicator"
-          >↑</i>
-          <i
-            class={{get_filter_class @root.opts @key "DESC"}}
-            id={{concat_str_args @key "_DESC"}}
-            hx-get={{sort_rte @key @root.entity_type_id "DESC"}} 
-            hx-target="#f1_table"
-            hx-swap="outerHTML"
-            hx-indicator=".htmx-indicator"
-          >↓</i>
-        </th>
+        {{#unless (str_in @key ["slug", "id"])}}
+          <th>{{to_title_case @key}}
+            <i 
+              class={{get_filter_class @root.opts @key "ASC"}}
+              id={{concat_str_args @key "_ASC"}}
+              hx-get={{sort_rte @key @root.entity_type_id "ASC"}} 
+              hx-target="#f1_table" 
+              hx-swap="outerHTML"
+              hx-indicator=".htmx-indicator"
+            >↑</i>
+            <i
+              class={{get_filter_class @root.opts @key "DESC"}}
+              id={{concat_str_args @key "_DESC"}}
+              hx-get={{sort_rte @key @root.entity_type_id "DESC"}} 
+              hx-target="#f1_table"
+              hx-swap="outerHTML"
+              hx-indicator=".htmx-indicator"
+            >↓</i>
+          </th>
+        {{/unless}}
       {{/each}}
         <th>Action(s)</th>
     </tr>
   </thead>
   <tbody id="table_body">
     {{#each entities}}
-      <tr>
-        {{#each this}}
-          {{#if (is_icon_col @key)}}
-            <td class="entity_cell" id={{@key}}>{{get_icon @key this}}</td>
-          {{else}}
-            <td class="entity_cell" id={{@key}}>{{this}}</td>
-          {{/if}}
-        {{/each}}
-          <td class="action_cell" id="td_action">
-            <button 
-              class="action_btn" 
-              {{!-- onclick="window.dialog.show();" --}}
-              hx-get={{form_rte this.slug @root.entity_type_id}}
-              hx-target="#edit_form_modal"
-              {{!-- hx-target="body" 
-              hx-swap="beforeend" --}}
-            >Edit
-            </button>
+        <tr>
+          {{#each this}}
+            {{#if (is_icon_col @key)}}
+              <td class="entity_cell" id={{@key}}>{{get_icon @key this}}</td>
+            {{else}}
+              {{#unless (str_in @key ["slug", "id"])}}
+                <td class="entity_cell" id={{@key}}>{{this}}</td>
+              {{/unless}}
+            {{/if}}
+          {{/each}}
+            <td class="action_cell" id="td_action">
               <button 
                 class="action_btn" 
                 {{!-- onclick="window.dialog.show();" --}}
-                hx-get={{attachments_rte this.slug @root.entity_type_id}}
+                hx-get={{form_rte this.slug @root.entity_type_id}}
                 hx-target="#edit_form_modal"
-                {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
-                  disabled="true"
-                {{/if}}
                 {{!-- hx-target="body" 
                 hx-swap="beforeend" --}}
-                >🔍
+              >Edit
               </button>
-          </td>
-      </tr>
+                <button 
+                  class="action_btn" 
+                  {{!-- onclick="window.dialog.show();" --}}
+                  hx-get={{attachments_rte this.slug @root.entity_type_id}}
+                  hx-target="#edit_form_modal"
+                  {{#if (int_eq @root.entity_type_id 8) }} {{!-- Disable for Query Entities --}}
+                    disabled="true"
+                  {{/if}}
+                  {{!-- hx-target="body" 
+                  hx-swap="beforeend" --}}
+                  >🔍
+                </button>
+            </td>
+        </tr>
     {{/each}}
     {{#if (int_eq vec_len 10)}}
         <tr>

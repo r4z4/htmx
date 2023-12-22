@@ -15,7 +15,7 @@ use hbs_helpers::{
     attachments_rte, construct_opts_url, concat_str_args, fifth_week, first_week, form_rte, fourth_week,
     get_icon, get_list_view, get_month_name, get_search_rte, get_table_title, int_eq, int_in,
     is_icon_col, loc_vec_len_ten, lower_and_single, preview_text, second_week, sort_rte, str_eq,
-    subscribe_icon, subscribe_rte, third_week, to_title_case, get_filter_class
+    subscribe_icon, subscribe_rte, third_week, to_title_case, get_filter_class, str_in, cal_rte
 };
 use models::{
     model_admin::AdminUserList, model_consultant::ResponseConsultant, model_location::LocationList,
@@ -795,6 +795,7 @@ async fn main() -> std::io::Result<()> {
 
     handlebars.register_helper("to_title_case", Box::new(to_title_case));
     handlebars.register_helper("str_eq", Box::new(str_eq));
+    handlebars.register_helper("str_in", Box::new(str_in));
     handlebars.register_helper("int_eq", Box::new(int_eq));
     handlebars.register_helper("int_in", Box::new(int_in));
     handlebars.register_helper("get_month_name", Box::new(get_month_name));
@@ -819,6 +820,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("get_filter_class", Box::new(get_filter_class));
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
     handlebars.register_helper("get_list_view", Box::new(get_list_view));
+    handlebars.register_helper("cal_rte", Box::new(cal_rte));
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
