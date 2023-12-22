@@ -2,5 +2,8 @@
     <div class="day_container">
         <span class="item1">{{day}}</span>
     {{!-- <span>{{cal_data.num_days}}</span> --}}
+        {{#if (is_holiday day @root.cal_data.holidays)}}
+            <span class="item1">Holiday</span>
+        {{/if}}
     </div>
 </td>

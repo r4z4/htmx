@@ -64,6 +64,12 @@ handlebars_helper!(cal_rte: |dir: String, month: i32, year: i32| {
     String::from("calendar/move?dir=") + &dir + "&year=" + &year.to_string() + "&month=" + &month.to_string()
 });
 
+handlebars_helper!(is_holiday: |day: String, holidays: Vec<(i32, String)>| {
+    let day_list = holidays.iter().map(|holiday| holiday.0).collect::<Vec<i32>>();
+    let int = day.parse::<i32>().unwrap_or(0);
+    day_list.contains(&int)
+});
+
 
 handlebars_helper!(sort_rte: |key: String, entity_type_id: i32, dir: String| {
     match entity_type_id {

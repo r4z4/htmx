@@ -13,7 +13,7 @@ use dotenv::dotenv;
 use handlebars::Handlebars;
 use hbs_helpers::{
     attachments_rte, construct_opts_url, concat_str_args, fifth_week, first_week, form_rte, fourth_week,
-    get_icon, get_list_view, get_month_name, get_search_rte, get_table_title, int_eq, int_in,
+    get_icon, get_list_view, get_month_name, get_search_rte, get_table_title, int_eq, int_in, is_holiday,
     is_icon_col, loc_vec_len_ten, lower_and_single, preview_text, second_week, sort_rte, str_eq,
     subscribe_icon, subscribe_rte, third_week, to_title_case, get_filter_class, str_in, cal_rte
 };
@@ -821,6 +821,7 @@ async fn main() -> std::io::Result<()> {
     handlebars.register_helper("get_table_title", Box::new(get_table_title));
     handlebars.register_helper("get_list_view", Box::new(get_list_view));
     handlebars.register_helper("cal_rte", Box::new(cal_rte));
+    handlebars.register_helper("is_holiday", Box::new(is_holiday));
 
     // handlebars.register_helper("gen_vec_len_ten", Box::new(gen_vec_len_ten));
 
