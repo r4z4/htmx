@@ -229,6 +229,18 @@ handlebars_helper!(loc_vec_len_ten: |vec: Vec<LocationList>| {
     }
 });
 
+handlebars_helper!(get_filter_class: |opts: FilterOptions, key: String, dir: String| {
+    if opts.key.is_some() {
+        if opts.key.unwrap() == key && opts.dir.unwrap() == dir {
+            "filter_chosen"
+        } else {
+            "filter_unchosen"
+        }
+    } else {
+        "filter_unchosen"
+    }
+});
+
 handlebars_helper!(get_search_rte: |entity_type_id: i32, opts: FilterOptions| {
     dbg!(&opts);
     let added = opts.page.unwrap() as i32 + 1;
@@ -332,6 +344,15 @@ handlebars_helper!(get_month_name: |month: u32| {
         _ => "Oops",
     }
 });
+
+/// Capitalizes the first character in s.
+pub fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
 
 // Not Working
 
